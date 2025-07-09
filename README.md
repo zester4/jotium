@@ -3,42 +3,27 @@
 
 [![npm version](https://img.shields.io/npm/v/jotium-agent?style=flat-square)](https://www.npmjs.com/package/jotium-agent)
 [![npm downloads](https://img.shields.io/npm/dm/jotium-agent?style=flat-square)](https://www.npmjs.com/package/jotium-agent)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](./LICENSE)
 
 ---
 
 ## About
 
-**Jotium Agent** is a full-stack, extensible AI agent platform designed for real-world productivity, automation, and research. Built around Google Gemini models and a rich suite of advanced tools, Jotium provides a highly capable, multi-modal, and context-aware assistant. It is ideal for developers, teams, and organizations looking to integrate advanced AI into their workflows.
+**Jotium Agent** is a modern, extensible AI agent platform that brings the power of Google Gemini and 15+ production-grade tools to your workflow. Designed for developers, teams, and organizations, Jotium makes it easy to automate tasks, integrate with popular APIs, and build context-aware, multi-modal assistants for productivity, research, and automation.
 
 ---
 
-## Overview
+## Why Use Jotium?
 
-- **AI Model:** Google Gemini (via [`@google/genai`](https://www.npmjs.com/package/@google/genai))
-- **Agent:** Jotium (modular, tool-augmented, memory-enabled)
-- **Tooling:** 15+ production-grade tools for web, code, file, API, scheduling, social, and more
-- **Memory:** Persistent, context-limited, with conversation history and tool results
-- **Streaming:** Real-time, robust Server-Sent Events (SSE) for chat and tool output
-- **Security:** Environment-based secrets, no secrets in repo
-
----
-
-## Features
-
-- **Natural Language Chat:** Conversational interface with streaming responses and agent thoughts
-- **Tool-Augmented Reasoning:** Jotium can autonomously invoke tools for web search, file ops, code execution, scheduling, and more
-- **Memory:** Retains recent context, tool results, and user history for continuity
-- **Multi-Modal:** Supports text, code, files, images, and structured data
-- **Extensible:** Add new tools by implementing the simple Tool interface
-- **Production-Ready:** Robust error handling, input validation, and security best practices
+- **All-in-one AI agent:** Combines chat, code, web, scheduling, file, and more in a single platform.
+- **Production-ready:** Robust, secure, and built for real-world use.
+- **Extensible:** Add your own tools or connect to any API with minimal effort.
+- **Multi-modal:** Supports text, code, files, images, and structured data.
+- **Open and developer-friendly:** Easy to set up, customize, and contribute to.
 
 ---
-
 
 ## Quick Start
 
-```bash
 ```bash
 # 1. Install dependencies
 pnpm install
@@ -55,6 +40,9 @@ pnpm db:migrate
 pnpm dev
 
 # App runs at http://localhost:3000
+```
+
+---
 ```
 ```
 
