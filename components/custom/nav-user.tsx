@@ -84,9 +84,11 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem className="gap-2 px-2 py-1 text-xs">
-                <Sparkles className="size-4" />
-                Upgrade to Pro
+              <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs">
+                <Link href="/pricing" className="flex items-center w-full">
+                  <Sparkles className="size-4" />
+                  Upgrade to Pro
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
@@ -98,7 +100,7 @@ export function NavUser({
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs">
-                <Link href="/pricing" className="flex items-center w-full">
+                <Link href="/billing" className="flex items-center w-full">
                   <CreditCard className="size-4" />
                   Billing
                 </Link>
