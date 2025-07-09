@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --foreground-rgb: 0, 0, 0;
+    --background-start-rgb: 214, 219, 220;
+    --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --foreground-rgb: 255, 255, 255;
+        --background-start-rgb: 0, 0, 0;
+        --background-end-rgb: 0, 0, 0;
+    }
+}
+
+@layer utilities {
+    .text-balance {
+        text-wrap: balance;
+    }
+}
+
+@layer base {
+    :root {
+        --background: 39 52% 95%;
+        --foreground: 25 47% 25%;
+        --card: 39 52% 95%;
+        --card-foreground: 25 47% 25%;
+        --popover: 39 52% 95%;
+        --popover-foreground: 25 47% 25%;
+        --primary: 25 47% 35%;
+        --primary-foreground: 39 52% 95%;
+        --secondary: 39 52% 92%;
+        --secondary-foreground: 25 47% 25%;
+        --muted: 39 52% 92%;
+        --muted-foreground: 25 47% 35%;
+        --accent: 39 52% 92%;
+        --accent-foreground: 25 47% 25%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 39 52% 89%;
+        --input: 39 52% 89%;
+        --ring: 25 47% 35%;
+        --chart-1: 12 76% 61%;
+        --chart-2: 173 58% 39%;
+        --chart-3: 197 37% 24%;
+        --chart-4: 43 74% 66%;
+        --chart-5: 27 87% 67%;
+        --radius: 0.75rem;
+        --sidebar-background: 39 52% 92%;
+        --sidebar-foreground: 25 47% 25%;
+        --sidebar-primary: 25 47% 35%;
+        --sidebar-primary-foreground: 39 52% 95%;
+        --sidebar-accent: 39 52% 89%;
+        --sidebar-accent-foreground: 25 47% 25%;
+        --sidebar-border: 39 52% 89%;
+        --sidebar-ring: 25 47% 35%;
+    }
+    .dark {
+        --background: 25 47% 15%;
+        --foreground: 39 52% 95%;
+        --card: 25 47% 15%;
+        --card-foreground: 39 52% 95%;
+        --popover: 25 47% 15%;
+        --popover-foreground: 39 52% 95%;
+        --primary: 25 47% 45%;
+        --primary-foreground: 39 52% 95%;
+        --secondary: 25 47% 20%;
+        --secondary-foreground: 39 52% 95%;
+        --muted: 25 47% 20%;
+        --muted-foreground: 39 52% 89%;
+        --accent: 25 47% 20%;
+        --accent-foreground: 39 52% 95%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 25 47% 25%;
+        --input: 25 47% 25%;
+        --ring: 25 47% 45%;
+        --chart-1: 220 70% 50%;
+        --chart-2: 160 60% 45%;
+        --chart-3: 30 80% 55%;
+        --chart-4: 280 65% 60%;
+        --chart-5: 340 75% 55%;
+        --sidebar-background: 25 47% 12%;
+        --sidebar-foreground: 39 52% 92%;
+        --sidebar-primary: 25 47% 45%;
+        --sidebar-primary-foreground: 39 52% 95%;
+        --sidebar-accent: 25 47% 20%;
+        --sidebar-accent-foreground: 39 52% 92%;
+        --sidebar-border: 25 47% 25%;
+        --sidebar-ring: 25 47% 45%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+
+    @font-face {
+        font-family: "geist";
+        font-style: normal;
+        font-weight: 100 900;
+        src: url(/fonts/geist.woff2) format("woff2");
+    }
+
+    @font-face {
+        font-family: "geist-mono";
+        font-style: normal;
+        font-weight: 100 900;
+        src: url(/fonts/geist-mono.woff2) format("woff2");
+    }
+}
+
+.skeleton {
+    * {
+        pointer-events: none !important;
+    }
+
+    *[class^="text"] {
+        color: transparent !important;
+        @apply rounded-sm bg-foreground/20 select-none animate-pulse;
+    }
+
+    *[class^="no-skeleton"] {
+        opacity: 0 !important;
+    }
+
+    input {
+        opacity: 0 !important;
+    }
+
+    .skeleton-bg {
+        @apply bg-foreground/10;
+    }
+
+    .skeleton-div {
+        @apply bg-foreground/20 animate-pulse;
+    }
+}

@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1751934989557,
+      "tag": "0000_eminent_mariko_yashida",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1751964997998,
+      "tag": "0001_jittery_post",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1751965407045,
+      "tag": "0002_complete_quicksilver",
+      "breakpoints": true
+    }
+  ]
+}
