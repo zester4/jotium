@@ -9,9 +9,9 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://gemini.vercel.ai"),
-  title: "Jotium Agent",
-  description: "Jotium | The fastest and best agent.",
+  metadataBase: new URL("https://jotium.vercel.app"),
+  title: "Jotium | The Digital Gennie",
+  description: "Jotium Agent | Making your dreams come true.",
 };
 
 export default async function RootLayout({

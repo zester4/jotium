@@ -1,10 +1,21 @@
-# Gemini Raiden: Jotium AI Agent Platform
+
+# Jotium Agent
+
+[![npm version](https://img.shields.io/npm/v/jotium-agent?style=flat-square)](https://www.npmjs.com/package/jotium-agent)
+[![npm downloads](https://img.shields.io/npm/dm/jotium-agent?style=flat-square)](https://www.npmjs.com/package/jotium-agent)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](./LICENSE)
+
+---
+
+## About
+
+**Jotium Agent** is a full-stack, extensible AI agent platform designed for real-world productivity, automation, and research. Built around Google Gemini models and a rich suite of advanced tools, Jotium provides a highly capable, multi-modal, and context-aware assistant. It is ideal for developers, teams, and organizations looking to integrate advanced AI into their workflows.
+
+---
 
 ## Overview
 
-**Gemini Raiden** is a full-stack, extensible AI agent platform built around the Jotium agent. Jotium leverages Google Gemini models and a rich suite of advanced tools to provide a highly capable, multi-modal, and context-aware assistant for real-world productivity, automation, and research.
-
-- **AI Model:** Google Gemini (via `@google/genai`)
+- **AI Model:** Google Gemini (via [`@google/genai`](https://www.npmjs.com/package/@google/genai))
 - **Agent:** Jotium (modular, tool-augmented, memory-enabled)
 - **Tooling:** 15+ production-grade tools for web, code, file, API, scheduling, social, and more
 - **Memory:** Persistent, context-limited, with conversation history and tool results
@@ -15,23 +26,24 @@
 
 ## Features
 
-- **Natural Language Chat**: Conversational interface with streaming responses and agent thoughts
-- **Tool-Augmented Reasoning**: Jotium can autonomously invoke tools for web search, file ops, code execution, scheduling, and more
-- **Memory**: Retains recent context, tool results, and user history for continuity
-- **Multi-Modal**: Supports text, code, files, images, and structured data
-- **Extensible**: Add new tools by implementing the simple Tool interface
-- **Production-Ready**: Robust error handling, input validation, and security best practices
+- **Natural Language Chat:** Conversational interface with streaming responses and agent thoughts
+- **Tool-Augmented Reasoning:** Jotium can autonomously invoke tools for web search, file ops, code execution, scheduling, and more
+- **Memory:** Retains recent context, tool results, and user history for continuity
+- **Multi-Modal:** Supports text, code, files, images, and structured data
+- **Extensible:** Add new tools by implementing the simple Tool interface
+- **Production-Ready:** Robust error handling, input validation, and security best practices
 
 ---
 
+
 ## Quick Start
 
+```bash
 ```bash
 # 1. Install dependencies
 pnpm install
 
 # 2. Set up environment variables (see .env.example)
-#    Never commit your .env file!
 cp .env.example .env.local
 # Fill in your API keys for Gemini, Tavily, Slack, GitHub, etc.
 
@@ -44,12 +56,17 @@ pnpm dev
 
 # App runs at http://localhost:3000
 ```
+```
+
+---
+
 
 ---
 
 ## Architecture
 
-### Jotium Agent (`ai/jotium.ts`)
+
+### Jotium Agent ([`ai/jotium.ts`](./ai/jotium.ts))
 
 - **Core:** `AIAgent` class wraps Google Gemini, manages memory, and orchestrates tool calls.
 - **Tool Integration:** Tools are registered in a map and exposed to Gemini as function declarations.
@@ -57,11 +74,13 @@ pnpm dev
 - **Streaming:** All responses (including tool output and agent thoughts) are streamed to the client via SSE.
 - **System Prompt:** Jotium is instructed to act as a human-like, proactive, tool-empowered agent.
 
-### Tool System (`ai/tools/`)
+
+### Tool System ([`ai/tools/`](./ai/tools/))
 
 Each tool implements a simple interface:
 - `getDefinition()`: Returns a function declaration for Gemini (OpenAI-style function calling)
 - `execute(args)`: Runs the tool logic and returns a result
+
 
 #### Major Tools
 
@@ -85,6 +104,9 @@ Each tool implements a simple interface:
 
 ---
 
+
+---
+
 ## Tool Example: Web Search
 
 ```js
@@ -95,6 +117,7 @@ const result = await agent.tools.get('web_search').execute({
 });
 console.log(result.answer, result.results);
 ```
+
 
 ## Tool Example: File Management
 
@@ -108,6 +131,9 @@ console.log(result.content);
 
 ---
 
+
+---
+
 ## Adding a New Tool
 
 1. Create a new file in `ai/tools/` implementing the `Tool` interface:
@@ -118,11 +144,17 @@ console.log(result.content);
 
 ---
 
+
+---
+
 ## Security
 
 - **Never commit `.env` files** or secrets to the repo.
 - All API keys and tokens are loaded from environment variables.
 - Sensitive operations (file, code, API) are protected by authentication and input validation.
+
+---
+
 
 ---
 
@@ -135,11 +167,17 @@ console.log(result.content);
 
 ---
 
-## License
-
-MIT
 
 ---
+
+## License
+
+This project is licensed under the [MIT License](./LICENSE).
+
+---
+
+---
+
 
 ## Credits
 
@@ -151,6 +189,9 @@ MIT
 - Project management by [ClickUp](https://clickup.com/)
 - Flights by [Duffel](https://duffel.com/)
 - And many more...
+
+---
+
 
 ---
 
