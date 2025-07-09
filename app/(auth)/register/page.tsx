@@ -35,7 +35,7 @@ export default function Page() {
       toast.error("Failed validating your submission!");
     } else if (state.status === "success") {
       toast.success("Account created successfully");
-      router.push("/chat"); // Redirect to chat page
+      router.push("/"); // Redirect to chat page
     }
   }, [state, router]);
 

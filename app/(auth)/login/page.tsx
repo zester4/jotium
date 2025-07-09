@@ -29,7 +29,7 @@ export default function Page() {
     } else if (state.status === "invalid_data") {
       toast.error("Failed validating your submission!");
     } else if (state.status === "success") {
-      router.push("/chat"); // Redirect to chat page
+      router.push("/"); // Redirect to chat page
     }
   }, [state.status, router]);
 
