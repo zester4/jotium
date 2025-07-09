@@ -1,8 +1,11 @@
-"use client"
+//app/notifications/page.tsx
 
-import React from "react";
-import { useRouter } from "next/navigation";
+"use client";
+
 import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+import React from "react";
+
 import { Button } from "@/components/ui/button";
 
 const notifications = [
@@ -57,4 +60,4 @@ export default function NotificationsPage() {
       </div>
     </div>
   );
-} 
+}

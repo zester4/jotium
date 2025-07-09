@@ -6,7 +6,7 @@ const PrivacyPolicyPage = () => (
     <section className="mb-6">
       <h2 className="text-xl font-semibold mb-2">Introduction</h2>
       <p>
-        Welcome to Jotium ("we", "us", or "our"). We are dedicated to protecting your privacy and ensuring transparency about how your information is handled. This Privacy Policy describes in detail the types of information we collect, how we use and protect it, your rights, and how you can exercise those rights. By using Jotium, you agree to the practices described in this policy.
+        Welcome to Jotium (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;). We are dedicated to protecting your privacy and ensuring transparency about how your information is handled. This Privacy Policy describes in detail the types of information we collect, how we use and protect it, your rights, and how you can exercise those rights. By using Jotium, you agree to the practices described in this policy.
       </p>
     </section>
     <section className="mb-6">

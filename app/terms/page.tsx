@@ -6,7 +6,7 @@ const TermsOfServicePage = () => (
     <section className="mb-6">
       <h2 className="text-xl font-semibold mb-2">Acceptance of Terms</h2>
       <p>
-        By accessing or using Jotium ("the Service"), you agree to be bound by these Terms of Service ("Terms") and our Privacy Policy. If you do not agree to these Terms, please do not use Jotium.
+        By accessing or using Jotium (&quot;the Service&quot;), you agree to be bound by these Terms of Service (&quot;Terms&quot;) and our Privacy Policy. If you do not agree to these Terms, please do not use Jotium.
       </p>
     </section>
     <section className="mb-6">
@@ -70,7 +70,7 @@ const TermsOfServicePage = () => (
     <section className="mb-6">
       <h2 className="text-xl font-semibold mb-2">Disclaimers and Limitation of Liability</h2>
       <ul className="list-disc pl-6">
-        <li>Jotium is provided "as is" and "as available" without warranties of any kind, express or implied.</li>
+        <li>Jotium is provided &quot;as is&quot; and &quot;as available&quot; without warranties of any kind, express or implied.</li>
         <li>We do not guarantee that the Service will be uninterrupted, error-free, or secure.</li>
         <li>To the maximum extent permitted by law, we are not liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of Jotium.</li>
         <li>Our total liability for any claim related to the Service will not exceed the amount you paid us (if any) in the past 12 months.</li>
@@ -103,4 +103,4 @@ const TermsOfServicePage = () => (
   </main>
 );
 
-export default TermsOfServicePage; 
+export default TermsOfServicePage;

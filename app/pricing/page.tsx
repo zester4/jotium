@@ -1,13 +1,15 @@
-"use client";
-import { Check } from 'lucide-react'
-import React, { useState } from 'react'
-import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+//app/pricing/page.tsx
 
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { cn, generateUUID } from '@/lib/utils'
+"use client";
+
+import { Check, ArrowLeft } from 'lucide-react';
+import { useRouter } from "next/navigation";
+import React, { useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { cn, generateUUID } from '@/lib/utils';
 
 const plans = [
   {
@@ -241,19 +243,19 @@ export default function PricingPage() {
                 <table className="min-w-[500px] sm:min-w-full border-collapse rounded-xl overflow-hidden text-xs sm:text-sm">
                 <thead>
                     <tr className="bg-background text-foreground">
-                    <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-bold">Features</th>
-                    <th className="py-2 sm:py-3 px-2 sm:px-4 font-bold">Free</th>
-                    <th className="py-2 sm:py-3 px-2 sm:px-4 font-bold">Pro</th>
-                    <th className="py-2 sm:py-3 px-2 sm:px-4 font-bold">Advanced</th>
-                    <th className="py-2 sm:py-3 px-2 sm:px-4 font-bold">Team</th>
+                    <th className="p-2 sm:p-3 font-bold text-left">Features</th>
+                    <th className="p-2 sm:p-3 font-bold">Free</th>
+                    <th className="p-2 sm:p-3 font-bold">Pro</th>
+                    <th className="p-2 sm:p-3 font-bold">Advanced</th>
+                    <th className="p-2 sm:p-3 font-bold">Team</th>
                     </tr>
                 </thead>
                 <tbody>
                     {allFeatures.map((f) => (
                     <tr key={f.label} className="border-b border-zinc-200 dark:border-zinc-700">
-                        <td className="py-2 px-4 font-medium text-zinc-700 dark:text-zinc-200">{f.label}</td>
+                        <td className="p-2 font-medium text-zinc-700 dark:text-zinc-200">{f.label}</td>
                         {["free", "pro", "advanced", "team"].map((plan) => (
-                        <td key={plan} className="py-2 px-4 text-center">
+                        <td key={plan} className="p-2 text-center">
                             {typeof f[plan as keyof typeof f] === "boolean"
                             ? f[plan as keyof typeof f]
                                 ? <span className="text-green-600 dark:text-green-400 font-bold">✓</span>
