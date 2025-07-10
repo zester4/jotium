@@ -23,6 +23,8 @@ import { CalComTool } from './tools/calcom-tool';
 import { CodeExecutionTool } from './tools/code-tool'
 import { AgentMemory, Message, Tool, ToolCall, ToolResult } from "./types";
 import { generateUUID } from "@/lib/utils";
+import { ImageGenerationTool } from './tools/image-gen';
+import { GetWeatherTool } from './tools/get-weather';
 
 dotenv.config();
 
@@ -82,24 +84,27 @@ export class AIAgent {
       process.env.FIRECRAWL_API_KEY || ""
     );
     const codeExecutionTool = new CodeExecutionTool();
+    const imageGenerationTool = new ImageGenerationTool(process.env.GEMINI_API_KEY || "");
+    const getWeatherTool = new GetWeatherTool();
 
     // Register tools
     this.tools.set("web_search", webSearchTool);
     this.tools.set("file_manager", fileManagerTool);
     this.tools.set("github_tool", githubTool);
+    this.tools.set(githubTool.getDefinition().name || "github_operations", githubTool);
     this.tools.set("slack_tool", slackTool);
+    this.tools.set(slackTool.getDefinition().name || "slack_action", slackTool);
     this.tools.set("clickup_tool", clickupTool);
     this.tools.set("api_tool", apiTool);
     this.tools.set("datetime_tool", dateTimeTool);
     // this.tools.set("asana_tool", asanaTool);
     this.tools.set("calcom_scheduler", calcomSchedulerTool);
-    
-    
-    // Register new tools
     this.tools.set("flight_booking", flightBookingTool);
     this.tools.set("social_media", ayrshareTool);
     this.tools.set("web_scrape", webScrapeTool);
     this.tools.set("code_execution", codeExecutionTool);
+    this.tools.set("generate_image", imageGenerationTool);
+    this.tools.set("get_weather", getWeatherTool);
 
     console.log(`✅ Initialized ${this.tools.size} tools`);
   }
@@ -209,6 +214,8 @@ export class AIAgent {
         🌐 WEB SCRAPING: Use web_scrape for extracting data from websites
         🖥️ CODE EXECUTION: Use code_execution for running code, executing files, managing processes, and advanced code operations
         📅 CALENDAR : Use calcom_scheduler to schedule book meetings and more.
+        🖼️ IMAGE GENERATION: Use generate_image for creating, editing, or generating story-mode images with Gemini's capabilities
+        ☀️ WEATHER: Use get_weather to fetch current weather, temperature, sunrise, sunset, and forecasts for any location
         
         Guidelines:
         - Be proactive in suggesting relevant tools for user requests
