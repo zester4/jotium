@@ -5,7 +5,7 @@ import { desc, eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-import { user, chat, User, reservation, apiKey, ApiKey } from "./schema";
+import { user, chat, User, reservation, apiKey, ApiKey, notification } from "./schema";
 import { encryptApiKey, decryptApiKey } from "@/lib/encryption";
 
 // Optionally, if not using email/pass login, you can
@@ -182,4 +182,107 @@ export async function deleteApiKey({ userId, service }: { userId: string; servic
 export async function listApiKeys({ userId }: { userId: string }) {
   const keys = await db.select({ service: apiKey.service }).from(apiKey).where(eq(apiKey.userId, userId));
   return keys.map((k) => k.service);
+}
+
+// Set Stripe customer/subscription IDs and status for a user
+export async function setStripeSubscription({
+  userId,
+  stripeCustomerId,
+  stripeSubscriptionId,
+  subscriptionStatus,
+}: {
+  userId: string;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  subscriptionStatus?: string;
+}) {
+  try {
+    return await db.update(user)
+      .set({
+        ...(stripeCustomerId && { stripeCustomerId }),
+        ...(stripeSubscriptionId && { stripeSubscriptionId }),
+        ...(subscriptionStatus && { subscriptionStatus }),
+      })
+      .where(eq(user.id, userId));
+  } catch (error) {
+    console.error("Failed to update Stripe subscription for user:", error);
+    throw error;
+  }
+}
+
+// Get Stripe subscription info for a user
+export async function getStripeSubscription(userId: string) {
+  try {
+    const [u] = await db.select().from(user).where(eq(user.id, userId));
+    return {
+      stripeCustomerId: u?.stripeCustomerId,
+      stripeSubscriptionId: u?.stripeSubscriptionId,
+      subscriptionStatus: u?.subscriptionStatus,
+    };
+  } catch (error) {
+    console.error("Failed to get Stripe subscription for user:", error);
+    throw error;
+  }
+}
+
+// Update only the subscription status
+export async function updateSubscriptionStatus({ userId, subscriptionStatus }: { userId: string; subscriptionStatus: string }) {
+  try {
+    return await db.update(user)
+      .set({ subscriptionStatus })
+      .where(eq(user.id, userId));
+  } catch (error) {
+    console.error("Failed to update subscription status for user:", error);
+    throw error;
+  }
+}
+
+export async function createNotification({
+  userId,
+  title,
+  description,
+  type,
+}: {
+  userId: string;
+  title: string;
+  description?: string;
+  type?: string;
+}) {
+  try {
+    return await db.insert(notification).values({
+      userId,
+      title,
+      description,
+      type,
+      read: false,
+      createdAt: new Date(),
+    });
+  } catch (error) {
+    console.error("Failed to create notification:", error);
+    throw error;
+  }
+}
+
+export async function getUserNotifications(userId: string) {
+  try {
+    return await db
+      .select()
+      .from(notification)
+      .where(eq(notification.userId, userId))
+      .orderBy(desc(notification.createdAt));
+  } catch (error) {
+    console.error("Failed to get notifications:", error);
+    throw error;
+  }
+}
+
+export async function markNotificationRead({ notificationId }: { notificationId: string }) {
+  try {
+    return await db.update(notification)
+      .set({ read: true })
+      .where(eq(notification.id, notificationId));
+  } catch (error) {
+    console.error("Failed to mark notification as read:", error);
+    throw error;
+  }
 }

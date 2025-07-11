@@ -73,26 +73,6 @@ const plans = [
     ],
     cta: 'Get Advanced',
   },
-  {
-    name: 'Team',
-    price: {
-      monthly: 35,
-      yearly: 357, // 35 * 12 * 0.85
-    },
-    originalPrice: {
-        monthly: 35,
-        yearly: 420,
-      },
-    description: 'For large organizations with custom needs.',
-    features: [
-      'Everything in Advanced',
-      'Admin dashboard',
-      'SAML SSO',
-      'On-premise deployment',
-      '24/7 priority support',
-    ],
-    cta: 'Choose Team',
-  },
 ]
 
 const allFeatures = [
@@ -152,135 +132,258 @@ const allFeatures = [
 
 export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  return (
-    <div className="min-h-screen bg-background pb-16">
-      <Button
-        variant="outline"
-        size="sm"
-        className="mb-4 flex items-center gap-2"
-        onClick={() => router.back()}
-      >
-        <ArrowLeft className="size-4" />
-        Back
-      </Button>
-      <div className="container mx-auto px-2 sm:px-4 py-8 sm:py-12">
-        <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-3 sm:mb-4">
-            Flexible plans for every team
-          </h1>
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground mb-6 sm:mb-8">
-            Start for free, upgrade as you grow. No hidden fees. Cancel anytime.
-          </p>
-          <div className="flex items-center justify-center space-x-2 sm:space-x-4 mb-8 sm:mb-12">
-            <Label htmlFor="billing-cycle" className={cn(billingCycle === 'monthly' ? 'text-foreground' : 'text-muted-foreground')}>
-              Monthly
-            </Label>
-            <Switch
-              id="billing-cycle"
-              checked={billingCycle === 'yearly'}
-              onCheckedChange={(checked: boolean) => setBillingCycle(checked ? 'yearly' : 'monthly')}
-            />
-            <Label htmlFor="billing-cycle" className={cn(billingCycle === 'yearly' ? 'text-foreground' : 'text-muted-foreground')}>
-              Yearly (Save 15%)
-            </Label>
-          </div>
-        </div>
+  async function handleCheckout(plan: string) {
+    setLoadingPlan(plan);
+    setError(null);
+    try {
+      const res = await fetch('/api/pricing/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, billingCycle }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error || 'Failed to start checkout.');
+      }
+    } catch (err) {
+      setError('Failed to start checkout.');
+    } finally {
+      setLoadingPlan(null);
+    }
+  }
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
-          {plans.map((plan) => (
-            <div
-              key={plan.name}
-              className={cn(
-                'border rounded-lg p-6 flex flex-col',
-                plan.popular ? 'border-primary shadow-lg' : 'border-border'
-              )}
-            >
-              {plan.popular && (
-                <div className="text-xs bg-primary text-primary-foreground font-semibold py-1 px-3 rounded-full self-start mb-4">
-                  Most Popular
-                </div>
-              )}
-              <h2 className="text-2xl font-bold mb-4">{plan.name}</h2>
-              <p className="text-muted-foreground mb-6 h-12">{plan.description}</p>
-              <div className="mb-6">
-                <div className="flex items-baseline">
-                    <span className="text-4xl font-extrabold">
-                    ${plan.price[billingCycle]}
-                    </span>
-                    {plan.originalPrice[billingCycle] > plan.price[billingCycle] && (
-                        <span className="text-muted-foreground line-through ml-2">
-                        ${plan.originalPrice[billingCycle]}
-                        </span>
-                    )}
-                </div>
-                <span className="text-muted-foreground">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
-              </div>
-              <Button
+  return (
+    <div className="min-h-screen bg-background pb-8 sm:pb-16">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6">
+        <Button
+          variant="outline"
+          size="sm"
+          className="mb-4 flex items-center gap-2 mt-4 sm:mt-0"
+          onClick={() => router.back()}
+        >
+          <ArrowLeft className="size-4" />
+          Back
+        </Button>
+        
+        <div className="py-4 sm:py-8 lg:py-12">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-2 sm:mb-3 md:mb-4 leading-tight">
+              Flexible plans for every team
+            </h1>
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground mb-6 sm:mb-8 px-2 sm:px-4">
+              Start for free, upgrade as you grow. No hidden fees. Cancel anytime.
+            </p>
+            
+            {/* Billing Toggle */}
+            <div className="flex items-center justify-center space-x-2 sm:space-x-4 mb-6 sm:mb-8 lg:mb-12">
+              <Label 
+                htmlFor="billing-cycle" 
                 className={cn(
-                  'w-full',
-                  plan.popular ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
+                  "text-sm sm:text-base transition-colors",
+                  billingCycle === 'monthly' ? 'text-foreground font-medium' : 'text-muted-foreground'
                 )}
               >
-                {plan.cta}
-              </Button>
-              <ul className="mt-8 space-y-4 text-sm">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center">
-                    <Check className="size-4 text-primary mr-3" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
+                Monthly
+              </Label>
+              <Switch
+                id="billing-cycle"
+                checked={billingCycle === 'yearly'}
+                onCheckedChange={(checked: boolean) => setBillingCycle(checked ? 'yearly' : 'monthly')}
+              />
+              <Label 
+                htmlFor="billing-cycle" 
+                className={cn(
+                  "text-sm sm:text-base transition-colors",
+                  billingCycle === 'yearly' ? 'text-foreground font-medium' : 'text-muted-foreground'
+                )}
+              >
+                Yearly 
+                <span className="text-green-600 dark:text-green-400 font-semibold ml-1">
+                  (Save 15%)
+                </span>
+              </Label>
             </div>
-          ))}
-        </div>
+          </div>
 
-        <section className="max-w-5xl mx-auto px-0 sm:px-4 mt-12 sm:mt-16 overflow-x-auto">
-            <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center">Feature Comparison</h3>
-            <div className="w-full overflow-x-auto">
-                <table className="min-w-[500px] sm:min-w-full border-collapse rounded-xl overflow-hidden text-xs sm:text-sm">
+          {/* Pricing Cards */}
+          <div className="flex justify-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 max-w-5xl">
+              {plans.map((plan) => (
+                <div
+                  key={plan.name}
+                  className={cn(
+                    'border rounded-xl p-4 sm:p-6 flex flex-col relative transition-all duration-200 hover:shadow-lg w-full max-w-sm mx-auto',
+                    plan.popular 
+                      ? 'border-primary shadow-lg ring-2 ring-primary/20' 
+                      : 'border-border hover:border-primary/50'
+                  )}
+                >
+                  {plan.popular && (
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                      <div className="text-xs bg-primary text-primary-foreground font-semibold py-1 px-3 rounded-full whitespace-nowrap">
+                        Most Popular
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="text-center mb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold mb-2">{plan.name}</h2>
+                    <p className="text-sm sm:text-base text-muted-foreground min-h-[2.5rem] sm:min-h-[3rem] flex items-center justify-center px-2">
+                      {plan.description}
+                    </p>
+                  </div>
+                  
+                  {/* Pricing */}
+                  <div className="mb-6 text-center">
+                    <div className="flex items-baseline justify-center mb-1">
+                      <span className="text-3xl sm:text-4xl font-extrabold">
+                        ${plan.price[billingCycle]}
+                      </span>
+                      {plan.originalPrice[billingCycle] > plan.price[billingCycle] && (
+                        <span className="text-muted-foreground line-through ml-2 text-lg sm:text-xl">
+                          ${plan.originalPrice[billingCycle]}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-sm sm:text-base text-muted-foreground">
+                      /{billingCycle === 'monthly' ? 'mo' : 'yr'}
+                    </span>
+                  </div>
+                  
+                  {/* CTA Button */}
+                  {plan.name === 'Free' ? (
+                    <Button
+                      className={cn(
+                        'w-full mb-6 h-10 sm:h-11 text-sm sm:text-base transition-all duration-200',
+                        'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                      )}
+                      onClick={() => router.push('/register')}
+                    >
+                      {plan.cta}
+                    </Button>
+                  ) : (
+                    <Button
+                      className={cn(
+                        'w-full mb-6 h-10 sm:h-11 text-sm sm:text-base transition-all duration-200',
+                        plan.popular 
+                          ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                          : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                      )}
+                      disabled={loadingPlan === plan.name}
+                      onClick={() => handleCheckout(plan.name)}
+                    >
+                      {loadingPlan === plan.name ? 'Redirecting...' : plan.cta}
+                    </Button>
+                  )}
+                  {error && loadingPlan === plan.name && (
+                    <div className="text-red-600 text-sm mt-2">{error}</div>
+                  )}
+                  
+                  {/* Features List */}
+                  <ul className="space-y-3 text-sm sm:text-base flex-1">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-start">
+                        <Check className="size-4 sm:size-5 text-primary mr-2 sm:mr-3 mt-0.5 flex-shrink-0" />
+                        <span className="leading-relaxed">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Feature Comparison Table */}
+          <section className="max-w-6xl mx-auto mt-12 sm:mt-16 lg:mt-20">
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-6 sm:mb-8 text-center">
+              Feature Comparison
+            </h3>
+            
+            {/* Mobile: Card-based comparison */}
+            <div className="lg:hidden space-y-4">
+              {allFeatures.map((feature) => (
+                <div key={feature.label} className="border rounded-lg p-4 bg-background">
+                  <h4 className="font-semibold mb-3 text-sm sm:text-base">{feature.label}</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+                    {["free", "pro", "advanced", "team"].map((plan) => (
+                      <div key={plan} className="text-center">
+                        <div className="text-xs sm:text-sm font-medium text-muted-foreground capitalize mb-1">
+                          {plan}
+                        </div>
+                        <div className="text-lg sm:text-xl">
+                          {typeof feature[plan as keyof typeof feature] === "boolean"
+                            ? feature[plan as keyof typeof feature]
+                              ? <span className="text-green-600 dark:text-green-400 font-bold">✓</span>
+                              : <span className="text-zinc-400">—</span>
+                            : <span className="text-sm">{feature[plan as keyof typeof feature]}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Desktop: Traditional table */}
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="w-full border-collapse rounded-xl overflow-hidden">
                 <thead>
-                    <tr className="bg-background text-foreground">
-                    <th className="p-2 sm:p-3 font-bold text-left">Features</th>
-                    <th className="p-2 sm:p-3 font-bold">Free</th>
-                    <th className="p-2 sm:p-3 font-bold">Pro</th>
-                    <th className="p-2 sm:p-3 font-bold">Advanced</th>
-                    <th className="p-2 sm:p-3 font-bold">Team</th>
-                    </tr>
+                  <tr className="bg-muted/50">
+                    <th className="p-4 font-bold text-left border-b">Features</th>
+                    <th className="p-4 font-bold text-center border-b">Free</th>
+                    <th className="p-4 font-bold text-center border-b">Pro</th>
+                    <th className="p-4 font-bold text-center border-b">Advanced</th>
+                    <th className="p-4 font-bold text-center border-b">Team</th>
+                  </tr>
                 </thead>
                 <tbody>
-                    {allFeatures.map((f) => (
-                    <tr key={f.label} className="border-b border-zinc-200 dark:border-zinc-700">
-                        <td className="p-2 font-medium text-zinc-700 dark:text-zinc-200">{f.label}</td>
-                        {["free", "pro", "advanced", "team"].map((plan) => (
-                        <td key={plan} className="p-2 text-center">
-                            {typeof f[plan as keyof typeof f] === "boolean"
+                  {allFeatures.map((f, index) => (
+                    <tr key={f.label} className={cn("border-b", index % 2 === 0 ? "bg-background" : "bg-muted/20")}>
+                      <td className="p-4 font-medium">{f.label}</td>
+                      {["free", "pro", "advanced", "team"].map((plan) => (
+                        <td key={plan} className="p-4 text-center">
+                          {typeof f[plan as keyof typeof f] === "boolean"
                             ? f[plan as keyof typeof f]
-                                ? <span className="text-green-600 dark:text-green-400 font-bold">✓</span>
-                                : <span className="text-zinc-400">—</span>
+                              ? <span className="text-green-600 dark:text-green-400 font-bold text-lg">✓</span>
+                              : <span className="text-zinc-400">—</span>
                             : <span>{f[plan as keyof typeof f]}</span>}
                         </td>
-                        ))}
+                      ))}
                     </tr>
-                    ))}
+                  ))}
                 </tbody>
-                </table>
+              </table>
             </div>
-        </section>
+          </section>
 
-        <section className="max-w-3xl mx-auto px-2 sm:px-4 mt-12 sm:mt-16">
-            <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center">Frequently Asked Questions</h3>
+          {/* FAQ Section */}
+          <section className="max-w-4xl mx-auto mt-12 sm:mt-16 lg:mt-20">
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-6 sm:mb-8 text-center">
+              Frequently Asked Questions
+            </h3>
             <div className="space-y-3 sm:space-y-4">
-            {faqs.map((faq, i) => (
-                <details key={i} className="rounded-lg p-4 group bg-background text-foreground border border-border">
-                <summary className="font-semibold cursor-pointer group-open:text-primary transition">{faq.q}</summary>
-                <div className="mt-2 text-foreground/80">{faq.a}</div>
+              {faqs.map((faq, i) => (
+                <details key={i} className="rounded-lg p-4 sm:p-6 group bg-muted/30 border border-border transition-all duration-200 hover:bg-muted/50">
+                  <summary className="font-semibold cursor-pointer group-open:text-primary transition-colors text-sm sm:text-base list-none">
+                    <div className="flex items-center justify-between">
+                      <span className="pr-4">{faq.q}</span>
+                      <span className="text-xl group-open:rotate-45 transition-transform duration-200">+</span>
+                    </div>
+                  </summary>
+                  <div className="mt-3 sm:mt-4 text-muted-foreground text-sm sm:text-base leading-relaxed">
+                    {faq.a}
+                  </div>
                 </details>
-            ))}
+              ))}
             </div>
-        </section>
+          </section>
+        </div>
       </div>
     </div>
   )

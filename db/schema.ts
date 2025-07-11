@@ -15,6 +15,10 @@ export const user = pgTable("User", {
   password: varchar("password", { length: 64 }),
   firstName: varchar("firstName", { length: 32 }).notNull(),
   lastName: varchar("lastName", { length: 32 }).notNull(),
+  // Stripe integration fields
+  stripeCustomerId: varchar("stripeCustomerId", { length: 64 }),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }),
+  subscriptionStatus: varchar("subscriptionStatus", { length: 32 }), // e.g. 'active', 'trialing', 'canceled', etc.
 });
 
 export type User = InferSelectModel<typeof user>;
@@ -53,3 +57,15 @@ export const apiKey = pgTable("ApiKey", {
 });
 
 export type ApiKey = InferSelectModel<typeof apiKey>;
+
+export const notification = pgTable("Notification", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId").notNull().references(() => user.id),
+  title: varchar("title", { length: 128 }).notNull(),
+  description: varchar("description", { length: 512 }),
+  type: varchar("type", { length: 32 }), // e.g. 'payment', 'subscription', etc.
+  read: boolean("read").notNull().default(false),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type Notification = InferSelectModel<typeof notification>;
