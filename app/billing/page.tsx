@@ -1,5 +1,7 @@
 "use client";
 
+
+import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -173,7 +175,16 @@ export default function BillingPage() {
   const isFreePlan = !overview?.paymentMethod && (!overview?.plan || overview?.plan.toLowerCase() === "free");
 
   return (
-    <main className="max-w-2xl mx-auto py-6 px-2 sm:px-4 md:px-0">
+    <main className="max-w-2xl mx-auto pt-16 pb-6 px-2 sm:px-4 md:px-0">
+      <Button
+        variant="outline"
+        size="sm"
+        className="mb-4 flex items-center gap-2"
+        onClick={() => router.back()}
+      >
+        <ArrowLeft className="size-4" />
+        Back
+      </Button>
       <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">Billing & Subscription</h1>
       {/* Overview Section */}
       <section className="mb-8">

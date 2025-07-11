@@ -159,12 +159,12 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-8 sm:pb-16">
+    <div className="min-h-screen bg-background pt-24 pb-8 sm:pb-16">
       <div className="container mx-auto px-3 sm:px-4 lg:px-6">
         <Button
           variant="outline"
           size="sm"
-          className="my-4 flex items-center gap-2"
+          className="my-4 flex items-center gap-2 border-2 border-black bg-white"
           onClick={() => router.back()}
         >
           <ArrowLeft className="size-4" />
