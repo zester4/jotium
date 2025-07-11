@@ -23,12 +23,12 @@ export const Navbar = async () => {
       <div className="bg-background absolute top-0 left-0 w-dvw py-2 px-3 justify-between flex flex-row items-center z-30">
         <div className="flex flex-row gap-3 items-center">
           <History user={session?.user} />
-          <div className="flex flex-row gap-2 items-center">
+          <Link href="/" className="flex flex-row gap-2 items-center">
             <Image
               src="/images/jotium.png"
               height={20}
               width={20}
-              alt="gemini logo"
+              alt="jotium logo"
             />
             <div className="text-zinc-500">
               <SlashIcon size={16} />
@@ -36,7 +36,7 @@ export const Navbar = async () => {
             <div className="text-sm dark:text-zinc-300 truncate w-28 md:w-fit">
               Jotium Agent
             </div>
-          </div>
+          </Link>
         </div>
 
         {session ? (
