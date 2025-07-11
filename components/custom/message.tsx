@@ -25,6 +25,7 @@ export const Message = ({
   toolInvocations,
   attachments,
   thoughts,
+  duration,
 }: {
   chatId: string;
   role: string;
@@ -32,6 +33,7 @@ export const Message = ({
   toolInvocations: Array<ToolInvocation> | undefined;
   attachments?: Array<Attachment>;
   thoughts?: string;
+  duration?: number;
 }) => {
   return (
     <motion.div
@@ -45,19 +47,14 @@ export const Message = ({
 
       <div className="flex flex-col gap-2 w-full">
         {thoughts && (
-          <MessageReasoning isLoading={false} reasoning={thoughts} />
+          <MessageReasoning isLoading={false} reasoning={thoughts} duration={duration} />
         )}
         {content && typeof content === "string" && (
           <>
             <div className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4">
               <Markdown>{content}</Markdown>
             </div>
-            {role === "assistant" && (
-              <MessageActions
-                messageId={chatId + "-" + (typeof content === "string" ? content.slice(0, 8) : "")}
-                content={content}
-              />
-            )}
+            <MessageActions messageId={chatId + "-" + (typeof content === "string" ? content.slice(0, 8) : "")} content={content} />
           </>
         )}
 

@@ -8,6 +8,7 @@ export interface Message {
   thoughts?: string;
   toolCalls?: ToolCall[];
   toolResults?: ToolResult[];
+  duration?: number; // Duration in ms for assistant's thought/response
 }
 
 export interface ToolCall {

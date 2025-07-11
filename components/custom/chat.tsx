@@ -61,6 +61,9 @@ export function Chat({
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
+      // Track start time for duration
+      const startTime = Date.now();
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -80,6 +83,8 @@ export function Chat({
                 } else if (data.type === "response") {
                   assistantMessage.content += data.content;
                 }
+                // Update duration on every chunk (so UI can show live duration if needed)
+                assistantMessage.duration = Date.now() - startTime;
                 setMessages((prev) =>
                   prev.map((msg) =>
                     msg.id === assistantMessage.id ? assistantMessage : msg
@@ -96,6 +101,13 @@ export function Chat({
           }
         }
       }
+      // Finalize duration after streaming ends
+      assistantMessage.duration = Date.now() - startTime;
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantMessage.id ? assistantMessage : msg
+        )
+      );
     }
     setIsLoading(false);
   };
@@ -117,6 +129,7 @@ export function Chat({
               content={message.content}
               thoughts={message.thoughts}
               toolInvocations={message.toolCalls as any}
+              duration={message.duration}
             />
           ))}
 

@@ -48,9 +48,9 @@ export function MessageReasoning({
       ) : (
         <div className="flex flex-row gap-2 items-center">
           <div className="font-medium">
-            {duration
-              ? `Reasoned for ${(duration / 1000).toFixed(2)} seconds`
-              : "Reasoned for a few seconds"}
+            {typeof duration === "number"
+              ? `Thought for ${(duration / 1000).toFixed(2)} seconds`
+              : "Thought for a few seconds"}
           </div>
           <button
             data-testid="message-reasoning-toggle"
