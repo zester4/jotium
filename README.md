@@ -1,4 +1,3 @@
-
 # Jotium Agent
 
 [![npm version](https://img.shields.io/npm/v/jotium-agent?style=flat-square)](https://www.npmjs.com/package/jotium-agent)
@@ -43,11 +42,28 @@ pnpm dev
 ```
 
 ---
-```
-```
 
----
+## Features
 
+- **Notifications System:**
+  - Users receive notifications for important events (e.g., billing, account, and system updates).
+  - Notifications are fetched securely from `/api/notifications` and displayed in the UI.
+  - Unread notifications are highlighted and include timestamps.
+- **Authentication:**
+  - Secure login and registration using NextAuth.js.
+  - Session management and protected API routes.
+- **Billing & Pricing:**
+  - Stripe integration for subscriptions and payments.
+  - Webhooks for real-time updates and notifications.
+- **Modern UI:**
+  - Built with Tailwind CSS and Radix UI components.
+  - Responsive, accessible, and dark mode support.
+- **Extensible Tooling:**
+  - Easily add or customize tools in `ai/tools/`.
+  - Examples: web search, file management, GitHub, Slack, ClickUp, and more.
+- **Database:**
+  - Uses Drizzle ORM for migrations and queries.
+  - PostgreSQL recommended for production.
 
 ---
 
@@ -186,3 +202,16 @@ This project is licensed under the [MIT License](./LICENSE).
 ## Contact
 
 For support, feature requests, or questions, open an issue or contact the maintainer.
+
+---
+
+## Project Structure
+
+```
+app/                # Next.js app directory (routes, pages, API)
+ai/                 # AI agent core and tools
+components/         # UI components (custom, flights, ui)
+db/                 # Database schema, queries, migrations
+lib/                # Utilities and helpers
+public/             # Static assets (fonts, images, logos)
+```
