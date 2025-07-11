@@ -164,7 +164,7 @@ export default function PricingPage() {
         <Button
           variant="outline"
           size="sm"
-          className="mb-4 flex items-center gap-2 mt-4 sm:mt-0"
+          className="my-4 flex items-center gap-2"
           onClick={() => router.back()}
         >
           <ArrowLeft className="size-4" />
@@ -225,7 +225,7 @@ export default function PricingPage() {
                   )}
                 >
                   {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <div className="text-xs bg-primary text-primary-foreground font-semibold py-1 px-3 rounded-full whitespace-nowrap">
                         Most Popular
                       </div>
@@ -234,7 +234,7 @@ export default function PricingPage() {
                   
                   <div className="text-center mb-4">
                     <h2 className="text-xl sm:text-2xl font-bold mb-2">{plan.name}</h2>
-                    <p className="text-sm sm:text-base text-muted-foreground min-h-[2.5rem] sm:min-h-[3rem] flex items-center justify-center px-2">
+                    <p className="text-sm sm:text-base text-muted-foreground min-h-10 sm:min-h-12 flex items-center justify-center px-2">
                       {plan.description}
                     </p>
                   </div>
@@ -289,7 +289,7 @@ export default function PricingPage() {
                   <ul className="space-y-3 text-sm sm:text-base flex-1">
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-start">
-                        <Check className="size-4 sm:size-5 text-primary mr-2 sm:mr-3 mt-0.5 flex-shrink-0" />
+                        <Check className="size-4 sm:size-5 text-primary mr-2 sm:mr-3 mt-0.5 shrink-0" />
                         <span className="leading-relaxed">{feature}</span>
                       </li>
                     ))}

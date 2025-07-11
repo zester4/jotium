@@ -1,328 +1,299 @@
 "use client";
 
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  SortingState,
-  useReactTable,
-  VisibilityState,
-} from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { MoreHorizontalIcon } from "@/components/custom/icons";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-// Mock data type and data
-export type BillingRecord = {
-  id: string;
-  amount: number;
-  status: "processing" | "success" | "failed";
-  email: string;
-};
+function formatDate(ts: number | undefined) {
+  if (!ts) return "-";
+  return new Date(ts * 1000).toLocaleDateString();
+}
 
-const data: BillingRecord[] = [
-  {
-    id: "m5gr84i9",
-    amount: 316,
-    status: "success",
-    email: "ken99@example.com",
-  },
-  {
-    id: "3u1reuv4",
-    amount: 242,
-    status: "success",
-    email: "abe45@example.com",
-  },
-  {
-    id: "derv1ws0",
-    amount: 837,
-    status: "processing",
-    email: "monserrat44@example.com",
-  },
-  {
-    id: "5kma53ae",
-    amount: 874,
-    status: "success",
-    email: "silas22@example.com",
-  },
-  {
-    id: "bhqecj4p",
-    amount: 721,
-    status: "failed",
-    email: "carmella@example.com",
-  },
-];
-
-
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 640);
+    }
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+  return isMobile;
+}
 
 export default function BillingPage() {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
+  const [overview, setOverview] = useState<any>(null);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [invoiceError, setInvoiceError] = useState<string | null>(null);
+  const [notificationError, setNotificationError] = useState<string | null>(null);
+  const [showInvoices, setShowInvoices] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(true);
+  const isMobile = useIsMobile();
   const router = useRouter();
 
-  const columns: ColumnDef<BillingRecord>[] = [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => (
-        <div className="capitalize">{row.getValue("status")}</div>
-      ),
-    },
-    {
-      accessorKey: "email",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Email
-            <ArrowUpDown className="ml-2 size-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => <div className="lowercase">{row.getValue("email")}</div>,
-    },
-    {
-      accessorKey: "amount",
-      header: () => <div className="text-right">Amount</div>,
-      cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("amount"));
-        const formatted = new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: "USD",
-        }).format(amount);
-        return <div className="text-right font-medium">{formatted}</div>;
-      },
-    },
-    {
-      id: "actions",
-      enableHiding: false,
-      cell: ({ row }) => {
-        const record = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="size-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontalIcon size={18} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => {
-                  // Placeholder for view details action
-                  alert(`View details for ${record.email}`);
-                }}
-              >
-                View details
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  // Placeholder for download invoice action
-                  alert(`Download invoice for ${record.email}`);
-                }}
-              >
-                Download invoice
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ];
+  useEffect(() => {
+    setShowInvoices(!isMobile);
+    setShowNotifications(!isMobile);
+  }, [isMobile]);
 
-  const table = useReactTable({
-    data,
-    columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-    },
-  });
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      setInvoiceError(null);
+      setNotificationError(null);
+      try {
+        const [oRes, iRes, nRes] = await Promise.all([
+          fetch("/api/billing/overview"),
+          fetch("/api/billing/invoices"),
+          fetch("/api/notifications"),
+        ]);
+        const o = await oRes.json();
+        setOverview(o);
+        if (iRes.ok) {
+          const i = await iRes.json();
+          setInvoices(i.invoices || []);
+        } else {
+          setInvoices([]);
+          setInvoiceError("No invoices found or failed to load invoices.");
+        }
+        if (nRes.ok) {
+          const n = await nRes.json();
+          setNotifications(n.notifications || []);
+        } else {
+          setNotifications([]);
+          setNotificationError("No notifications found or failed to load notifications.");
+        }
+      } catch (err) {
+        setError("Failed to load billing info.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  async function handlePortal() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.message || data.error || "Failed to open billing portal.");
+      }
+    } catch {
+      setError("Failed to open billing portal.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCancel() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/billing/cancel", { method: "POST" });
+      const data = await res.json();
+      if (data.status) {
+        setOverview((prev: any) => ({ ...prev, status: data.status, cancel_at_period_end: data.cancel_at_period_end }));
+      } else {
+        setError(data.error || "Failed to cancel subscription.");
+      }
+    } catch {
+      setError("Failed to cancel subscription.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResume() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/billing/resume", { method: "POST" });
+      const data = await res.json();
+      if (data.status) {
+        setOverview((prev: any) => ({ ...prev, status: data.status, cancel_at_period_end: data.cancel_at_period_end }));
+      } else {
+        setError(data.error || "Failed to resume subscription.");
+      }
+    } catch {
+      setError("Failed to resume subscription.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function markNotificationRead(notificationId: string) {
+    try {
+      await fetch("/api/notifications/mark-read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notificationId }),
+      });
+      setNotifications((prev) => prev.map((n) => n.id === notificationId ? { ...n, read: true } : n));
+    } catch {}
+  }
+
+  // Swipe-to-mark-as-read for mobile (basic touch event)
+  function useSwipeToMarkRead() {
+    const [touchStart, setTouchStart] = useState<number | null>(null);
+    const [swipedId, setSwipedId] = useState<string | null>(null);
+    function onTouchStart(e: React.TouchEvent, id: string) {
+      setTouchStart(e.touches[0].clientX);
+      setSwipedId(id);
+    }
+    function onTouchEnd(e: React.TouchEvent, id: string) {
+      if (touchStart !== null && swipedId === id) {
+        const diff = e.changedTouches[0].clientX - touchStart;
+        if (diff < -60) markNotificationRead(id); // swipe left
+      }
+      setTouchStart(null);
+      setSwipedId(null);
+    }
+    return { onTouchStart, onTouchEnd };
+  }
+  const swipeHandlers = useSwipeToMarkRead();
+
+  if (loading) return <div className="p-8 text-center">Loading billing info...</div>;
+  if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
+
+  const isFreePlan = !overview?.paymentMethod && (!overview?.plan || overview?.plan.toLowerCase() === "free");
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background pt-16 pb-6 px-2 sm:px-4">
-      <div className="w-full max-w-full sm:max-w-2xl md:max-w-3xl rounded-xl border border-border bg-card p-2 sm:p-4 md:p-6 shadow-lg">
-        <Button
-          variant="outline"
-          size="sm"
-          className="mb-4 flex items-center gap-2"
-          onClick={() => router.back()}
-        >
-          <ArrowLeft className="size-4" />
-          Back
-        </Button>
-        <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-2">
-          <Input
-            placeholder="Filter emails..."
-            value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("email")?.setFilterValue(event.target.value)
-            }
-            className="max-w-full sm:max-w-sm"
-          />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto ml-0 sm:ml-auto">
-                Columns <ChevronDown className="ml-2 size-4" />
+    <main className="max-w-2xl mx-auto py-6 px-2 sm:px-4 md:px-0">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">Billing & Subscription</h1>
+      {/* Overview Section */}
+      <section className="mb-8">
+        <Card className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div className="flex-1 min-w-0">
+              <div className="text-base sm:text-lg font-semibold truncate">Current Plan: {overview?.plan || "-"}</div>
+              <div className="text-sm text-muted-foreground">Status: <Badge>{overview?.status}</Badge></div>
+              {isFreePlan && (
+                <div className="text-sm text-green-600 mt-1">You are on the Free plan. Upgrade to unlock more features!</div>
+              )}
+              {overview?.cancel_at_period_end && (
+                <div className="text-sm text-yellow-600 mt-1">Subscription will cancel at period end.</div>
+              )}
+              {overview?.status === "past_due" && (
+                <div className="text-sm text-red-600 mt-1">Payment failed. Please update your payment method.</div>
+              )}
+              {overview?.status === "canceled" && (
+                <div className="text-sm text-red-600 mt-1">Your subscription is canceled.</div>
+              )}
+              {overview?.status === "trialing" && (
+                <div className="text-sm text-blue-600 mt-1">You are in a free trial.</div>
+              )}
+            </div>
+            <div className="flex flex-col gap-2 sm:items-end w-full sm:w-auto">
+              {!isFreePlan && <Button onClick={handlePortal} disabled={loading} className="w-full sm:w-auto">Manage Subscription</Button>}
+              {!isFreePlan && overview?.status === "active" && !overview?.cancel_at_period_end && (
+                <Button variant="outline" onClick={handleCancel} disabled={loading} className="w-full sm:w-auto">Cancel Subscription</Button>
+              )}
+              {!isFreePlan && overview?.cancel_at_period_end && (
+                <Button variant="outline" onClick={handleResume} disabled={loading} className="w-full sm:w-auto">Resume Subscription</Button>
+              )}
+            </div>
+          </div>
+          <Separator className="my-4" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="text-sm text-muted-foreground">Next Payment Date: <span className="font-medium">{formatDate(overview?.current_period_end)}</span></div>
+            {overview?.paymentMethod && (
+              <div className="text-sm text-muted-foreground mt-1">Payment Method: <span className="font-medium">{overview.paymentMethod.card?.brand?.toUpperCase()} ****{overview.paymentMethod.card?.last4}</span> (exp {overview.paymentMethod.card?.exp_month}/{overview.paymentMethod.card?.exp_year})</div>
+            )}
+          </div>
+        </Card>
+      </section>
+
+      {/* Invoices Section */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl sm:text-2xl font-bold">Invoices</h2>
+          <Button variant="ghost" size="sm" onClick={() => setShowInvoices((v) => !v)} aria-expanded={showInvoices} aria-controls="invoices-table">
+            {showInvoices ? "Collapse" : "Expand"}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
-        <div className="rounded-md border border-border bg-background overflow-x-auto">
-          <Table className="min-w-[500px]">
+        {invoiceError && <div className="text-red-600 mb-2">{invoiceError}</div>}
+        {showInvoices && (
+          <Card className="p-2 sm:p-4 overflow-x-auto" id="invoices-table">
+            <Table className="min-w-[400px]">
             <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  ))}
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Download</TableHead>
                 </TableRow>
-              ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
+                {invoices.length === 0 && (
+                  <TableRow><TableCell colSpan={4} className="text-center">No invoices found.</TableCell></TableRow>
+                )}
+                {invoices.map((inv) => (
+                  <TableRow key={inv.id}>
+                    <TableCell>{formatDate(inv.created)}</TableCell>
+                    <TableCell>${(inv.amount_paid / 100).toFixed(2)}</TableCell>
+                    <TableCell><Badge>{inv.status}</Badge></TableCell>
+                    <TableCell>{inv.invoice_pdf ? <a href={inv.invoice_pdf} target="_blank" rel="noopener noreferrer" className="underline">PDF</a> : '-'}</TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
+                ))}
             </TableBody>
           </Table>
+          </Card>
+        )}
+      </section>
+
+      {/* Notifications Section */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl sm:text-2xl font-bold">Billing Notifications</h2>
+          <Button variant="ghost" size="sm" onClick={() => setShowNotifications((v) => !v)} aria-expanded={showNotifications} aria-controls="notifications-list">
+            {showNotifications ? "Collapse" : "Expand"}
+          </Button>
         </div>
-        <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 sm:space-x-2 py-4">
-          <div className="text-muted-foreground flex-1 text-sm text-center sm:text-left">
-            {table.getFilteredSelectedRowModel().rows.length} of {" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
+        {notificationError && <div className="text-red-600 mb-2">{notificationError}</div>}
+        {showNotifications && (
+          <Card className="p-2 sm:p-4" id="notifications-list">
+            {notifications.length === 0 && <div className="text-muted-foreground">No notifications.</div>}
+            <ul className="space-y-2">
+              {notifications.map((n) => (
+                <li
+                  key={n.id}
+                  className={`flex flex-col sm:flex-row sm:items-center gap-2 py-2 border-b last:border-b-0 ${isMobile ? 'bg-zinc-50' : ''}`}
+                  onTouchStart={isMobile ? (e) => swipeHandlers.onTouchStart(e, n.id) : undefined}
+                  onTouchEnd={isMobile ? (e) => swipeHandlers.onTouchEnd(e, n.id) : undefined}
+                >
+                  <div className="flex items-center gap-2">
+                    {!n.read && <Badge>New</Badge>}
+                    <span className="font-medium truncate max-w-[180px] sm:max-w-none">{n.title}</span>
           </div>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
+                  <span className="text-muted-foreground flex-1 truncate">{n.description}</span>
+                  <span className="text-xs text-muted-foreground sm:ml-auto">{formatDate(new Date(n.createdAt).getTime() / 1000)}</span>
+                  {!n.read && !isMobile && (
+                    <Button variant="ghost" size="sm" onClick={() => markNotificationRead(n.id)}>Mark as read</Button>
+                  )}
+                  {isMobile && !n.read && (
+                    <span className="text-xs text-zinc-400">Swipe left to mark as read</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+      </section>
+    </main>
   );
 }

@@ -1,12 +1,12 @@
-//app/notifications/page.tsx
-
 "use client";
 
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -32,6 +32,19 @@ export default function NotificationsPage() {
     fetchNotifications();
   }, []);
 
+  async function markAsRead(notificationId: string) {
+    try {
+      await fetch(`/api/notifications/mark-read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notificationId }),
+      });
+      setNotifications((prev) => prev.map((n) => n.id === notificationId ? { ...n, read: true } : n));
+    } catch (err) {
+      // Optionally show error
+    }
+  }
+
   return (
     <div className="max-w-2xl mx-auto py-16 px-4">
       <Button
@@ -54,11 +67,19 @@ export default function NotificationsPage() {
         ) : (
           <ul className="divide-y divide-border">
             {notifications.map((n) => (
-              <li key={n.id} className="py-4 flex flex-col gap-1">
-                <div className="font-semibold text-foreground">{n.title}</div>
+              <li
+                key={n.id}
+                className={`py-4 flex flex-col gap-1 cursor-pointer ${!n.read ? 'bg-muted/30 hover:bg-muted/50' : ''}`}
+                onClick={() => {
+                  if (!n.read) markAsRead(n.id);
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold text-foreground">{n.title}</div>
+                  {!n.read && <Badge variant="secondary">New</Badge>}
+                </div>
                 <div className="text-sm text-foreground/80">{n.description}</div>
                 <div className="text-xs text-foreground/60">{new Date(n.createdAt).toLocaleString()}</div>
-                {!n.read && <span className="text-xs text-blue-600">New</span>}
               </li>
             ))}
           </ul>
