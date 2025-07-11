@@ -65,9 +65,9 @@ export function MessageActions({ messageId, content, onRegenerate, className, is
   }
 
   return (
-    <div className={cn("flex items-center", isMobile ? "gap-1" : "gap-1", className)}>
+    <div className={cn("flex items-center", "gap-0", className)}>
       <Button
-        variant="default"
+        variant="ghost"
         size="sm"
         onClick={handleRegenerate}
         className={cn(
@@ -80,7 +80,7 @@ export function MessageActions({ messageId, content, onRegenerate, className, is
       </Button>
 
       <Button
-        variant="default"
+        variant="ghost"
         size="sm"
         onClick={handleCopy}
         className={cn(
@@ -97,7 +97,7 @@ export function MessageActions({ messageId, content, onRegenerate, className, is
       </Button>
 
       <Button
-        variant="default"
+        variant="ghost"
         size="sm"
         onClick={handleShare}
         className={cn(
@@ -110,7 +110,7 @@ export function MessageActions({ messageId, content, onRegenerate, className, is
       </Button>
 
       <Button
-        variant="default"
+        variant="ghost"
         size="sm"
         onClick={() => handleFeedback("up")}
         className={cn(
@@ -124,7 +124,7 @@ export function MessageActions({ messageId, content, onRegenerate, className, is
       </Button>
 
       <Button
-        variant="default"
+        variant="ghost"
         size="sm"
         onClick={() => handleFeedback("down")}
         className={cn(
