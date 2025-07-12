@@ -54,7 +54,16 @@ export const Message = ({
             <div className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4">
               <Markdown>{content}</Markdown>
             </div>
-            <MessageActions messageId={chatId + "-" + (typeof content === "string" ? content.slice(0, 8) : "")} content={content} />
+            {role === "assistant" && (
+              <MessageActions
+                messageId={
+                  chatId +
+                  "-" +
+                  (typeof content === "string" ? content.slice(0, 8) : "")
+                }
+                content={content}
+              />
+            )}
           </>
         )}
 
