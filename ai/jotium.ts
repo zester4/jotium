@@ -25,6 +25,8 @@ import { AgentMemory, Message, Tool, ToolCall, ToolResult } from "./types";
 import { generateUUID } from "@/lib/utils";
 import { ImageGenerationTool } from './tools/image-gen';
 import { GetWeatherTool } from './tools/get-weather';
+import { NotionTool } from './tools/notion-tool';
+import { StripeManagementTool } from './tools/stripe-tool';
 
 dotenv.config();
 
@@ -86,6 +88,8 @@ export class AIAgent {
     const codeExecutionTool = new CodeExecutionTool();
     const imageGenerationTool = new ImageGenerationTool(process.env.GEMINI_API_KEY || "");
     const getWeatherTool = new GetWeatherTool();
+    const notionTool = new NotionTool(process.env.NOTION_API_KEY || "");
+    const stripeTool = new StripeManagementTool(process.env.STRIPE_SECRET_KEY || "");
 
     // Register tools
     this.tools.set("web_search", webSearchTool);
@@ -105,6 +109,10 @@ export class AIAgent {
     this.tools.set("code_execution", codeExecutionTool);
     this.tools.set("generate_image", imageGenerationTool);
     this.tools.set("get_weather", getWeatherTool);
+    this.tools.set("notion_tool", notionTool);
+    this.tools.set(notionTool.getDefinition().name || "notion_workspace", notionTool);
+    this.tools.set("stripe_tool", stripeTool);
+    this.tools.set(stripeTool.getDefinition().name || "stripe_management", stripeTool);
 
     console.log(`✅ Initialized ${this.tools.size} tools`);
   }
@@ -216,6 +224,8 @@ export class AIAgent {
         📅 CALENDAR : Use calcom_scheduler to schedule book meetings and more.
         🖼️ IMAGE GENERATION: Use generate_image for creating, editing, or generating story-mode images with Gemini's capabilities
         ☀️ WEATHER: Use get_weather to fetch current weather, temperature, sunrise, sunset, and forecasts for any location
+        🗂️ NOTION: Use notion_tool for workspace, database, page, and content management and more
+        💳 STRIPE: Use stripe_tool for payments, subscriptions, invoices, and customer management
         
         Guidelines:
         - Be proactive in suggesting relevant tools for user requests

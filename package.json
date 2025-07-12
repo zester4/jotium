@@ -35,6 +35,7 @@
     "@slack/rtm-api": "^7.0.3",
     "@slack/web-api": "^7.9.3",
     "@stripe/stripe-js": "^7.4.0",
+    "@supabase/supabase-js": "^2.50.5",
     "@tanstack/react-table": "^8.21.3",
     "@tavily/core": "^0.5.9",
     "@upstash/redis": "^1.35.1",
