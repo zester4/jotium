@@ -16,14 +16,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // List of tools that require API keys (from /ai/tools)
 const apiTools = [
-  { name: "Tavily", keyName: "tavilyApiKey", placeholder: "tv-..." },
-  { name: "GitHub", keyName: "githubToken", placeholder: "ghp-..." },
-  { name: "Slack", keyName: "slackBotToken", placeholder: "xoxb-..." },
-  { name: "ClickUp", keyName: "clickupApiToken", placeholder: "pk_..." },
-  { name: "Duffel", keyName: "duffelApiKey", placeholder: "duffel_test_..." },
+  { name: "Airtable", keyName: "airtableApiKey", placeholder: "key..." },
   { name: "Ayrshare", keyName: "ayrshareApiKey", placeholder: "ayr-..." },
   { name: "Cal.com", keyName: "calcomApiKey", placeholder: "cal-..." },
-  { name: "Firecrawl", keyName: "firecrawlApiKey", placeholder: "fc-..." },
+  { name: "ClickUp", keyName: "clickupApiToken", placeholder: "pk_..." },
+  { name: "GitHub", keyName: "githubToken", placeholder: "ghp-..." },
+  { name: "Notion", keyName: "notionApiKey", placeholder: "secret_..." },
+  { name: "Slack", keyName: "slackBotToken", placeholder: "xoxb-..." },
+  { name: "Stripe", keyName: "stripeSecretKey", placeholder: "sk_test_..." },
+  { name: "Supabase URL", keyName: "supabaseUrl", placeholder: "https://<project-ref>.supabase.co" },
+  { name: "Supabase Key", keyName: "supabaseKey", placeholder: "ey..." },
 ];
 
 export default function AccountPage() {

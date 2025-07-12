@@ -20,6 +20,7 @@ export function Chat({
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
   const [attachments, setAttachments] = useState<any[]>([]);
@@ -42,12 +43,21 @@ export function Chat({
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+    setError(null);
 
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, messages: [...messages, userMessage] }),
     });
+
+    if (response.status === 429) {
+      setError("You have reached your daily message limit. Please upgrade your plan to continue.");
+      setIsLoading(false);
+      // remove user message
+      setMessages((prev) => prev.slice(0, prev.length - 1));
+      return;
+    }
 
     if (response.body) {
       const reader = response.body.getReader();
@@ -82,6 +92,8 @@ export function Chat({
                   assistantMessage.thoughts += data.content;
                 } else if (data.type === "response") {
                   assistantMessage.content += data.content;
+                } else if (data.type === "error") {
+                  setError(data.content);
                 }
                 // Update duration on every chunk (so UI can show live duration if needed)
                 assistantMessage.duration = Date.now() - startTime;
@@ -138,6 +150,12 @@ export function Chat({
             className="shrink-0 min-w-[24px] min-h-[24px]"
           />
         </div>
+
+        {error && (
+          <div className="text-red-500 text-sm text-center">
+            {error}
+          </div>
+        )}
 
         <form
           onSubmit={handleSubmit}

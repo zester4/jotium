@@ -20,13 +20,16 @@ import { DuffelFlightTool } from './tools/flight-booking-tool';
 import { AyrshareSocialTool } from './tools/ayrshare-tool';
 import { WebScrapeTool } from './tools/webscrape-tool';
 import { CalComTool } from './tools/calcom-tool';
-import { CodeExecutionTool } from './tools/code-tool'
+import { CodeExecutionTool } from './tools/code-tool';
 import { AgentMemory, Message, Tool, ToolCall, ToolResult } from "./types";
 import { generateUUID } from "@/lib/utils";
 import { ImageGenerationTool } from './tools/image-gen';
 import { GetWeatherTool } from './tools/get-weather';
 import { NotionTool } from './tools/notion-tool';
 import { StripeManagementTool } from './tools/stripe-tool';
+import { AlphaVantageTool } from './tools/alphavantage-tool';
+import { AirtableTool } from './tools/airtable-tool';
+import { SupabaseTool } from './tools/supabase-tool';
 
 dotenv.config();
 
@@ -52,67 +55,95 @@ export class AIAgent {
 
   // Async initialization for tools, must be called after constructing the agent
   public async initializeTools(userId?: string): Promise<void> {
-    // Get user's Tavily API key if available
-    let tavilyApiKey = process.env.TAVILY_API_KEY || "";
-    if (userId) {
-      const userKey = await getDecryptedApiKey({ userId, service: "Tavily" });
-      if (userKey) tavilyApiKey = userKey;
+    // --- Group 1: Excluded Tools (initialized from .env only) ---
+    if (process.env.TAVILY_API_KEY) {
+      this.tools.set("web_search", new WebSearchTool(process.env.TAVILY_API_KEY));
     }
-    const webSearchTool = new WebSearchTool(tavilyApiKey);
-    const fileManagerTool = new FileManagerTool();
-    const githubTool = new GithubTool(
-      process.env.GITHUB_TOKEN || ""
-    );
-    const slackTool = new SlackTool({
-      botToken: process.env.SLACK_BOT_TOKEN || ""
-    });
-    const clickupTool = new ClickUpTool({
-      apiKey: process.env.CLICKUP_API_TOKEN || ""
-    });    
-    const apiTool = new ApiTool();
-    const dateTimeTool = new DateTimeTool();
-    // const asanaTool = new AsanaTool(process.env.ASANA_ACCESS_TOKEN || "");
+    if (process.env.FIRECRAWL_API_KEY) {
+      this.tools.set("web_scrape", new WebScrapeTool(process.env.FIRECRAWL_API_KEY));
+    }
+    if (process.env.ALPHAVANTAGE_API_KEY) {
+      const tool = new AlphaVantageTool(process.env.ALPHAVANTAGE_API_KEY);
+      this.tools.set("alphavantage_tool", tool);
+      this.tools.set(tool.getDefinition().name || "alphavantage_data", tool);
+    }
+    if (process.env.GEMINI_API_KEY) {
+      this.tools.set("generate_image", new ImageGenerationTool(process.env.GEMINI_API_KEY));
+    }
+    if (process.env.DUFFEL_API_KEY) {
+      this.tools.set("flight_booking", new DuffelFlightTool({ apiKey: process.env.DUFFEL_API_KEY }));
+    }
     
-    const flightBookingTool = new DuffelFlightTool({
-      apiKey: process.env.DUFFEL_API_KEY || ""
-    });
-    const calcomSchedulerTool = new CalComTool(
-      process.env.CALCOM_API_KEY || ""
-    );
-    const ayrshareTool = new AyrshareSocialTool(
-      process.env.AYRSHARE_API_KEY || ""
-    );
-    const webScrapeTool = new WebScrapeTool(
-      process.env.FIRECRAWL_API_KEY || ""
-    );
-    const codeExecutionTool = new CodeExecutionTool();
-    const imageGenerationTool = new ImageGenerationTool(process.env.GEMINI_API_KEY || "");
-    const getWeatherTool = new GetWeatherTool();
-    const notionTool = new NotionTool(process.env.NOTION_API_KEY || "");
-    const stripeTool = new StripeManagementTool(process.env.STRIPE_SECRET_KEY || "");
+    // --- Group 2: Tools without API Keys ---
+    this.tools.set("file_manager", new FileManagerTool());
+    this.tools.set("api_tool", new ApiTool());
+    this.tools.set("get_weather", new GetWeatherTool());
+    this.tools.set("code_execution", new CodeExecutionTool());
+    this.tools.set("datetime_tool", new DateTimeTool());
 
-    // Register tools
-    this.tools.set("web_search", webSearchTool);
-    this.tools.set("file_manager", fileManagerTool);
-    this.tools.set("github_tool", githubTool);
-    this.tools.set(githubTool.getDefinition().name || "github_operations", githubTool);
-    this.tools.set("slack_tool", slackTool);
-    this.tools.set(slackTool.getDefinition().name || "slack_action", slackTool);
-    this.tools.set("clickup_tool", clickupTool);
-    this.tools.set("api_tool", apiTool);
-    this.tools.set("datetime_tool", dateTimeTool);
-    // this.tools.set("asana_tool", asanaTool);
-    this.tools.set("calcom_scheduler", calcomSchedulerTool);
-    this.tools.set("flight_booking", flightBookingTool);
-    this.tools.set("social_media", ayrshareTool);
-    this.tools.set("web_scrape", webScrapeTool);
-    this.tools.set("code_execution", codeExecutionTool);
-    this.tools.set("generate_image", imageGenerationTool);
-    this.tools.set("get_weather", getWeatherTool);
-    this.tools.set("notion_tool", notionTool);
-    this.tools.set(notionTool.getDefinition().name || "notion_workspace", notionTool);
-    this.tools.set("stripe_tool", stripeTool);
-    this.tools.set(stripeTool.getDefinition().name || "stripe_management", stripeTool);
+    // --- Group 3: User-Configurable Tools (user key OR .env fallback) ---
+    const getKey = async (serviceName: string, envVar: string): Promise<string> => {
+      if (userId) {
+        const userKey = await getDecryptedApiKey({ userId, service: serviceName });
+        if (userKey) return userKey;
+      }
+      return process.env[envVar] || "";
+    };
+
+    // Airtable
+    const airtableKey = await getKey("Airtable", "AIRTABLE_API_KEY");
+    if (airtableKey) this.tools.set("airtable_tool", new AirtableTool(airtableKey));
+
+    // Ayrshare
+    const ayrshareKey = await getKey("Ayrshare", "AYRSHARE_API_KEY");
+    if (ayrshareKey) this.tools.set("social_media", new AyrshareSocialTool(ayrshareKey));
+
+    // Cal.com
+    const calcomKey = await getKey("Cal.com", "CALCOM_API_KEY");
+    if (calcomKey) this.tools.set("calcom_scheduler", new CalComTool(calcomKey));
+
+    // GitHub
+    const githubKey = await getKey("GitHub", "GITHUB_TOKEN");
+    if (githubKey) {
+      const tool = new GithubTool(githubKey);
+      this.tools.set("github_tool", tool);
+      this.tools.set(tool.getDefinition().name || "github_operations", tool);
+    }
+
+    // Notion
+    const notionKey = await getKey("Notion", "NOTION_API_KEY");
+    if (notionKey) {
+      const tool = new NotionTool(notionKey);
+      this.tools.set("notion_tool", tool);
+      this.tools.set(tool.getDefinition().name || "notion_workspace", tool);
+    }
+
+    // Stripe
+    const stripeKey = await getKey("Stripe", "STRIPE_SECRET_KEY");
+    if (stripeKey) {
+      const tool = new StripeManagementTool(stripeKey);
+      this.tools.set("stripe_tool", tool);
+      this.tools.set(tool.getDefinition().name || "stripe_management", tool);
+    }
+
+    // ClickUp
+    const clickupKey = await getKey("ClickUp", "CLICKUP_API_TOKEN");
+    if (clickupKey) this.tools.set("clickup_tool", new ClickUpTool({ apiKey: clickupKey }));
+
+    // Slack
+    const slackKey = await getKey("Slack", "SLACK_BOT_TOKEN");
+    if (slackKey) {
+      const tool = new SlackTool({ botToken: slackKey });
+      this.tools.set("slack_tool", tool);
+      this.tools.set(tool.getDefinition().name || "slack_action", tool);
+    }
+
+    // Supabase
+    const supabaseUrl = await getKey("Supabase URL", "SUPABASE_URL");
+    const supabaseKey = await getKey("Supabase Key", "SUPABASE_KEY");
+    if (supabaseUrl && supabaseKey) {
+      this.tools.set("supabase_database", new SupabaseTool(supabaseUrl, supabaseKey));
+    }
 
     console.log(`✅ Initialized ${this.tools.size} tools`);
   }
@@ -208,7 +239,7 @@ export class AIAgent {
         tools: [{
           functionDeclarations: this.getToolDefinitions()
         }],
-        systemInstruction: `You are Jotium, an AI Agent with access to multiple powerful tools:
+        systemInstruction: `Your name is Jotium, an AI Agent with access to multiple powerful tools:
         🔍 WEB SEARCH: Use web_search for current information, news, research, or real-time data
         📁 FILE MANAGER: Use file_manager for local file operations (read, write, list, delete, create directories)
         🐙 GITHUB: Use github_tool for repository management, code operations, issues, PRs, and Git operations
@@ -217,6 +248,7 @@ export class AIAgent {
         🌐 API: Use api_tool for making HTTP requests to any API endpoint
         ⏰ DATETIME: Use datetime_tool for date and time operations, formatting, parsing, and manipulation
         📋 ASANA: Use asana_tool for task and project management, team collaboration, and workflow automation
+        🗂️ AIRTABLE: Use airtable_tool for database management, creating, reading, updating, and deleting records
         ✈️ FLIGHT BOOKING: Use flight_booking for searching and booking flights
         📱 SOCIAL MEDIA: Use social_media for posting updates and interacting on social platforms
         🌐 WEB SCRAPING: Use web_scrape for extracting data from websites
@@ -226,6 +258,7 @@ export class AIAgent {
         ☀️ WEATHER: Use get_weather to fetch current weather, temperature, sunrise, sunset, and forecasts for any location
         🗂️ NOTION: Use notion_tool for workspace, database, page, and content management and more
         💳 STRIPE: Use stripe_tool for payments, subscriptions, invoices, and customer management
+        🗄️ SUPABASE: Use supabase_database for managing Supabase database operations, authentication, storage, and real-time features
         
         Guidelines:
         - Be proactive in suggesting relevant tools for user requests
