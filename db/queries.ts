@@ -190,11 +190,13 @@ export async function setStripeSubscription({
   stripeCustomerId,
   stripeSubscriptionId,
   subscriptionStatus,
+  plan,
 }: {
   userId: string;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   subscriptionStatus?: string;
+  plan?: string;
 }) {
   try {
     return await db.update(user)
@@ -202,6 +204,7 @@ export async function setStripeSubscription({
         ...(stripeCustomerId && { stripeCustomerId }),
         ...(stripeSubscriptionId && { stripeSubscriptionId }),
         ...(subscriptionStatus && { subscriptionStatus }),
+        ...(plan && { plan }),
       })
       .where(eq(user.id, userId));
   } catch (error) {
