@@ -48,7 +48,6 @@ export function generateUUID(): string {
 export function convertToUIMessages(messages: any[]): Message[] {
   if (!Array.isArray(messages)) return [];
   return messages.map((msg) => {
-    // Defensive: handle both plain objects and already-correct messages
     return {
       id: msg.id || '',
       role: msg.role || 'user',
@@ -57,6 +56,7 @@ export function convertToUIMessages(messages: any[]): Message[] {
       thoughts: msg.thoughts || '',
       toolCalls: msg.toolCalls || undefined,
       toolResults: msg.toolResults || undefined,
+      attachments: msg.attachments || undefined, // <-- Preserve attachments!
     };
   });
 }
