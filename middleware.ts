@@ -12,5 +12,6 @@ export const config = {
     "/pricing/:path*",
     "/notifications/:path*",
     "/api/:path*",
+    "/((?!api/pricing/webhook).*)",
   ],
 };
