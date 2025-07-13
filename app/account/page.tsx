@@ -40,11 +40,45 @@ export default function AccountPage() {
   const [customName, setCustomName] = useState("");
   const [customInputValue, setCustomInputValue] = useState("");
 
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwSuccess, setPwSuccess] = useState("");
+  const [pwError, setPwError] = useState("");
+
+  // Profile state
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+
   // Fetch saved API key services on mount
   useEffect(() => {
     fetch("/account/api/api-keys")
       .then((res) => res.json())
       .then((data) => setSavedServices(data.services || []));
+  }, []);
+
+  useEffect(() => {
+    setProfileLoading(true);
+    fetch("/account/api/profile")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch profile");
+        return res.json();
+      })
+      .then((data) => {
+        setFirstName(data.firstName || "");
+        setLastName(data.lastName || "");
+        setEmail(data.email || "");
+        setProfileError("");
+      })
+      .catch(() => setProfileError("Failed to load profile info."))
+      .finally(() => setProfileLoading(false));
   }, []);
 
   // Built-in API key logic
@@ -137,6 +171,68 @@ export default function AccountPage() {
     setCustomKeys((prev) => prev.map((item, i) => i === idx ? { ...item, editing: false, inputValue: "" } : item));
   };
 
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwError("");
+    setPwSuccess("");
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPwError("All fields are required.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError("New passwords do not match.");
+      return;
+    }
+    setPwLoading(true);
+    try {
+      const res = await fetch("/account/api/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      if (res.status === 204) {
+        setPwSuccess("Password updated successfully.");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setPwError(data.error || "Failed to update password.");
+      }
+    } catch (err) {
+      setPwError("Failed to update password. Please try again.");
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileError("");
+    setProfileSuccess("");
+    if (!firstName || !lastName) {
+      setProfileError("First and last name are required.");
+      return;
+    }
+    setProfileSaving(true);
+    try {
+      const res = await fetch("/account/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName, lastName }),
+      });
+      if (res.status === 204) {
+        setProfileSuccess("Profile updated successfully.");
+      } else {
+        setProfileError("Failed to update profile.");
+      }
+    } catch {
+      setProfileError("Failed to update profile.");
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto py-16 px-4">
       <Button
@@ -161,7 +257,7 @@ export default function AccountPage() {
           {/* Profile Tab */}
           <TabsContent value="profile">
             <h2 className="text-xl font-semibold mb-4 text-foreground">Profile Information</h2>
-            <form className="space-y-6">
+            <form className="space-y-6" onSubmit={handleProfileSubmit}>
               <div className="flex items-center gap-4">
                 <Avatar className="size-16">
                   <AvatarImage src="/logo/avatar.svg" alt="Profile" />
@@ -169,26 +265,35 @@ export default function AccountPage() {
                 </Avatar>
                 <div>
                   <Label htmlFor="profile-picture" className="text-foreground">Profile Picture</Label>
-                  <Input id="profile-picture" type="file" className="mt-1 bg-background text-foreground border-border" />
+                  <Input id="profile-picture" type="file" className="mt-1 bg-background text-foreground border-border" disabled />
                 </div>
               </div>
               <div className="flex gap-2">
-                <Input name="firstName" type="text" placeholder="First Name" defaultValue="John" className="bg-background text-foreground border-border" />
-                <Input name="lastName" type="text" placeholder="Last Name" defaultValue="Doe" className="bg-background text-foreground border-border" />
+                <Input name="firstName" type="text" placeholder="First Name" className="bg-background text-foreground border-border" value={firstName} onChange={e => setFirstName(e.target.value)} disabled={profileLoading || profileSaving} />
+                <Input name="lastName" type="text" placeholder="Last Name" className="bg-background text-foreground border-border" value={lastName} onChange={e => setLastName(e.target.value)} disabled={profileLoading || profileSaving} />
               </div>
-              <Input name="email" type="email" placeholder="Email" defaultValue="john@example.com" disabled className="bg-background text-foreground border-border" />
-              <Input name="phone" type="tel" placeholder="Phone Number" defaultValue="+1 555-123-4567" className="bg-background text-foreground border-border" />
-              <Button type="submit" className="w-full">Save Changes</Button>
+              <Input name="email" type="email" placeholder="Email" className="bg-background text-foreground border-border" value={email} disabled />
+              {/* Optionally remove phone field or make it static */}
+              {/* <Input name="phone" type="tel" placeholder="Phone Number" className="bg-background text-foreground border-border" disabled /> */}
+              {profileError && <div className="text-red-500 text-sm">{profileError}</div>}
+              {profileSuccess && <div className="text-green-600 text-sm">{profileSuccess}</div>}
+              <Button type="submit" className="w-full" disabled={profileLoading || profileSaving}>{profileSaving ? "Saving..." : "Save Changes"}</Button>
             </form>
           </TabsContent>
 
           {/* Security Tab */}
           <TabsContent value="security">
             <h2 className="text-xl font-semibold mb-4 text-foreground">Password & Security</h2>
-            <form className="space-y-4 mb-8">
-              <Label htmlFor="new-password" className="text-foreground">Change Password</Label>
-              <Input id="new-password" name="password" type="password" placeholder="New Password" className="bg-background text-foreground border-border" />
-              <Button type="submit" className="w-full">Update Password</Button>
+            <form className="space-y-4 mb-8" onSubmit={handlePasswordChange}>
+              <Label htmlFor="current-password" className="text-foreground">Current Password</Label>
+              <Input id="current-password" name="current-password" type="password" placeholder="Current Password" className="bg-background text-foreground border-border" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} autoComplete="current-password" />
+              <Label htmlFor="new-password" className="text-foreground">New Password</Label>
+              <Input id="new-password" name="new-password" type="password" placeholder="New Password" className="bg-background text-foreground border-border" value={newPassword} onChange={e => setNewPassword(e.target.value)} autoComplete="new-password" />
+              <Label htmlFor="confirm-password" className="text-foreground">Confirm New Password</Label>
+              <Input id="confirm-password" name="confirm-password" type="password" placeholder="Confirm New Password" className="bg-background text-foreground border-border" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" />
+              {pwError && <div className="text-red-500 text-sm">{pwError}</div>}
+              {pwSuccess && <div className="text-green-600 text-sm">{pwSuccess}</div>}
+              <Button type="submit" className="w-full" disabled={pwLoading}>{pwLoading ? "Updating..." : "Update Password"}</Button>
             </form>
             <Separator className="my-6" />
             <div className="flex items-center justify-between mb-4">

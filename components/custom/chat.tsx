@@ -25,6 +25,18 @@ export function Chat({
     useScrollToBottom<HTMLDivElement>();
   const [attachments, setAttachments] = useState<any[]>([]);
 
+  // Add state for firstName
+  const [firstName, setFirstName] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    // Try to fetch the user's first name from the profile API
+    fetch("/account/api/profile")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.firstName) setFirstName(data.firstName);
+      });
+  }, []);
+
   const handleSubmit = async (
     e?: { preventDefault?: () => void }
   ) => {
@@ -132,7 +144,7 @@ export function Chat({
           ref={messagesContainerRef}
           className="flex flex-col gap-4 h-full w-dvw items-center overflow-y-scroll"
         >
-          {messages.length === 0 && <Overview />}
+          {messages.length === 0 && <Overview firstName={firstName} />}
 
           {messages.map((message) => (
             <PreviewMessage

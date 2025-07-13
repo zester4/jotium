@@ -286,3 +286,48 @@ export async function markNotificationRead({ notificationId }: { notificationId:
     throw error;
   }
 }
+
+// Update a user's password (hashes the new password securely)
+export async function updateUserPassword({ userId, newPassword }: { userId: string; newPassword: string }) {
+  const salt = genSaltSync(10);
+  const hash = hashSync(newPassword, salt);
+  try {
+    return await db.update(user)
+      .set({ password: hash })
+      .where(eq(user.id, userId));
+  } catch (error) {
+    console.error("Failed to update user password in database:", error);
+    throw error;
+  }
+}
+
+// Update user profile fields
+export async function updateUserProfile({
+  userId,
+  firstName,
+  lastName,
+}: {
+  userId: string;
+  firstName: string;
+  lastName: string;
+}) {
+  try {
+    return await db.update(user)
+      .set({ firstName, lastName })
+      .where(eq(user.id, userId));
+  } catch (error) {
+    console.error("Failed to update user profile:", error);
+    throw error;
+  }
+}
+
+// Get a user by their ID
+export async function getUserById(userId: string): Promise<User | undefined> {
+  try {
+    const users = await db.select().from(user).where(eq(user.id, userId));
+    return users[0];
+  } catch (error) {
+    console.error("Failed to get user by id from database:", error);
+    throw error;
+  }
+}

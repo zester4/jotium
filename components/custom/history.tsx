@@ -58,9 +58,23 @@ export const History = ({ user }: { user: User | undefined }) => {
     fallbackData: [],
   });
 
+  // Add state for profile info
+  const [profile, setProfile] = useState<{ firstName?: string; lastName?: string }>({});
+
   useEffect(() => {
     mutate();
   }, [pathname, mutate]);
+
+  // Fetch profile info for sidebar user display
+  useEffect(() => {
+    if (user) {
+      fetch("/account/api/profile")
+        .then((res) => res.ok ? res.json() : null)
+        .then((data) => {
+          if (data) setProfile({ firstName: data.firstName, lastName: data.lastName });
+        });
+    }
+  }, [user]);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -246,9 +260,11 @@ export const History = ({ user }: { user: User | undefined }) => {
             {user && (
               <NavUser
                 user={{
-                  name: user.name || user.email || "User",
+                  firstName: profile.firstName,
+                  lastName: profile.lastName,
                   email: user.email || "",
-                  avatar: user.image || "",
+                  avatar: user.image || "", // always string
+                  name: user.name || "", // always string
                 }}
               />
             )}

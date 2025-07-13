@@ -30,7 +30,7 @@ export const PreviewAttachment = ({
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex flex-col items-center justify-center w-full h-full"
+              className="flex flex-col items-center justify-center size-full"
               title={name}
             >
               <svg
@@ -39,7 +39,7 @@ export const PreviewAttachment = ({
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
                 stroke="currentColor"
-                className="w-8 h-8 text-red-600 mb-1"
+                className="size-8 text-red-600 mb-1"
               >
                 <path
                   strokeLinecap="round"

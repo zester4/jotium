@@ -37,12 +37,32 @@ export function NavUser({
   user,
 }: {
   user: {
-    name: string
-    email: string
-    avatar: string
-  }
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    email: string;
+    avatar: string;
+  };
 }) {
-  const { isMobile } = useSidebar()
+  const { isMobile } = useSidebar();
+
+  const displayName = user.firstName && user.lastName
+    ? `${user.firstName} ${user.lastName}`
+    : user.name || user.email;
+
+  // Compute initials for avatar fallback
+  const getInitials = () => {
+    if (user.firstName && user.lastName) {
+      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    }
+    if (user.name) {
+      return user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+    }
+    if (user.email) {
+      return user.email[0]?.toUpperCase() || "U";
+    }
+    return "U";
+  };
 
   return (
     <SidebarMenu>
@@ -54,11 +74,11 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground px-2 py-1 min-h-0 h-7"
             >
               <Avatar className="size-6 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg text-xs">CN</AvatarFallback>
+                <AvatarImage src={user.avatar} alt={displayName} />
+                <AvatarFallback className="rounded-lg text-xs">{getInitials()}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-xs leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
+                <span className="truncate font-medium">{displayName}</span>
                 <span className="truncate text-[10px]">{user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-3" />
@@ -73,11 +93,11 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 p-1 text-left text-xs">
                 <Avatar className="size-6 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg text-xs">CN</AvatarFallback>
+                  <AvatarImage src={user.avatar} alt={displayName} />
+                  <AvatarFallback className="rounded-lg text-xs">{getInitials()}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-xs leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
+                  <span className="truncate font-medium">{displayName}</span>
                   <span className="truncate text-[10px]">{user.email}</span>
                 </div>
               </div>

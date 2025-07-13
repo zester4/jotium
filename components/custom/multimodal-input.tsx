@@ -21,14 +21,24 @@ import { Textarea } from "../ui/textarea";
 
 const suggestedActions = [
   {
-    title: "Help me book a flight",
-    label: "from San Francisco to London",
-    action: "Help me book a flight from San Francisco to London",
+    title: "Search the web",
+    label: "Ask a question and get real-time web results",
+    action: "Search the web for the latest news on AI advancements.",
   },
   {
-    title: "What is the status",
-    label: "of flight BA142 flying tmrw?",
-    action: "What is the status of flight BA142 flying tmrw?",
+    title: "Explain an image",
+    label: "Upload an image and ask for an explanation",
+    action: "Explain what is happening in this image.",
+  },
+  {
+    title: "Draft an email",
+    label: "Get help writing a professional email",
+    action: "Draft a professional email about our upcoming project.",
+  },
+  {
+    title: "Generate a story",
+    label: "Ask for a creative story or idea",
+    action: "Write a short creative story about a robot and a cat.",
   },
 ];
 
@@ -167,11 +177,8 @@ export function MultimodalInput({
                 className={index > 1 ? "hidden sm:block" : "block"}
               >
                 <button
-                  onClick={async () => {
-                    append({
-                      role: "user",
-                      content: suggestedAction.action,
-                    });
+                  onClick={() => {
+                    setInput(suggestedAction.action);
                   }}
                   className="border-none bg-muted/50 w-full text-left border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 rounded-lg p-3 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex flex-col"
                 >
