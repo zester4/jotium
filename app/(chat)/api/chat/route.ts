@@ -27,26 +27,43 @@ export async function POST(request: NextRequest) {
       let conversationHistory: any[];
       let responseStream;
       // Only support one image for now
-      if (attachments.length > 0 && attachments[0].contentType && attachments[0].contentType.startsWith("image/")) {
-        const imageAttachment = attachments[0];
+      if (
+        attachments.length > 0 &&
+        attachments[0].contentType &&
+        (attachments[0].contentType.startsWith("image/") || attachments[0].contentType === "application/pdf")
+      ) {
+        const fileAttachment = attachments[0];
         try {
-          const response = await fetch(imageAttachment.url);
+          const response = await fetch(fileAttachment.url);
           const arrayBuffer = await response.arrayBuffer();
-          const base64ImageData = Buffer.from(arrayBuffer).toString('base64');
+          const base64Data = Buffer.from(arrayBuffer).toString('base64');
 
-          // Use inlineData for Gemini
-          conversationHistory = [
-            {
-              inlineData: {
-                mimeType: imageAttachment.contentType,
-                data: base64ImageData,
+          // For PDFs, prepend the user's text for context
+          if (fileAttachment.contentType === "application/pdf") {
+            conversationHistory = [
+              { text: lastMessage.content },
+              {
+                inlineData: {
+                  mimeType: fileAttachment.contentType,
+                  data: base64Data,
+                },
+              }
+            ];
+          } else {
+            // For images, keep the current logic
+            conversationHistory = [
+              {
+                inlineData: {
+                  mimeType: fileAttachment.contentType,
+                  data: base64Data,
+                },
               },
-            },
-            { text: lastMessage.content }
-          ];
+              { text: lastMessage.content }
+            ];
+          }
         } catch (err) {
           controller.enqueue(
-            `data: ${JSON.stringify({ type: "error", content: "Failed to process image attachment." })}\n\n`
+            `data: ${JSON.stringify({ type: "error", content: "Failed to process file attachment." })}\n\n`
           );
           controller.close();
           return;
