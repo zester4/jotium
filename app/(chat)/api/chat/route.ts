@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { AIAgent } from "@/ai/jotium";
 import { Message } from "@/ai/types";
 import { auth } from "@/app/(auth)/auth";
-import { saveChat, deleteChatById } from "@/db/queries";
+import { saveChat, deleteChatById, getUserById } from "@/db/queries";
+import { getGeminiModelForPlan } from "@/lib/ai-models";
 import { generateUUID } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
@@ -14,8 +15,12 @@ export async function POST(request: NextRequest) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const agent = new AIAgent(process.env.GOOGLE_API_KEY!, session.user.id);
-  await agent.initializeTools(session.user.id);
+  const userId = session.user.id as string;
+  const user = await getUserById(userId);
+  const model = getGeminiModelForPlan(user?.plan ?? 'Free') || 'gemini-2.0-flash';
+  const geminiApiKey = process.env.GOOGLE_API_KEY || '';
+  const agent = new AIAgent(geminiApiKey, userId, undefined, model);
+  await agent.initializeTools(userId);
   const lastMessage = messages[messages.length - 1];
 
   const attachments = lastMessage.attachments || [];
@@ -82,6 +87,7 @@ export async function POST(request: NextRequest) {
       let thoughts = "";
       let toolCalls: any[] = [];
       let hasToolCalls = false;
+      let lastAssistantAttachments: any[] | undefined;
 
       for await (const chunk of responseStream) {
         if (chunk.candidates?.[0]?.content?.parts) {
@@ -109,15 +115,40 @@ export async function POST(request: NextRequest) {
 
       if (hasToolCalls) {
         const toolResults = [];
+        const assistantAttachments = [];
         for (const toolCall of toolCalls) {
           const result = await agent.executeToolCall(toolCall);
-          toolResults.push(result);
+          // Handle image generation tool results
+          if (toolCall.functionName === 'generate_image' && result.result.success && result.result.results) {
+            const imageToolResult = result.result;
+            for (const imageResult of imageToolResult.results) {
+              if (imageResult.imageBase64) {
+                const outputFormat = imageToolResult.settings?.outputFormat || 'png';
+                const mimeType = `image/${outputFormat}`;
+                const dataUrl = `data:${mimeType};base64,${imageResult.imageBase64}`;
+                assistantAttachments.push({
+                  url: dataUrl,
+                  name: `generated-image-${Date.now()}.${outputFormat}`,
+                  contentType: mimeType,
+                });
+              }
+            }
+            // To avoid sending base64 to the model, we create a summary.
+            const summary = {
+              ...imageToolResult,
+              results: imageToolResult.results.map((r: any) => ({ textResponse: r.textResponse, imageGenerated: !!r.imageBase64, savedFile: r.savedFile, error: r.error }))
+            };
+            toolResults.push({ ...result, result: summary });
+          } else {
+            toolResults.push(result);
+          }
         }
 
+        // Create the content for the next prompt to the model
         const toolResultsContent = toolResults
           .map(
             (tr) =>
-              `Tool ${tr.toolCallId} result:\n${
+              `Tool ${tr.toolCallId} result:\n$${
                 typeof tr.result === "object"
                   ? JSON.stringify(tr.result, null, 2)
                   : String(tr.result)
@@ -132,14 +163,16 @@ export async function POST(request: NextRequest) {
           role: "model",
           parts: [{ text: fullResponse }],
         });
-        conversationHistory.push({
-          role: "user",
-          parts: [
-            {
-              text: `Tool execution results:\n${toolResultsContent}\n\nPlease provide a comprehensive response based on these tool results.`,
-            },
-          ],
-        });
+        if (toolResultsContent.trim()) {
+          conversationHistory.push({
+            role: "user",
+            parts: [
+              {
+                text: `Tool execution results:\n${toolResultsContent}\n\nPlease provide a comprehensive response based on these tool results.`,
+              },
+            ],
+          });
+        }
 
         const finalResponseStream = await agent.generateContentStream(conversationHistory);
         let finalResponseText = "";
@@ -156,6 +189,10 @@ export async function POST(request: NextRequest) {
           }
         }
         fullResponse = finalResponseText;
+        // Attach generated images to the assistant's message
+        if (assistantAttachments.length > 0) {
+          lastAssistantAttachments = assistantAttachments;
+        }
       }
 
       const finalMessages: Message[] = [
@@ -167,6 +204,7 @@ export async function POST(request: NextRequest) {
           thoughts: thoughts,
           timestamp: Date.now(),
           toolCalls: hasToolCalls ? toolCalls : undefined,
+          attachments: typeof lastAssistantAttachments !== 'undefined' ? lastAssistantAttachments : undefined,
         },
       ];
 

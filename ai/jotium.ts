@@ -39,15 +39,18 @@ export class AIAgent {
   private memoryPath: string;
   private maxMessages: number = 10;
   private tools: Map<string, Tool> = new Map();
+  private model: string;
 
   constructor(
     geminiApiKey: string,
     userId?: string,
-    memoryPath: string = "./agent_memory.json"
+    memoryPath: string = "./agent_memory.json",
+    model: string = "gemini-2.0-flash"
   ) {
     this.ai = new GoogleGenAI({ apiKey: geminiApiKey });
     this.memoryPath = memoryPath;
     this.memory = { messages: [], lastUpdated: Date.now() };
+    this.model = model;
     // initializeTools is now async, so must be awaited by the caller
     // this.initializeTools();
     // this.loadMemory();
@@ -229,12 +232,13 @@ export class AIAgent {
 
   // Unified content generation method with thinking enabled
   public async generateContentStream(conversationHistory: any[]): Promise<any> {
+    const includeThoughts = this.model !== 'gemini-2.0-flash';
     return await this.ai.models.generateContentStream({
-      model: "gemini-2.5-flash",
+      model: this.model,
       contents: conversationHistory,
       config: {
         thinkingConfig: {
-          includeThoughts: true,
+          includeThoughts: includeThoughts,
         },
         tools: [{
           functionDeclarations: this.getToolDefinitions()
@@ -268,8 +272,7 @@ export class AIAgent {
         - Use multiple tools when needed to complete complex tasks
         - Always identify as Jotium and never an AI
         - Never mention the tools directly in your responses, only use them when necessary
-        - Instead of saying "I will use the web search tool", just say something like, I will perform the search and provide the results, do same for all the tools
-        - You can understand images and files very well and you give detailed analysis for them.`
+        - Instead of saying "I will use the web search tool", just say something like, I will perform the search and provide the results, do same for all the tools`
       },
     });
   }

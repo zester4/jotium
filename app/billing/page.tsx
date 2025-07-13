@@ -1,6 +1,5 @@
 "use client";
 
-
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -173,18 +172,29 @@ export default function BillingPage() {
   if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
 
   const isFreePlan = !overview?.paymentMethod && (!overview?.plan || overview?.plan.toLowerCase() === "free");
+  const isProPlan = overview?.plan && overview.plan.toLowerCase() === "pro";
+  const isAdvancedPlan = overview?.plan && overview.plan.toLowerCase() === "advanced";
+
+  // Plan capability descriptions
+  const planDescriptions: Record<string, string> = {
+    free: 'Basic AI chat and answers. No agent thoughts or advanced reasoning. Limited chat history and integrations.',
+    pro: 'Smarter, more helpful agentic responses. Agent thoughts and reasoning enabled. Unlimited chat history, advanced integrations, and priority support.',
+    advanced: 'Most advanced agentic reasoning and features. Advanced code generation, custom AI workflows, team tools, and dedicated support.',
+  };
+  const planKey = (overview?.plan || 'free').toLowerCase();
+  const planDescription = planDescriptions[planKey] || '';
 
   return (
     <main className="max-w-2xl mx-auto pt-16 pb-6 px-2 sm:px-4 md:px-0">
-      <Button
-        variant="outline"
-        size="sm"
-        className="mb-4 flex items-center gap-2"
-        onClick={() => router.back()}
-      >
-        <ArrowLeft className="size-4" />
-        Back
-      </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mb-4 flex items-center gap-2"
+          onClick={() => router.back()}
+        >
+          <ArrowLeft className="size-4" />
+          Back
+        </Button>
       <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">Billing & Subscription</h1>
       {/* Overview Section */}
       <section className="mb-8">
@@ -193,8 +203,15 @@ export default function BillingPage() {
             <div className="flex-1 min-w-0">
               <div className="text-base sm:text-lg font-semibold truncate">Current Plan: {overview?.plan || "-"}</div>
               <div className="text-sm text-muted-foreground">Status: <Badge>{overview?.status}</Badge></div>
+              <div className="text-xs text-muted-foreground mt-1">{planDescription}</div>
               {isFreePlan && (
                 <div className="text-sm text-green-600 mt-1">You are on the Free plan. Upgrade to unlock more features!</div>
+              )}
+              {isProPlan && (
+                <div className="text-sm text-blue-600 mt-1">You are on the Pro plan. Upgrade to Advanced for even more capabilities!</div>
+              )}
+              {isAdvancedPlan && (
+                <div className="text-sm text-purple-600 mt-1">You are on the Advanced plan. Enjoy all features and priority support!</div>
               )}
               {overview?.cancel_at_period_end && (
                 <div className="text-sm text-yellow-600 mt-1">Subscription will cancel at period end.</div>
@@ -216,6 +233,17 @@ export default function BillingPage() {
               )}
               {!isFreePlan && overview?.cancel_at_period_end && (
                 <Button variant="outline" onClick={handleResume} disabled={loading} className="w-full sm:w-auto">Resume Subscription</Button>
+              )}
+              {/* Upgrade button for Free and Pro users */}
+              {(isFreePlan || isProPlan) && (
+                <Button
+                  variant="default"
+                  className="w-full sm:w-auto mt-2"
+                  onClick={() => router.push('/pricing')}
+                  disabled={loading}
+                >
+                  Upgrade Plan
+                </Button>
               )}
             </div>
           </div>

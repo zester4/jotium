@@ -41,7 +41,8 @@ CREATE TABLE IF NOT EXISTS "User" (
 	"lastName" varchar(32) NOT NULL,
 	"stripeCustomerId" varchar(64),
 	"stripeSubscriptionId" varchar(64),
-	"subscriptionStatus" varchar(32)
+	"subscriptionStatus" varchar(32),
+	"plan" varchar(32) DEFAULT 'Free'
 );
 --> statement-breakpoint
 DO $$ BEGIN

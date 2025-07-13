@@ -19,6 +19,8 @@ export const user = pgTable("User", {
   stripeCustomerId: varchar("stripeCustomerId", { length: 64 }),
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }),
   subscriptionStatus: varchar("subscriptionStatus", { length: 32 }), // e.g. 'active', 'trialing', 'canceled', etc.
+  plan: varchar("plan", { length: 32 }).default("Free"),
+
 });
 
 export type User = InferSelectModel<typeof user>;

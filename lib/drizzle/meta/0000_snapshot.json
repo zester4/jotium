@@ -1,5 +1,5 @@
 {
-  "id": "43aa1362-75f3-4202-9c1f-e113832e47fb",
+  "id": "7c5e33b5-4ba4-4d0d-86b5-4497d3c8ea36",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -299,6 +299,13 @@
           "type": "varchar(32)",
           "primaryKey": false,
           "notNull": false
+        },
+        "plan": {
+          "name": "plan",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'Free'"
         }
       },
       "indexes": {},
