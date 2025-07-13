@@ -38,6 +38,7 @@ export function Chat({
       role: "user",
       content: input,
       timestamp: Date.now(),
+      attachments, // <-- Add this line!
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -142,6 +143,7 @@ export function Chat({
               thoughts={message.thoughts}
               toolInvocations={message.toolCalls as any}
               duration={message.duration}
+              attachments={message.attachments} // <-- Add this line!
             />
           ))}
 

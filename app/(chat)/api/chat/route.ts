@@ -18,18 +18,48 @@ export async function POST(request: NextRequest) {
   await agent.initializeTools(session.user.id);
   const lastMessage = messages[messages.length - 1];
 
+  const attachments = lastMessage.attachments || [];
+
   const chatId = id || generateUUID();
 
   const stream = new ReadableStream({
     async start(controller) {
-      const conversationHistory = messages.map((msg) => ({
-        role: msg.role === "assistant" ? "model" : msg.role,
-        parts: [{ text: msg.content }],
-      }));
+      let conversationHistory: any[];
+      let responseStream;
+      // Only support one image for now
+      if (attachments.length > 0 && attachments[0].contentType && attachments[0].contentType.startsWith("image/")) {
+        const imageAttachment = attachments[0];
+        try {
+          const response = await fetch(imageAttachment.url);
+          const arrayBuffer = await response.arrayBuffer();
+          const base64ImageData = Buffer.from(arrayBuffer).toString('base64');
 
-      const responseStream = await agent.generateContentStream(
-        conversationHistory
-      );
+          // Use inlineData for Gemini
+          conversationHistory = [
+            {
+              inlineData: {
+                mimeType: imageAttachment.contentType,
+                data: base64ImageData,
+              },
+            },
+            { text: lastMessage.content }
+          ];
+        } catch (err) {
+          controller.enqueue(
+            `data: ${JSON.stringify({ type: "error", content: "Failed to process image attachment." })}\n\n`
+          );
+          controller.close();
+          return;
+        }
+      } else {
+        // Fallback to text-only flow
+        conversationHistory = messages.map((msg) => ({
+          role: msg.role === "assistant" ? "model" : msg.role,
+          parts: [{ text: msg.content }],
+        }));
+      }
+
+      responseStream = await agent.generateContentStream(conversationHistory);
 
       let fullResponse = "";
       let thoughts = "";
@@ -78,6 +108,9 @@ export async function POST(request: NextRequest) {
           )
           .join("\n\n");
 
+        if (!Array.isArray(conversationHistory)) {
+          conversationHistory = [conversationHistory];
+        }
         conversationHistory.push({
           role: "model",
           parts: [{ text: fullResponse }],
@@ -91,9 +124,7 @@ export async function POST(request: NextRequest) {
           ],
         });
 
-        const finalResponseStream = await agent.generateContentStream(
-          conversationHistory
-        );
+        const finalResponseStream = await agent.generateContentStream(conversationHistory);
         let finalResponseText = "";
         for await (const chunk of finalResponseStream) {
           if (chunk.candidates?.[0]?.content?.parts) {
