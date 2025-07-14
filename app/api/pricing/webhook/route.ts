@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    async function updateUserFromMetadata(metadata: any, updates: Partial<{stripeCustomerId: string, stripeSubscriptionId: string, subscriptionStatus: string}>, notification?: {title: string, description?: string, type?: string}) {
+    async function updateUserFromMetadata(metadata: any, updates: Partial<{stripeCustomerId: string, stripeSubscriptionId: string, subscriptionStatus: string, plan: string}>, notification?: {title: string, description?: string, type?: string}) {
       const userId = metadata?.userId;
       if (!userId) return;
       await setStripeSubscription({
@@ -44,10 +44,16 @@ export async function POST(req: NextRequest) {
         const customerId = session.customer as string;
         const subscriptionId = session.subscription as string;
         const metadata = session.metadata;
+        let plan: string | undefined = undefined;
+        if (subscriptionId) {
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId, { expand: ["items.data.price"] });
+          plan = (subscription.items.data[0].price.nickname as string) || undefined;
+        }
         await updateUserFromMetadata(metadata, {
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscriptionId,
           subscriptionStatus: 'active',
+          plan,
         }, {
           title: 'Payment Successful',
           description: 'Your payment was successful and your subscription is now active.',
@@ -59,8 +65,10 @@ export async function POST(req: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         const status = subscription.status;
         const metadata = subscription.metadata;
+        const plan = (subscription.items.data[0].price.nickname as string) || undefined;
         await updateUserFromMetadata(metadata, {
           subscriptionStatus: status,
+          plan,
         }, {
           title: 'Subscription Created',
           description: 'Your subscription has been created.',
@@ -72,8 +80,10 @@ export async function POST(req: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         const status = subscription.status;
         const metadata = subscription.metadata;
+        const plan = (subscription.items.data[0].price.nickname as string) || undefined;
         await updateUserFromMetadata(metadata, {
           subscriptionStatus: status,
+          plan,
         }, {
           title: 'Subscription Updated',
           description: `Your subscription status is now: ${status}.`,

@@ -48,10 +48,11 @@ export async function POST(req: NextRequest) {
       billing_address_collection: 'auto',
       metadata: {
         userId: session.user.id,
+        plan: typedPlan,
       },
     });
     return NextResponse.json({ url: stripeSession.url });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
-} 
+}
