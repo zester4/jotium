@@ -14,6 +14,12 @@ import { encryptApiKey, decryptApiKey } from "@/lib/encryption";
 let client = postgres(`${process.env.POSTGRES_URL!}?sslmode=require`);
 let db = drizzle(client);
 
+export const adminEmails = [
+  "seyyid225@gmail.com",
+  "terry.wright40@gmail.com",
+  "treffbour@gmail.com",
+];
+
 export async function getUser(email: string): Promise<Array<User>> {
   try {
     return await db.select().from(user).where(eq(user.email, email));
@@ -27,11 +33,6 @@ export async function createUser(email: string, password: string, firstName: str
   let salt = genSaltSync(10);
   let hash = hashSync(password, salt);
   // Admin emails
-  const adminEmails = [
-    "seyyid225@gmail.com",
-    "terry.wright40@gmail.com",
-    "treffbour@gmail.com",
-  ];
   const isAdmin = adminEmails.includes(email);
   try {
     return await db.insert(user).values({ email, password: hash, firstName, lastName, isAdmin });
