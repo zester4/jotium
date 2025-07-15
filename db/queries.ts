@@ -26,13 +26,29 @@ export async function getUser(email: string): Promise<Array<User>> {
 export async function createUser(email: string, password: string, firstName: string, lastName: string) {
   let salt = genSaltSync(10);
   let hash = hashSync(password, salt);
-
+  // Admin emails
+  const adminEmails = [
+    "seyyid225@gmail.com",
+    "terry.wright40@gmail.com",
+    "treffbour@gmail.com",
+  ];
+  const isAdmin = adminEmails.includes(email);
   try {
-    return await db.insert(user).values({ email, password: hash, firstName, lastName });
+    return await db.insert(user).values({ email, password: hash, firstName, lastName, isAdmin });
   } catch (error) {
     console.error("Failed to create user in database");
     throw error;
   }
+}
+
+export async function isUserAdminById(userId: string): Promise<boolean> {
+  const [u] = await db.select({ isAdmin: user.isAdmin }).from(user).where(eq(user.id, userId));
+  return !!u?.isAdmin;
+}
+
+export async function isUserAdminByEmail(email: string): Promise<boolean> {
+  const [u] = await db.select({ isAdmin: user.isAdmin }).from(user).where(eq(user.email, email));
+  return !!u?.isAdmin;
 }
 
 export async function saveChat({

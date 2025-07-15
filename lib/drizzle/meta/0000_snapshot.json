@@ -1,5 +1,5 @@
 {
-  "id": "7c5e33b5-4ba4-4d0d-86b5-4497d3c8ea36",
+  "id": "0991c83b-317f-4ae1-ab99-c3344b7229e5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -306,6 +306,20 @@
           "primaryKey": false,
           "notNull": false,
           "default": "'Free'"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "isAdmin": {
+          "name": "isAdmin",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         }
       },
       "indexes": {},
