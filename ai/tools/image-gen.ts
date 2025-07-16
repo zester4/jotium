@@ -160,6 +160,7 @@ export class ImageGenerationTool {
         textResponse: null,
         imageData: null,
         imageBase64: null,
+        imageDataUrl: null as string | null,
         savedFile: null as string | null,
         error: null
       };
@@ -172,16 +173,12 @@ export class ImageGenerationTool {
         } else if (part.inlineData) {
           result.imageData = part.inlineData.data;
           result.imageBase64 = part.inlineData.data;
-          
-          // Save to file if requested
-          if (args.saveToFile !== false) {
-            const buffer = Buffer.from(part.inlineData.data, "base64");
-            const extension = args.outputFormat || "png";
-            const filePath = `${filename}.${extension}`;
-            fs.writeFileSync(filePath, buffer);
-            result.savedFile = filePath;
-            console.log(`💾 Image saved as ${filePath}`);
-          }
+          // Always return as data URL for frontend display
+          const extension = args.outputFormat || "png";
+          const mimeType = `image/${extension}`;
+          result.imageDataUrl = `data:${mimeType};base64,${part.inlineData.data}`;
+          // Do NOT save to file by default
+          result.savedFile = null;
         }
       }
 
@@ -193,6 +190,7 @@ export class ImageGenerationTool {
         textResponse: null,
         imageData: null,
         imageBase64: null,
+        imageDataUrl: null,
         savedFile: null,
         error: error instanceof Error ? error.message : String(error)
       };

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const apiTools = [
   { name: "Airtable", keyName: "airtableApiKey", placeholder: "key..." },
   { name: "Ayrshare", keyName: "ayrshareApiKey", placeholder: "ayr-..." },
+  { name: "Asana", keyName: "asanaApiKey", placeholder: "pat_..." },
   { name: "Cal.com", keyName: "calcomApiKey", placeholder: "cal-..." },
   { name: "ClickUp", keyName: "clickupApiToken", placeholder: "pk_..." },
   { name: "GitHub", keyName: "githubToken", placeholder: "ghp-..." },
@@ -330,6 +331,13 @@ export default function AccountPage() {
               </div>
               <div className="flex items-center justify-between p-3 rounded bg-background border border-border">
                 <div className="flex items-center gap-3">
+                  <Image src="/logo/asana.svg" alt="Asana" width={24} height={24} className="size-6" />
+                  <span className="text-foreground">Asana</span>
+                </div>
+                <Button size="sm">Connect</Button>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded bg-background border border-border">
+                <div className="flex items-center gap-3">
                   <Image src="/logo/github.svg" alt="GitHub" width={24} height={24} className="size-6" />
                   <span className="text-foreground">GitHub</span>
                 </div>
@@ -378,8 +386,9 @@ export default function AccountPage() {
                         autoComplete="off"
                         className="mt-1 bg-background text-foreground border-border"
                       />
-                      <Button size="sm" variant="outline" type="button" onClick={() => handleShowToggle(tool.keyName)}>
-                        {showKey[tool.keyName] ? "Hide" : "Show"}
+                      {/* Only one Eye/EyeOff icon button per input */}
+                      <Button size="icon" variant="ghost" type="button" onClick={() => handleShowToggle(tool.keyName)} aria-label={showKey[tool.keyName] ? "Hide key" : "Show key"} className="mt-1">
+                        {showKey[tool.keyName] ? <EyeOff size={18} /> : <Eye size={18} />}
                       </Button>
                     </div>
                   </div>

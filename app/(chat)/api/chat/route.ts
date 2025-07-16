@@ -116,79 +116,158 @@ export async function POST(request: NextRequest) {
       if (hasToolCalls) {
         const toolResults = [];
         const assistantAttachments = [];
+        let shouldContinueToAgent = true;
+        
         for (const toolCall of toolCalls) {
-          const result = await agent.executeToolCall(toolCall);
-          // Handle image generation tool results
-          if (toolCall.functionName === 'generate_image' && result.result.success && result.result.results) {
-            const imageToolResult = result.result;
-            for (const imageResult of imageToolResult.results) {
-              if (imageResult.imageBase64) {
-                const outputFormat = imageToolResult.settings?.outputFormat || 'png';
-                const mimeType = `image/${outputFormat}`;
-                const dataUrl = `data:${mimeType};base64,${imageResult.imageBase64}`;
-                assistantAttachments.push({
-                  url: dataUrl,
-                  name: `generated-image-${Date.now()}.${outputFormat}`,
-                  contentType: mimeType,
-                });
+          const toolName = toolCall.functionName || toolCall.name;
+          
+          // Handle generate_image tool call directly
+          if (toolName === 'generate_image') {
+            shouldContinueToAgent = false;
+            const result = await agent.executeToolCall(toolCall);
+            
+            if (result.result.success && result.result.results) {
+              const imageToolResult = result.result;
+              for (const imageResult of imageToolResult.results) {
+                // Prefer imageDataUrl if present, fallback to imageBase64
+                let dataUrl = imageResult.imageDataUrl;
+                let outputFormat = imageToolResult.settings?.outputFormat || 'png';
+                let mimeType = `image/${outputFormat}`;
+                if (!dataUrl && imageResult.imageBase64) {
+                  dataUrl = `data:${mimeType};base64,${imageResult.imageBase64}`;
+                }
+                if (dataUrl) {
+                  assistantAttachments.push({
+                    url: dataUrl,
+                    name: `generated-image-${Date.now()}.${outputFormat}`,
+                    contentType: mimeType,
+                  });
+                }
               }
+              
+              // Send success response directly to user
+              const successMessage = `I've generated ${imageToolResult.results.length} image(s) for you.`;
+              controller.enqueue(
+                `data: ${JSON.stringify({ type: "response", content: successMessage })}\n\n`
+              );
+              fullResponse = successMessage;
+            } else {
+              // Handle error
+              const errorMessage = `I encountered an error generating the image: ${result.result.error || 'Unknown error'}`;
+              controller.enqueue(
+                `data: ${JSON.stringify({ type: "response", content: errorMessage })}\n\n`
+              );
+              fullResponse = errorMessage;
             }
-            // To avoid sending base64 to the model, we create a summary.
-            const summary = {
-              ...imageToolResult,
-              results: imageToolResult.results.map((r: any) => ({ textResponse: r.textResponse, imageGenerated: !!r.imageBase64, savedFile: r.savedFile, error: r.error }))
-            };
-            toolResults.push({ ...result, result: summary });
-          } else {
+          }
+          
+          // Handle web_scrape tool call directly
+          else if (toolName === 'web_scrape') {
+            shouldContinueToAgent = false;
+            const result = await agent.executeToolCall(toolCall);
+            
+            if (result.result.success) {
+              const scrapeData = result.result;
+              let responseMessage = `I've successfully scraped the webpage. Here's what I found:\n\n`;
+              
+              if (scrapeData.title) {
+                responseMessage += `**Title:** ${scrapeData.title}\n\n`;
+              }
+              
+              if (scrapeData.description) {
+                responseMessage += `**Description:** ${scrapeData.description}\n\n`;
+              }
+              
+              if (scrapeData.content) {
+                // Limit content length for display
+                const contentPreview = scrapeData.content.length > 1000 
+                  ? scrapeData.content.substring(0, 1000) + '...' 
+                  : scrapeData.content;
+                responseMessage += `**Content:**\n${contentPreview}\n\n`;
+              }
+              
+              if (scrapeData.links && scrapeData.links.length > 0) {
+                responseMessage += `**Links found:** ${scrapeData.links.length}\n\n`;
+                // Show first few links
+                const linkPreview = scrapeData.links.slice(0, 5).map((link: any) => 
+                  `- [${link.text || 'Link'}](${link.url})`
+                ).join('\n');
+                responseMessage += linkPreview;
+                if (scrapeData.links.length > 5) {
+                  responseMessage += `\n... and ${scrapeData.links.length - 5} more links`;
+                }
+              }
+              
+              controller.enqueue(
+                `data: ${JSON.stringify({ type: "response", content: responseMessage })}\n\n`
+              );
+              fullResponse = responseMessage;
+            } else {
+              // Handle error
+              const errorMessage = `I encountered an error scraping the webpage: ${result.result.error || 'Unknown error'}`;
+              controller.enqueue(
+                `data: ${JSON.stringify({ type: "response", content: errorMessage })}\n\n`
+              );
+              fullResponse = errorMessage;
+            }
+          }
+          
+          // For other tools, execute normally
+          else {
+            const result = await agent.executeToolCall(toolCall);
             toolResults.push(result);
           }
         }
 
-        // Create the content for the next prompt to the model
-        const toolResultsContent = toolResults
-          .map(
-            (tr) =>
-              `Tool ${tr.toolCallId} result:\n$${
-                typeof tr.result === "object"
-                  ? JSON.stringify(tr.result, null, 2)
-                  : String(tr.result)
-              }`
-          )
-          .join("\n\n");
+        // Only continue to agent if we have non-direct tools
+        if (shouldContinueToAgent && toolResults.length > 0) {
+          // Create the content for the next prompt to the model
+          const toolResultsContent = toolResults
+            .map(
+              (tr) =>
+                `Tool ${tr.toolCallId} result:\n${
+                  typeof tr.result === "object"
+                    ? JSON.stringify(tr.result, null, 2)
+                    : String(tr.result)
+                }`
+            )
+            .join("\n\n");
 
-        if (!Array.isArray(conversationHistory)) {
-          conversationHistory = [conversationHistory];
-        }
-        conversationHistory.push({
-          role: "model",
-          parts: [{ text: fullResponse }],
-        });
-        if (toolResultsContent.trim()) {
+          if (!Array.isArray(conversationHistory)) {
+            conversationHistory = [conversationHistory];
+          }
           conversationHistory.push({
-            role: "user",
-            parts: [
-              {
-                text: `Tool execution results:\n${toolResultsContent}\n\nPlease provide a comprehensive response based on these tool results.`,
-              },
-            ],
+            role: "model",
+            parts: [{ text: fullResponse }],
           });
-        }
+          if (toolResultsContent.trim()) {
+            conversationHistory.push({
+              role: "user",
+              parts: [
+                {
+                  text: `Tool execution results:\n${toolResultsContent}\n\nPlease provide a comprehensive response based on these tool results.`,
+                },
+              ],
+            });
+          }
 
-        const finalResponseStream = await agent.generateContentStream(conversationHistory);
-        let finalResponseText = "";
-        for await (const chunk of finalResponseStream) {
-          if (chunk.candidates?.[0]?.content?.parts) {
-            for (const part of chunk.candidates[0].content.parts) {
-              if (part.text) {
-                finalResponseText += part.text;
-                controller.enqueue(
-                  `data: ${JSON.stringify({ type: "response", content: part.text })}\n\n`
-                );
+          const finalResponseStream = await agent.generateContentStream(conversationHistory);
+          let finalResponseText = "";
+          for await (const chunk of finalResponseStream) {
+            if (chunk.candidates?.[0]?.content?.parts) {
+              for (const part of chunk.candidates[0].content.parts) {
+                if (part.text) {
+                  finalResponseText += part.text;
+                  controller.enqueue(
+                    `data: ${JSON.stringify({ type: "response", content: part.text })}\n\n`
+                  );
+                }
               }
             }
           }
+          fullResponse = finalResponseText;
         }
-        fullResponse = finalResponseText;
+        
         // Attach generated images to the assistant's message
         if (assistantAttachments.length > 0) {
           lastAssistantAttachments = assistantAttachments;

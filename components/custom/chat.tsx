@@ -81,11 +81,14 @@ export function Chat({
         content: "",
         thoughts: "",
         timestamp: Date.now(),
+        attachments: [], // <-- Ensure attachments property exists
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
       // Track start time for duration
       const startTime = Date.now();
+
+      let pendingAttachments: any[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -108,11 +111,16 @@ export function Chat({
                 } else if (data.type === "error") {
                   setError(data.content);
                 }
+                // If the backend ever streams attachments, handle here:
+                if (data.attachments && Array.isArray(data.attachments)) {
+                  pendingAttachments = data.attachments;
+                  assistantMessage.attachments = pendingAttachments;
+                }
                 // Update duration on every chunk (so UI can show live duration if needed)
                 assistantMessage.duration = Date.now() - startTime;
                 setMessages((prev) =>
                   prev.map((msg) =>
-                    msg.id === assistantMessage.id ? assistantMessage : msg
+                    msg.id === assistantMessage.id ? { ...assistantMessage } : msg
                   )
                 );
               } catch (error) {
@@ -128,9 +136,13 @@ export function Chat({
       }
       // Finalize duration after streaming ends
       assistantMessage.duration = Date.now() - startTime;
+      // If any attachments were found, update the message
+      if (pendingAttachments.length > 0) {
+        assistantMessage.attachments = pendingAttachments;
+      }
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === assistantMessage.id ? assistantMessage : msg
+          msg.id === assistantMessage.id ? { ...assistantMessage } : msg
         )
       );
     }

@@ -15,7 +15,7 @@ import { SlackTool } from './tools/slack-tool';
 import { ClickUpTool } from './tools/clickup-tool';
 import { ApiTool } from './tools/api-tool';
 import { DateTimeTool } from './tools/datetime-tool';
-// import { AsanaTool } from './tools/asana-tool';
+import { AsanaTool } from './tools/asana-tool';
 import { DuffelFlightTool } from './tools/flight-booking-tool';
 import { AyrshareSocialTool } from './tools/ayrshare-tool';
 import { WebScrapeTool } from './tools/webscrape-tool';
@@ -147,6 +147,10 @@ export class AIAgent {
     if (supabaseUrl && supabaseKey) {
       this.tools.set("supabase_database", new SupabaseTool(supabaseUrl, supabaseKey));
     }
+
+    // Asana
+    const asanaKey = await getKey("Asana", "ASANA_API_KEY");
+    if (asanaKey) this.tools.set("asana_tool", new AsanaTool(asanaKey));
 
     console.log(`✅ Initialized ${this.tools.size} tools`);
   }

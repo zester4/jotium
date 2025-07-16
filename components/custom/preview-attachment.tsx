@@ -1,5 +1,8 @@
 //components/custom/preview-attatchment.tsx
 import { Attachment } from "ai";
+import { Download } from "lucide-react";
+import Image from "next/image";
+import React, { useState } from "react";
 
 import { LoaderIcon } from "./icons";
 
@@ -11,20 +14,63 @@ export const PreviewAttachment = ({
   isUploading?: boolean;
 }) => {
   const { name, url, contentType } = attachment;
+  const [modalOpen, setModalOpen] = useState(false);
 
   return (
-    <div className="flex flex-col gap-2 max-w-16">
-      <div className="h-20 w-16 bg-muted rounded-md relative flex flex-col items-center justify-center">
+    <div className="flex flex-col gap-2 max-w-32 w-full">
+      <div className="relative w-full bg-muted rounded-md flex flex-col items-center justify-center" style={{ aspectRatio: '4/5', maxWidth: '100%' }}>
         {contentType ? (
           contentType.startsWith("image") ? (
-            // NOTE: it is recommended to use next/image for images
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={url}
-              src={url}
-              alt={name ?? "An image attachment"}
-              className="rounded-md size-full object-cover"
-            />
+            <>
+              {/* Use Next.js Image for optimization and LCP improvement */}
+              <Image
+                key={url}
+                src={url}
+                alt={name ?? "An image attachment"}
+                className="rounded-md object-cover w-full size-auto max-h-40 cursor-pointer"
+                style={{ maxWidth: '100%', display: 'block' }}
+                onClick={() => setModalOpen(true)}
+                tabIndex={0}
+                aria-label="Open image preview"
+                width={320} // fallback width for preview
+                height={400} // fallback height for preview
+                unoptimized // Remove if you add a loader for remote images
+              />
+              {/* Modal for image preview and download */}
+              {modalOpen && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+                  onClick={() => setModalOpen(false)}
+                  style={{ cursor: 'zoom-out' }}
+                >
+                  <div
+                    className="relative max-w-full max-h-full flex flex-col items-center"
+                    onClick={e => e.stopPropagation()}
+                    style={{ cursor: 'default' }}
+                  >
+                    <Image
+                      src={url}
+                      alt={name ?? "Image preview"}
+                      className="rounded-md max-w-full max-h-[80vh] size-auto shadow-lg"
+                      style={{ background: 'white' }}
+                      width={600} // fallback width for modal
+                      height={800} // fallback height for modal
+                      unoptimized // Remove if you add a loader for remote images
+                    />
+                    <a
+                      href={url}
+                      download={name}
+                      className="absolute top-2 right-2 bg-black/70 rounded-full p-2 text-white hover:bg-black/90 focus:bg-black/90 transition-colors"
+                      aria-label="Download image"
+                      tabIndex={0}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <Download size={20} />
+                    </a>
+                  </div>
+                </div>
+              )}
+            </>
           ) : contentType === "application/pdf" ? (
             <a
               href={url}
