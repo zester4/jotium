@@ -1,3 +1,4 @@
+//components/custom/chat.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -22,7 +23,7 @@ export function Chat({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messagesContainerRef, messagesEndRef] =
-    useScrollToBottom<HTMLDivElement>();
+    useScrollToBottom<HTMLDivElement>([messages.length]);
   const [attachments, setAttachments] = useState<any[]>([]);
 
   // Add state for firstName
