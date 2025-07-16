@@ -1,11 +1,16 @@
+/* globals.css — light teal primary */
+/* Maintains your existing structure; only swaps purple hue for a light teal in both light & dark themes. */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 :root {
     --foreground-rgb: 0, 0, 0;
     --background-start-rgb: 214, 219, 220;
     --background-end-rgb: 255, 255, 255;
 }
+
 @media (prefers-color-scheme: dark) {
     :root {
         --foreground-rgb: 255, 255, 255;
@@ -13,11 +18,20 @@
         --background-end-rgb: 0, 0, 0;
     }
 }
+
 @layer utilities {
     .text-balance {
         text-wrap: balance;
     }
 }
+
+/* ----------------------------------------------------------------------------------
+   THEME TOKENS
+   ----------------------------------------------------------------------------------
+   Using HSL component values (space‑separated) so Tailwind + shadcn/ui can consume
+   them via "hsl(var(--primary))" patterns in your tailwind.config.js.
+   Only the purple values have been changed → light teal (174 60% 65%).
+----------------------------------------------------------------------------------- */
 @layer base {
     :root {
         --background: 0 0% 100%;
@@ -26,7 +40,7 @@
         --card-foreground: 240 10% 3.9%;
         --popover: 0 0% 100%;
         --popover-foreground: 240 10% 3.9%;
-        --primary: 0 0% 0%;
+        --primary: 174 60% 65%; /* light teal */
         --primary-foreground: 0 0% 98%;
         --secondary: 240 4.8% 95.9%;
         --secondary-foreground: 240 5.9% 10%;
@@ -38,7 +52,7 @@
         --destructive-foreground: 0 0% 98%;
         --border: 240 5.9% 90%;
         --input: 240 5.9% 90%;
-        --ring: 0 0% 0%;
+        --ring: 174 60% 65%; /* match teal */
         --chart-1: 12 76% 61%;
         --chart-2: 173 58% 39%;
         --chart-3: 197 37% 24%;
@@ -53,7 +67,7 @@
         --card-foreground: 0 0% 98%;
         --popover: 240 10% 3.9%;
         --popover-foreground: 0 0% 98%;
-        --primary: 0 0% 0%;
+        --primary: 174 60% 65%; /* light teal */
         --primary-foreground: 240 5.9% 10%;
         --secondary: 240 3.7% 15.9%;
         --secondary-foreground: 0 0% 98%;
@@ -65,7 +79,7 @@
         --destructive-foreground: 0 0% 98%;
         --border: 240 3.7% 15.9%;
         --input: 240 3.7% 15.9%;
-        --ring: 0 0% 100%;
+        --ring: 174 60% 65%; /* match teal */
         --chart-1: 220 70% 50%;
         --chart-2: 160 60% 45%;
         --chart-3: 30 80% 55%;
@@ -73,19 +87,23 @@
         --chart-5: 340 75% 55%;
     }
 }
+
 @layer base {
     * {
         @apply border-border;
     }
+
     body {
         @apply bg-background text-foreground;
     }
+
     @font-face {
         font-family: "geist";
         font-style: normal;
         font-weight: 100 900;
         src: url(/fonts/geist.woff2) format("woff2");
     }
+
     @font-face {
         font-family: "geist-mono";
         font-style: normal;
@@ -93,24 +111,82 @@
         src: url(/fonts/geist-mono.woff2) format("woff2");
     }
 }
+
+/* ----------------------------------------------------------------------------------
+   SKELETON STATE HELPERS
+----------------------------------------------------------------------------------- */
 .skeleton {
     * {
         pointer-events: none !important;
     }
+
     *[class^="text"] {
         color: transparent !important;
         @apply rounded-sm bg-foreground/20 select-none animate-pulse;
     }
+
     *[class^="no-skeleton"] {
         opacity: 0 !important;
     }
+
     input {
         opacity: 0 !important;
     }
+
     .skeleton-bg {
         @apply bg-foreground/10;
     }
+
     .skeleton-div {
         @apply bg-foreground/20 animate-pulse;
     }
 }
+
+/* ----------------------------------------------------------------------------------
+   OPTIONAL: Tailwind config mapping (add to tailwind.config.js)
+-----------------------------------------------------------------------------------
+  export const theme = {
+    extend: {
+      colors: {
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
+      },
+      borderRadius: {
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)'
+      }
+    }
+  }
+*/
