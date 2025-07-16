@@ -8,6 +8,6 @@ export function getGeminiModelForPlan(plan: string): string {
       return "gemini-2.5-flash";
     case "free":
     default:
-      return "gemini-2.0-flash";
+      return "gemini-2.5-pro";
   }
 } 
