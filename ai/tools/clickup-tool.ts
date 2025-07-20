@@ -90,7 +90,8 @@ export class ClickUpTool {
               "create_webhook",
               "get_task_templates",
               "bulk_update_tasks",
-              "get_workspaces"
+              "get_workspaces",
+              "create_folder"
             ]
           },
           // Task Management Parameters
@@ -145,7 +146,7 @@ export class ClickUpTool {
           },
           folder_id: {
             type: Type.STRING,
-            description: "Folder ID for folder-specific operations"
+            description: "Folder ID for folder-specific operations (required if creating a list in a folder)"
           },
           list_name: {
             type: Type.STRING,
@@ -154,6 +155,10 @@ export class ClickUpTool {
           space_name: {
             type: Type.STRING,
             description: "Name of the space to create"
+          },
+          folder_name: {
+            type: Type.STRING,
+            description: "Name of the folder to create"
           },
           
           // Filtering and Query Parameters
@@ -360,6 +365,8 @@ export class ClickUpTool {
           return await this.bulkUpdateTasks(args);
         case "get_workspaces":
           return await this.getWorkspaces(args);
+        case "create_folder":
+          return await this.createFolder(args);
         default:
           throw new Error(`Unknown action: ${args.action}`);
       }
@@ -485,6 +492,9 @@ export class ClickUpTool {
   }
 
   private async createList(args: any): Promise<any> {
+    if (!args.folder_id && !args.space_id) {
+      throw new Error("Either folder_id or space_id must be provided to create a list.");
+    }
     const listData = {
       name: args.list_name,
       content: args.task_description || "",
@@ -493,9 +503,17 @@ export class ClickUpTool {
       assignee: args.assignees?.[0] || undefined,
       status: args.status || undefined
     };
-
-    const response = await this.client.post(`/folder/${args.folder_id}/list`, listData);
-    
+    let response;
+    if (args.folder_id) {
+      response = await this.client.post(`/folder/${args.folder_id}/list`, listData);
+    } else if (args.space_id) {
+      response = await this.client.post(`/space/${args.space_id}/list`, listData);
+    } else {
+      throw new Error("Failed to determine endpoint for list creation.");
+    }
+    if (!response) {
+      throw new Error("Failed to create list: No response from ClickUp API.");
+    }
     return {
       success: true,
       action: "create_list",
@@ -823,5 +841,21 @@ export class ClickUpTool {
         throw new Error(`Missing required parameter: ${field}`);
       }
     }
+  }
+
+  private async createFolder(args: any): Promise<any> {
+    this.validateRequired(args, ["space_id", "folder_name"]);
+    const folderData = {
+      name: args.folder_name
+    };
+    const response = await this.client.post(`/space/${args.space_id}/folder`, folderData);
+    return {
+      success: true,
+      action: "create_folder",
+      data: response.data,
+      folder_id: response.data.id,
+      message: `Folder "${args.folder_name}" created successfully`,
+      timestamp: new Date().toISOString()
+    };
   }
 }
