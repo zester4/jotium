@@ -11,7 +11,7 @@ export class AsanaTool {
   getDefinition(): FunctionDeclaration {
     return {
       name: "asana_tool",
-      description: "A comprehensive tool for Asana project management operations including tasks, projects, users, teams, and workspace management",
+      description: "A comprehensive tool for managing Asana resources and operations. Provides functionality to: Create/update/delete tasks and projects, manage workspaces and teams, handle user assignments and permissions, configure webhooks for real-time updates, and interact with project templates. Supports full CRUD operations on all major Asana entities with proper authentication, it will help find all ids.",
       parameters: {
         type: Type.OBJECT,
         properties: {
