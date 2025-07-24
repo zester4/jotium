@@ -27,6 +27,8 @@ const apiTools = [
   { name: "Stripe", keyName: "stripeSecretKey", placeholder: "sk_test_..." },
   { name: "Supabase URL", keyName: "supabaseUrl", placeholder: "https://<project-ref>.supabase.co" },
   { name: "Supabase Key", keyName: "supabaseKey", placeholder: "ey..." },
+  { name: "Trello", keyName: "trelloApiKey", placeholder: "key..." },
+  { name: "Trello Token", keyName: "trelloToken", placeholder: "token..." },
 ];
 
 export default function AccountPage() {
