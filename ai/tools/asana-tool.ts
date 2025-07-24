@@ -40,6 +40,10 @@ export class AsanaTool {
               "get_project_sections",
               "create_project_section",
               "duplicate_project",
+              "get_project_templates",
+              "create_project_from_template",
+              "get_workspace_by_name",
+              "get_team_by_name",
               
               // User operations
               "get_user",
@@ -129,6 +133,14 @@ export class AsanaTool {
               due_date: { type: Type.STRING },
               start_date: { type: Type.STRING }
             }
+          },
+          name: {
+            type: Type.STRING,
+            description: "Name of the object to create or search for"
+          },
+          template_gid: {
+            type: Type.STRING,
+            description: "GID of the project template to use"
           },
           
           // Search parameters
@@ -238,7 +250,7 @@ export class AsanaTool {
         case "get_project":
           return this.getProject(args.gid, args.fields);
         case "create_project":
-          return this.createProject(args.projectData);
+          return this.createProject(args.name, args.workspace, args.team, args.projectData);
         case "update_project":
           return this.updateProject(args.gid, args.projectData);
         case "delete_project":
@@ -251,6 +263,14 @@ export class AsanaTool {
           return this.createProjectSection(args.project, args.name);
         case "duplicate_project":
           return this.duplicateProject(args.gid, args.name);
+        case "get_project_templates":
+          return this.getProjectTemplates(args.workspace, args.team);
+        case "create_project_from_template":
+          return this.createProjectFromTemplate(args.template_gid, args.name, args.team);
+        case "get_workspace_by_name":
+          return this.getWorkspaceByName(args.name);
+        case "get_team_by_name":
+          return this.getTeamByName(args.workspace, args.name);
           
         // User operations
         case "get_user":
@@ -462,8 +482,14 @@ export class AsanaTool {
     };
   }
 
-  private async createProject(projectData: any): Promise<any> {
-    const result = await this.makeRequest('/projects', 'POST', projectData);
+  private async createProject(name: string, workspace: string, team: string, projectData: any = {}): Promise<any> {
+    const data = {
+      ...projectData,
+      name,
+      workspace,
+      team
+    };
+    const result = await this.makeRequest('/projects', 'POST', data);
     return {
       success: true,
       action: "create_project",
@@ -489,12 +515,13 @@ export class AsanaTool {
     };
   }
 
-  private async getProjects(workspaceGid?: string, teamGid?: string, fields?: string[], limit?: number, offset?: string): Promise<any> {
+  private async getProjects(workspaceGid?: string, teamGid?: string, archived?: boolean, fields?: string[], limit?: number, offset?: string): Promise<any> {
     let endpoint = '/projects';
     const params = new URLSearchParams();
     
     if (workspaceGid) params.append('workspace', workspaceGid);
     if (teamGid) params.append('team', teamGid);
+    if (archived !== undefined) params.append('archived', String(archived));
     if (fields) params.append('opt_fields', fields.join(','));
     if (limit) params.append('limit', limit.toString());
     if (offset) params.append('offset', offset);
@@ -536,6 +563,64 @@ export class AsanaTool {
       success: true,
       action: "duplicate_project",
       data: result.data
+    };
+  }
+
+  private async getProjectTemplates(workspaceGid: string, teamGid?: string): Promise<any> {
+    let endpoint = `/project_templates`;
+    const params = new URLSearchParams();
+    if (workspaceGid) params.append('workspace', workspaceGid);
+    if (teamGid) params.append('team', teamGid);
+    if (params.toString()) {
+      endpoint += `?${params.toString()}`;
+    }
+    const result = await this.makeRequest(endpoint);
+    return {
+      success: true,
+      action: "get_project_templates",
+      data: result.data
+    };
+  }
+
+  private async createProjectFromTemplate(templateGid: string, name: string, teamGid: string): Promise<any> {
+    const data = {
+      name,
+      team: teamGid,
+      public: false
+    };
+    const result = await this.makeRequest(`/project_templates/${templateGid}/instantiateProject`, 'POST', data);
+    return {
+      success: true,
+      action: "create_project_from_template",
+      data: result.data
+    };
+  }
+
+  private async getWorkspaceByName(name: string): Promise<any> {
+    const workspaces = await this.getWorkspaces();
+    const workspace = workspaces.data.find((ws: any) => ws.name.toLowerCase() === name.toLowerCase());
+    if (!workspace) {
+      throw new Error(`Workspace with name "${name}" not found.`);
+    }
+    return {
+      success: true,
+      action: "get_workspace_by_name",
+      gid: workspace.gid,
+      name: workspace.name
+    };
+  }
+
+  private async getTeamByName(workspaceGid: string, name: string): Promise<any> {
+    const teams = await this.getTeams(workspaceGid);
+    const team = teams.data.find((t: any) => t.name.toLowerCase() === name.toLowerCase());
+    if (!team) {
+      throw new Error(`Team with name "${name}" not found in workspace ${workspaceGid}.`);
+    }
+    return {
+      success: true,
+      action: "get_team_by_name",
+      gid: team.gid,
+      name: team.name
     };
   }
 
