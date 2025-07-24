@@ -91,13 +91,22 @@ export class ClickUpTool {
               "get_task_templates",
               "bulk_update_tasks",
               "get_workspaces",
-              "create_folder"
+              "create_folder",
+              "get_folders",
+              "get_folderless_lists",
+              "get_space_id_by_name",
+              "get_folder_id_by_name",
+              "get_list_id_by_name"
             ]
           },
           // Task Management Parameters
           task_id: {
             type: Type.STRING,
             description: "Task ID for task-specific operations"
+          },
+          parent_task_id: {
+            type: Type.STRING,
+            description: "Parent task ID for creating a sub-task"
           },
           task_name: {
             type: Type.STRING,
@@ -367,6 +376,16 @@ export class ClickUpTool {
           return await this.getWorkspaces(args);
         case "create_folder":
           return await this.createFolder(args);
+        case "get_folders":
+          return await this.getFolders(args);
+        case "get_folderless_lists":
+          return await this.getFolderlessLists(args);
+        case "get_space_id_by_name":
+          return await this.getSpaceIdByName(args);
+        case "get_folder_id_by_name":
+          return await this.getFolderIdByName(args);
+        case "get_list_id_by_name":
+          return await this.getListIdByName(args);
         default:
           throw new Error(`Unknown action: ${args.action}`);
       }
@@ -391,7 +410,8 @@ export class ClickUpTool {
       priority: args.priority ? this.getPriorityValue(args.priority) : undefined,
       due_date: args.due_date ? new Date(args.due_date).getTime() : undefined,
       start_date: args.start_date ? new Date(args.start_date).getTime() : undefined,
-      custom_fields: args.custom_fields || []
+      custom_fields: args.custom_fields || [],
+      parent: args.parent_task_id || undefined
     };
 
     // Remove undefined values
@@ -855,6 +875,78 @@ export class ClickUpTool {
       data: response.data,
       folder_id: response.data.id,
       message: `Folder "${args.folder_name}" created successfully`,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  private async getFolders(args: any): Promise<any> {
+    this.validateRequired(args, ["space_id"]);
+    const response = await this.client.get(`/space/${args.space_id}/folder`);
+    return {
+      success: true,
+      action: "get_folders",
+      data: response.data,
+      count: response.data.folders?.length || 0,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  private async getFolderlessLists(args: any): Promise<any> {
+    this.validateRequired(args, ["space_id"]);
+    const response = await this.client.get(`/space/${args.space_id}/list`);
+    return {
+      success: true,
+      action: "get_folderless_lists",
+      data: response.data,
+      count: response.data.lists?.length || 0,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  private async getSpaceIdByName(args: any): Promise<any> {
+    this.validateRequired(args, ["team_id", "space_name"]);
+    const spacesResponse = await this.getSpaces(args);
+    const space = spacesResponse.data.spaces.find((s: any) => s.name.toLowerCase() === args.space_name.toLowerCase());
+    if (!space) {
+      throw new Error(`Space with name "${args.space_name}" not found.`);
+    }
+    return {
+      success: true,
+      action: "get_space_id_by_name",
+      space_id: space.id,
+      space_name: space.name,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  private async getFolderIdByName(args: any): Promise<any> {
+    this.validateRequired(args, ["space_id", "folder_name"]);
+    const foldersResponse = await this.getFolders(args);
+    const folder = foldersResponse.data.folders.find((f: any) => f.name.toLowerCase() === args.folder_name.toLowerCase());
+    if (!folder) {
+      throw new Error(`Folder with name "${args.folder_name}" not found in space ${args.space_id}.`);
+    }
+    return {
+      success: true,
+      action: "get_folder_id_by_name",
+      folder_id: folder.id,
+      folder_name: folder.name,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  private async getListIdByName(args: any): Promise<any> {
+    this.validateRequired(args, ["folder_id", "list_name"]);
+    const listsResponse = await this.getLists(args);
+    const list = listsResponse.data.lists.find((l: any) => l.name.toLowerCase() === args.list_name.toLowerCase());
+    if (!list) {
+      throw new Error(`List with name "${args.list_name}" not found in folder ${args.folder_id}.`);
+    }
+    return {
+      success: true,
+      action: "get_list_id_by_name",
+      list_id: list.id,
+      list_name: list.name,
       timestamp: new Date().toISOString()
     };
   }
