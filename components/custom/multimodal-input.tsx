@@ -16,7 +16,6 @@ import { toast } from "sonner";
 
 import { ArrowUpIcon, PaperclipIcon, StopIcon } from "./icons";
 import { PreviewAttachment } from "./preview-attachment";
-import useWindowSize from "./use-window-size";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 
@@ -77,7 +76,6 @@ export function MultimodalInput({
   ) => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { width } = useWindowSize();
   const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
@@ -108,10 +106,10 @@ export function MultimodalInput({
       experimental_attachments: attachments,
     });
 
-    if (width && width > 768) {
+    if (typeof window !== "undefined" && window.innerWidth > 768) {
       textareaRef.current?.focus();
     }
-  }, [attachments, handleSubmit, width, input]);
+  }, [attachments, handleSubmit, input]);
 
   const uploadFile = async (file: File) => {
     const formData = new FormData();
@@ -188,7 +186,7 @@ export function MultimodalInput({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 * index }}
                   key={index}
-                  className="block"
+                  className={`block ${index > 1 ? "hidden md:block" : ""}`}
                 >
                   <button
                     onClick={() => {
@@ -269,7 +267,7 @@ export function MultimodalInput({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           className={`
-            min-h-[60px] sm:min-h-[80px] max-h-[250px] sm:max-h-[300px] overflow-y-auto resize-none 
+            min-h-[72px] sm:min-h-[88px] max-h-[250px] sm:max-h-[300px] overflow-y-auto resize-none 
             border-0 bg-transparent text-sm sm:text-base placeholder:text-muted-foreground/60 
             focus-visible:ring-0 focus-visible:ring-offset-0 px-3 sm:px-4 py-3 sm:py-4 
             pr-20 sm:pr-28 leading-relaxed
