@@ -515,7 +515,13 @@ export const InfoIcon = ({ size = 16 }: { size?: number }) => {
   );
 };
 
-export const ArrowUpIcon = ({ size = 16 }: { size?: number }) => {
+export const ArrowUpIcon = ({
+  size = 16,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) => {
   return (
     <svg
       height={size}
@@ -523,6 +529,7 @@ export const ArrowUpIcon = ({ size = 16 }: { size?: number }) => {
       viewBox="0 0 16 16"
       width={size}
       style={{ color: "currentcolor" }}
+      className={className}
     >
       <path
         fillRule="evenodd"
@@ -534,13 +541,20 @@ export const ArrowUpIcon = ({ size = 16 }: { size?: number }) => {
   );
 };
 
-export const StopIcon = ({ size = 16 }: { size?: number }) => {
+export const StopIcon = ({
+  size = 16,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) => {
   return (
     <svg
       height={size}
       viewBox="0 0 16 16"
       width={size}
       style={{ color: "currentcolor" }}
+      className={className}
     >
       <path
         fillRule="evenodd"
@@ -552,7 +566,13 @@ export const StopIcon = ({ size = 16 }: { size?: number }) => {
   );
 };
 
-export const PaperclipIcon = ({ size = 16 }: { size?: number }) => {
+export const PaperclipIcon = ({
+  size = 16,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) => {
   return (
     <svg
       height={size}
@@ -560,7 +580,7 @@ export const PaperclipIcon = ({ size = 16 }: { size?: number }) => {
       viewBox="0 0 16 16"
       width={size}
       style={{ color: "currentcolor" }}
-      className="-rotate-45"
+      className={`${className} -rotate-45`}
     >
       <path
         fillRule="evenodd"

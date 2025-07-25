@@ -1,6 +1,6 @@
+//components/custom/overview.tsx
 import { motion } from "framer-motion";
 import Link from "next/link";
-
 
 export const Overview = ({ firstName }: { firstName?: string }) => {
   // Determine greeting based on local time
@@ -16,17 +16,20 @@ export const Overview = ({ firstName }: { firstName?: string }) => {
   return (
     <motion.div
       key="overview"
-      className="max-w-[500px] mt-20 mx-4 md:mx-0"
+      className="w-full mt-20 px-4"
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}
       transition={{ delay: 0.5 }}
     >
-      <div className="border-none bg-muted/50 rounded-2xl p-6 flex flex-col gap-4 text-zinc-500 text-sm dark:text-zinc-400 dark:border-zinc-700">
-        <div className="text-lg font-semibold text-zinc-700 dark:text-zinc-200">
-          {getGreeting()} {firstName ? firstName : ""}!
+      <div className="bg-gradient-to-br from-muted/50 to-muted/80 backdrop-blur-sm border border-border/50 rounded-3xl p-8 md:p-10 shadow-lg">
+        <div className="text-center space-y-4">
+          <div className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            {getGreeting()} {firstName ? firstName : ""}!
+          </div>
+          <div className="text-lg md:text-xl text-muted-foreground/80 max-w-2xl mx-auto leading-relaxed">
+          </div>
         </div>
-        {/* Icons removed as requested */}
       </div>
     </motion.div>
   );

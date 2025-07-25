@@ -1,4 +1,5 @@
-import { Metadata } from "next";
+//app/layout.tsx
+import { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Toaster } from "sonner";
 
@@ -14,26 +15,57 @@ export const metadata: Metadata = {
   description: "Jotium Agent | Making your dreams come true.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+};
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Jotium" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
+      <body className="antialiased safe-area-padding">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <Toaster position="top-center" />
+          <Toaster 
+            position="top-center" 
+            toastOptions={{
+              className: "text-sm sm:text-base",
+              style: {
+                marginTop: "env(safe-area-inset-top, 0px)",
+              },
+            }}
+          />
           <SidebarProvider>
-            <Navbar />
-            <main className="flex w-full justify-center">
-              {children}
-            </main>
+            <div className="flex flex-col min-h-screen w-full">
+              <Navbar />
+              <main className="flex-1 flex w-full justify-center overflow-hidden">
+                <div className="w-full max-w-none">
+                  {children}
+                </div>
+              </main>
+            </div>
           </SidebarProvider>
         </ThemeProvider>
       </body>

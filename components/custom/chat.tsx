@@ -1,6 +1,7 @@
 //components/custom/chat.tsx
 "use client";
 
+import { AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
 import { Message } from "@/ai/types";
@@ -25,12 +26,9 @@ export function Chat({
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>([messages.length]);
   const [attachments, setAttachments] = useState<any[]>([]);
-
-  // Add state for firstName
   const [firstName, setFirstName] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    // Try to fetch the user's first name from the profile API
     fetch("/account/api/profile")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -38,24 +36,23 @@ export function Chat({
       });
   }, []);
 
-  const handleSubmit = async (
-    e?: { preventDefault?: () => void }
-  ) => {
+  const handleSubmit = async (e?: { preventDefault?: () => void }) => {
     if (e && typeof e.preventDefault === "function") {
       e.preventDefault();
     }
-    if (!input) return;
+    if (!input.trim() && attachments.length === 0) return;
 
     const userMessage: Message = {
       id: generateUUID(),
       role: "user",
       content: input,
       timestamp: Date.now(),
-      attachments, // <-- Add this line!
+      attachments,
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setAttachments([]);
     setIsLoading(true);
     setError(null);
 
@@ -68,7 +65,6 @@ export function Chat({
     if (response.status === 429) {
       setError("You have reached your daily message limit. Please upgrade your plan to continue.");
       setIsLoading(false);
-      // remove user message
       setMessages((prev) => prev.slice(0, prev.length - 1));
       return;
     }
@@ -82,13 +78,11 @@ export function Chat({
         content: "",
         thoughts: "",
         timestamp: Date.now(),
-        attachments: [], // <-- Ensure attachments property exists
+        attachments: [],
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Track start time for duration
       const startTime = Date.now();
-
       let pendingAttachments: any[] = [];
 
       while (true) {
@@ -101,7 +95,6 @@ export function Chat({
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             const jsonStr = line.substring(6);
-            // Only attempt to parse if it looks like valid JSON (starts with { and ends with })
             if (jsonStr.trim().startsWith("{") && jsonStr.trim().endsWith("}")) {
               try {
                 const data = JSON.parse(jsonStr);
@@ -112,12 +105,10 @@ export function Chat({
                 } else if (data.type === "error") {
                   setError(data.content);
                 }
-                // If the backend ever streams attachments, handle here:
                 if (data.attachments && Array.isArray(data.attachments)) {
                   pendingAttachments = data.attachments;
                   assistantMessage.attachments = pendingAttachments;
                 }
-                // Update duration on every chunk (so UI can show live duration if needed)
                 assistantMessage.duration = Date.now() - startTime;
                 setMessages((prev) =>
                   prev.map((msg) =>
@@ -127,17 +118,12 @@ export function Chat({
               } catch (error) {
                 console.error("Error parsing stream data:", error, jsonStr);
               }
-            } else {
-              // Skip malformed/incomplete JSON
-              // Optionally log for debugging
-              // console.warn("Skipping malformed stream line:", jsonStr);
             }
           }
         }
       }
-      // Finalize duration after streaming ends
+      
       assistantMessage.duration = Date.now() - startTime;
-      // If any attachments were found, update the message
       if (pendingAttachments.length > 0) {
         assistantMessage.attachments = pendingAttachments;
       }
@@ -151,55 +137,95 @@ export function Chat({
   };
 
   return (
-    <div className="flex flex-row justify-center pb-4 md:pb-8 h-dvh bg-background">
-      <div className="flex flex-col justify-between items-center gap-4">
-        <div
-          ref={messagesContainerRef}
-          className="flex flex-col gap-4 h-full w-dvw items-center overflow-y-scroll"
-        >
-          {messages.length === 0 && <Overview firstName={firstName} />}
+    <div className="flex flex-col h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Messages Container - Stable width system */}
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto custom-scrollbar"
+        style={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'hsl(var(--border)) transparent'
+        }}
+      >
+        <style jsx>{`
+          div::-webkit-scrollbar {
+            width: 6px;
+          }
+          div::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          div::-webkit-scrollbar-thumb {
+            background-color: hsl(var(--border));
+            border-radius: 3px;
+          }
+          div::-webkit-scrollbar-thumb:hover {
+            background-color: hsl(var(--border) / 0.8);
+          }
+        `}</style>
+        
+        {/* Fixed width container that never changes */}
+        <div className="w-full max-w-none mx-auto">
+          {/* Responsive padding with stable inner container */}
+          <div className="px-4 sm:px-6 md:px-8 lg:mx-[144px] lg:px-12 xl:px-16 2xl:px-20">
+            {/* Fixed max-width content area - This ensures stable layout */}
+            <div className="max-w-4xl mx-auto layout-stable">
+              <AnimatePresence mode="popLayout">
+                {messages.length === 0 && (
+                  <Overview firstName={firstName} key="overview" />
+                )}
 
-          {messages.map((message) => (
-            <PreviewMessage
-              key={message.id}
-              chatId={id}
-              role={message.role}
-              content={message.content}
-              thoughts={message.thoughts}
-              toolInvocations={message.toolCalls as any}
-              duration={message.duration}
-              attachments={message.attachments} // <-- Add this line!
-            />
-          ))}
-
-          <div
-            ref={messagesEndRef}
-            className="shrink-0 min-w-[24px] min-h-[24px]"
-          />
+                {messages.map((message) => (
+                  <PreviewMessage
+                    key={message.id}
+                    chatId={id}
+                    role={message.role}
+                    content={message.content}
+                    thoughts={message.thoughts}
+                    toolInvocations={message.toolCalls as any}
+                    duration={message.duration}
+                    attachments={message.attachments}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
+        
+        <div ref={messagesEndRef} className="h-24 sm:h-32" />
+      </div>
 
+      {/* Error Display - Same stable width */}
+      <AnimatePresence>
         {error && (
-          <div className="text-red-500 text-sm text-center">
-            {error}
+          <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-20 pb-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                <p className="text-red-700 dark:text-red-300 text-sm text-center">
+                  {error}
+                </p>
+              </div>
+            </div>
           </div>
         )}
+      </AnimatePresence>
 
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-row gap-2 relative items-end w-full md:max-w-[500px] mx-auto max-w-[calc(100dvw-32px) px-4 md:px-0"
-        >
-          <MultimodalInput
-            input={input}
-            setInput={setInput}
-            handleSubmit={handleSubmit}
-            isLoading={isLoading}
-            stop={() => {}}
-            messages={messages as any}
-            attachments={attachments}
-            setAttachments={setAttachments}
-            append={async () => null}
-          />
-        </form>
+      {/* Input Section - Stable width system */}
+      <div className="border-t border-border/50 bg-background/80 backdrop-blur-sm">
+        <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-20 py-4 sm:py-6">
+          <div className="max-w-4xl mx-auto">
+            <MultimodalInput
+              input={input}
+              setInput={setInput}
+              handleSubmit={handleSubmit}
+              isLoading={isLoading}
+              stop={() => {}}
+              messages={messages as any}
+              attachments={attachments}
+              setAttachments={setAttachments}
+              append={async () => null}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
