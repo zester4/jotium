@@ -137,11 +137,11 @@ export function Chat({
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="flex flex-col h-screen pt-0 bg-gradient-to-br from-background via-background to-muted/20">
       {/* Messages Container - Stable width system */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto custom-scrollbar"
+className="flex-1 overflow-y-auto custom-scrollbar pb-24 sm:pb-32"
         style={{
           scrollbarWidth: 'thin',
           scrollbarColor: 'hsl(var(--border)) transparent'
@@ -210,8 +210,8 @@ export function Chat({
       </AnimatePresence>
 
       {/* Input Section - Stable width system */}
-      <div className="border-t border-border/50 bg-background/80 backdrop-blur-sm">
-        <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-20 py-4 sm:py-6">
+      <div className="fixed bottom-0 left-0 right-0 w-full z-10 border-t border-border/50 bg-background/80 backdrop-blur-sm">
+        <div className="p-4 sm:p-6 md:px-8 lg:px-12 xl:px-16 2xl:px-20">
           <div className="max-w-4xl mx-auto">
             <MultimodalInput
               input={input}
