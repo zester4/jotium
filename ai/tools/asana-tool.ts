@@ -228,7 +228,7 @@ export class AsanaTool {
         case "get_task":
           return this.getTask(args.gid, args.fields);
         case "create_task":
-          return this.createTask(args.taskData);
+          return this.createTask(args.taskData, args.workspace);
         case "update_task":
           return this.updateTask(args.gid, args.taskData);
         case "delete_task":
@@ -363,8 +363,15 @@ export class AsanaTool {
     };
   }
 
-  private async createTask(taskData: any): Promise<any> {
-    const result = await this.makeRequest('/tasks', 'POST', taskData);
+  private async createTask(taskData: any, workspace?: string): Promise<any> {
+    const data = { ...taskData };
+    if (workspace && !data.workspace) {
+      data.workspace = workspace;
+    }
+    if (!data.workspace && !data.projects) {
+      throw new Error("Either workspace or projects must be provided to create a task.");
+    }
+    const result = await this.makeRequest('/tasks', 'POST', data);
     return {
       success: true,
       action: "create_task",
@@ -484,10 +491,10 @@ export class AsanaTool {
 
   private async createProject(name: string, workspace: string, team: string, projectData: any = {}): Promise<any> {
     const data = {
-      ...projectData,
       name,
       workspace,
-      team
+      team,
+      ...projectData
     };
     const result = await this.makeRequest('/projects', 'POST', data);
     return {
@@ -903,14 +910,3 @@ export class AsanaTool {
     this.accessToken = token;
   }
 }
-
-// Usage example:
-// const asanaTool = new AsanaTool('your-access-token');
-// const result = await asanaTool.execute({
-//   action: 'create_task',
-//   taskData: {
-//     name: 'New Task',
-//     notes: 'Task description',
-//     projects: ['project-gid']
-//   }
-// });
