@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -185,7 +185,7 @@ export default function BillingPage() {
   const planDescription = planDescriptions[planKey] || '';
 
   return (
-    <main className="max-w-2xl mx-auto pt-16 pb-6 px-2 sm:px-4 md:px-0">
+    <main className="max-w-2xl mx-auto pt-24 pb-6 px-2 sm:px-4 md:px-0">
         <Button
           variant="outline"
           size="sm"
@@ -201,7 +201,7 @@ export default function BillingPage() {
         <Card className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div className="flex-1 min-w-0">
-              <div className="text-base sm:text-lg font-semibold truncate">Current Plan: {overview?.plan || "-"}</div>
+              <div className="text-base sm:text-lg font-semibold truncate">Current Plan: {overview?.plan || "Free"}</div>
               <div className="text-sm text-muted-foreground">Status: <Badge>{overview?.status}</Badge></div>
               <div className="text-xs text-muted-foreground mt-1">{planDescription}</div>
               {isFreePlan && (
@@ -262,8 +262,8 @@ export default function BillingPage() {
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl sm:text-2xl font-bold">Invoices</h2>
           <Button variant="ghost" size="sm" onClick={() => setShowInvoices((v) => !v)} aria-expanded={showInvoices} aria-controls="invoices-table">
-            {showInvoices ? "Collapse" : "Expand"}
-              </Button>
+            <ChevronDown className={`size-5 transition-transform ${showInvoices ? 'rotate-180' : ''}`} />
+          </Button>
         </div>
         {invoiceError && <div className="text-red-600 mb-2">{invoiceError}</div>}
         {showInvoices && (
@@ -300,7 +300,7 @@ export default function BillingPage() {
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl sm:text-2xl font-bold">Billing Notifications</h2>
           <Button variant="ghost" size="sm" onClick={() => setShowNotifications((v) => !v)} aria-expanded={showNotifications} aria-controls="notifications-list">
-            {showNotifications ? "Collapse" : "Expand"}
+            <ChevronDown className={`size-5 transition-transform ${showNotifications ? 'rotate-180' : ''}`} />
           </Button>
         </div>
         {notificationError && <div className="text-red-600 mb-2">{notificationError}</div>}
@@ -315,18 +315,22 @@ export default function BillingPage() {
                   onTouchStart={isMobile ? (e) => swipeHandlers.onTouchStart(e, n.id) : undefined}
                   onTouchEnd={isMobile ? (e) => swipeHandlers.onTouchEnd(e, n.id) : undefined}
                 >
-                  <div className="flex items-center gap-2">
-                    {!n.read && <Badge>New</Badge>}
-                    <span className="font-medium truncate max-w-[180px] sm:max-w-none">{n.title}</span>
-          </div>
-                  <span className="text-muted-foreground flex-1 truncate">{n.description}</span>
-                  <span className="text-xs text-muted-foreground sm:ml-auto">{formatDate(new Date(n.createdAt).getTime() / 1000)}</span>
-                  {!n.read && !isMobile && (
-                    <Button variant="ghost" size="sm" onClick={() => markNotificationRead(n.id)}>Mark as read</Button>
-                  )}
-                  {isMobile && !n.read && (
-                    <span className="text-xs text-zinc-400">Swipe left to mark as read</span>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      {!n.read && <Badge>New</Badge>}
+                      <span className="font-medium truncate">{n.title}</span>
+                    </div>
+                    <p className="text-muted-foreground text-sm mt-1 whitespace-normal">{n.description}</p>
+                    <div className="text-xs text-muted-foreground mt-1">{formatDate(new Date(n.createdAt).getTime() / 1000)}</div>
+                  </div>
+                  <div className="flex-shrink-0">
+                    {!n.read && !isMobile && (
+                      <Button variant="ghost" size="sm" onClick={() => markNotificationRead(n.id)}>Mark as read</Button>
+                    )}
+                    {isMobile && !n.read && (
+                      <span className="text-xs text-zinc-400">Swipe left to mark as read</span>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

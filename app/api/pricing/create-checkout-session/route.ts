@@ -46,6 +46,12 @@ export async function POST(req: NextRequest) {
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/pricing?canceled=1`,
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
+      subscription_data: {
+        metadata: {
+          userId: session.user.id,
+          plan: typedPlan,
+        },
+      },
       metadata: {
         userId: session.user.id,
         plan: typedPlan,
