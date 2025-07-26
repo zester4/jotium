@@ -10,13 +10,15 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { signOut } from "next-auth/react"
+import { useEffect, useState } from "react"
 
-import { signOut } from "@/app/(auth)/auth"
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +47,23 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    async function fetchNotifications() {
+      try {
+        const res = await fetch("/api/notifications");
+        if (res.ok) {
+          const data = await res.json();
+          const count = data.notifications?.filter((n: any) => !n.read).length || 0;
+          setUnreadCount(count);
+        }
+      } catch (error) {
+        // Handle error silently
+      }
+    }
+    fetchNotifications();
+  }, []);
 
   const displayName = user.firstName && user.lastName
     ? `${user.firstName} ${user.lastName}`
@@ -126,14 +145,24 @@ export function NavUser({
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs">
-                <Link href="/notifications" className="flex items-center w-full">
-                  <Bell className="size-4" />
-                  Notifications
+                <Link href="/notifications" className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2">
+                    <Bell className="size-4" />
+                    Notifications
+                  </div>
+                  {unreadCount > 0 && (
+                    <Badge variant="secondary" className="h-5 w-5 items-center justify-center p-0">
+                      {unreadCount}
+                    </Badge>
+                  )}
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 px-2 py-1 text-xs">
+            <DropdownMenuItem
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="gap-2 px-2 py-1 text-xs cursor-pointer"
+            >
               <LogOut className="size-4" />
               Log out
             </DropdownMenuItem>

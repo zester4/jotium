@@ -5,8 +5,9 @@ import { desc, eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-import { user, chat, User, reservation, apiKey, ApiKey, notification } from "./schema";
 import { encryptApiKey, decryptApiKey } from "@/lib/encryption";
+
+import { user, chat, User, reservation, apiKey, ApiKey, notification } from "./schema";
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
@@ -303,6 +304,17 @@ export async function markNotificationRead({ notificationId }: { notificationId:
       .where(eq(notification.id, notificationId));
   } catch (error) {
     console.error("Failed to mark notification as read:", error);
+    throw error;
+  }
+}
+
+export async function markAllNotificationsAsRead(userId: string) {
+  try {
+    return await db.update(notification)
+      .set({ read: true })
+      .where(eq(notification.userId, userId));
+  } catch (error) {
+    console.error("Failed to mark all notifications as read:", error);
     throw error;
   }
 }
