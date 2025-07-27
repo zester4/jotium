@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowLeft, ChevronDown } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { ArrowLeft, ChevronDown, RefreshCw } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -31,55 +31,80 @@ function useIsMobile() {
 export default function BillingPage() {
   const [overview, setOverview] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
-  const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [invoiceError, setInvoiceError] = useState<string | null>(null);
-  const [notificationError, setNotificationError] = useState<string | null>(null);
   const [showInvoices, setShowInvoices] = useState(true);
-  const [showNotifications, setShowNotifications] = useState(true);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
   const isMobile = useIsMobile();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     setShowInvoices(!isMobile);
-    setShowNotifications(!isMobile);
   }, [isMobile]);
 
+  // Handle success redirect from checkout
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      setError(null);
-      setInvoiceError(null);
-      setNotificationError(null);
-      try {
-        const [oRes, iRes, nRes] = await Promise.all([
-          fetch("/api/billing/overview"),
-          fetch("/api/billing/invoices"),
-          fetch("/api/notifications"),
-        ]);
-        const o = await oRes.json();
-        setOverview(o);
-        if (iRes.ok) {
-          const i = await iRes.json();
-          setInvoices(i.invoices || []);
-        } else {
-          setInvoices([]);
-          setInvoiceError("No invoices found or failed to load invoices.");
-        }
-        if (nRes.ok) {
-          const n = await nRes.json();
-          setNotifications(n.notifications || []);
-        } else {
-          setNotifications([]);
-          setNotificationError("No notifications found or failed to load notifications.");
-        }
-      } catch (err) {
-        setError("Failed to load billing info.");
-      } finally {
-        setLoading(false);
-      }
+    const success = searchParams.get('success');
+    const plan = searchParams.get('plan');
+    
+    if (success === '1') {
+      setSuccessMessage(
+        plan 
+          ? `Successfully upgraded to ${plan} plan! Your new features are now active.`
+          : 'Payment successful! Your subscription is now active.'
+      );
+      
+      // Clear URL parameters
+      router.replace('/billing', undefined);
+      
+      // Add a small delay to allow webhook processing
+      setTimeout(() => {
+        fetchData(true);
+      }, 2000);
     }
+  }, [searchParams, router]);
+
+  async function fetchData(skipCache = false) {
+    if (skipCache) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    
+    setError(null);
+    setInvoiceError(null);
+    
+    try {
+      const cacheParam = skipCache ? `?_t=${Date.now()}` : '';
+      
+      const [oRes, iRes] = await Promise.all([
+        fetch(`/api/billing/overview${cacheParam}`),
+        fetch(`/api/billing/invoices${cacheParam}`),
+      ]);
+      
+      const o = await oRes.json();
+      setOverview(o);
+      
+      if (iRes.ok) {
+        const i = await iRes.json();
+        setInvoices(i.invoices || []);
+      } else {
+        setInvoices([]);
+        setInvoiceError("No invoices found or failed to load invoices.");
+      }
+    } catch (err) {
+      setError("Failed to load billing info.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -108,7 +133,11 @@ export default function BillingPage() {
       const res = await fetch("/api/billing/cancel", { method: "POST" });
       const data = await res.json();
       if (data.status) {
-        setOverview((prev: any) => ({ ...prev, status: data.status, cancel_at_period_end: data.cancel_at_period_end }));
+        setOverview((prev: any) => ({ 
+          ...prev, 
+          status: data.status, 
+          cancel_at_period_end: data.cancel_at_period_end 
+        }));
       } else {
         setError(data.error || "Failed to cancel subscription.");
       }
@@ -126,7 +155,11 @@ export default function BillingPage() {
       const res = await fetch("/api/billing/resume", { method: "POST" });
       const data = await res.json();
       if (data.status) {
-        setOverview((prev: any) => ({ ...prev, status: data.status, cancel_at_period_end: data.cancel_at_period_end }));
+        setOverview((prev: any) => ({ 
+          ...prev, 
+          status: data.status, 
+          cancel_at_period_end: data.cancel_at_period_end 
+        }));
       } else {
         setError(data.error || "Failed to resume subscription.");
       }
@@ -137,39 +170,8 @@ export default function BillingPage() {
     }
   }
 
-  async function markNotificationRead(notificationId: string) {
-    try {
-      await fetch("/api/notifications/mark-read", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notificationId }),
-      });
-      setNotifications((prev) => prev.map((n) => n.id === notificationId ? { ...n, read: true } : n));
-    } catch {}
-  }
-
-  // Swipe-to-mark-as-read for mobile (basic touch event)
-  function useSwipeToMarkRead() {
-    const [touchStart, setTouchStart] = useState<number | null>(null);
-    const [swipedId, setSwipedId] = useState<string | null>(null);
-    function onTouchStart(e: React.TouchEvent, id: string) {
-      setTouchStart(e.touches[0].clientX);
-      setSwipedId(id);
-    }
-    function onTouchEnd(e: React.TouchEvent, id: string) {
-      if (touchStart !== null && swipedId === id) {
-        const diff = e.changedTouches[0].clientX - touchStart;
-        if (diff < -60) markNotificationRead(id); // swipe left
-      }
-      setTouchStart(null);
-      setSwipedId(null);
-    }
-    return { onTouchStart, onTouchEnd };
-  }
-  const swipeHandlers = useSwipeToMarkRead();
-
-  if (loading) return <div className="p-8 text-center">Loading billing info...</div>;
-  if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
+  if (loading && !overview) return <div className="p-8 text-center">Loading billing info...</div>;
+  if (error && !overview) return <div className="p-8 text-center text-red-600">{error}</div>;
 
   const isFreePlan = !overview?.paymentMethod && (!overview?.plan || overview?.plan.toLowerCase() === "free");
   const isProPlan = overview?.plan && overview.plan.toLowerCase() === "pro";
@@ -186,53 +188,100 @@ export default function BillingPage() {
 
   return (
     <main className="max-w-2xl mx-auto pt-24 pb-6 px-2 sm:px-4 md:px-0">
+      <Button
+        variant="outline"
+        size="sm"
+        className="mb-4 flex items-center gap-2"
+        onClick={() => router.back()}
+      >
+        <ArrowLeft className="size-4" />
+        Back
+      </Button>
+      
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-center">Billing & Subscription</h1>
         <Button
           variant="outline"
           size="sm"
-          className="mb-4 flex items-center gap-2"
-          onClick={() => router.back()}
+          onClick={() => fetchData(true)}
+          disabled={refreshing}
+          className="flex items-center gap-2"
         >
-          <ArrowLeft className="size-4" />
-          Back
+          <RefreshCw className={`size-4 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
         </Button>
-      <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">Billing & Subscription</h1>
+      </div>
+
+      {/* Success Message */}
+      {successMessage && (
+        <Card className="p-4 mb-6 bg-green-50 border-green-200">
+          <div className="text-green-800 font-medium">{successMessage}</div>
+        </Card>
+      )}
+
       {/* Overview Section */}
       <section className="mb-8">
         <Card className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div className="flex-1 min-w-0">
-              <div className="text-base sm:text-lg font-semibold truncate">Current Plan: {overview?.plan || "Free"}</div>
-              <div className="text-sm text-muted-foreground">Status: <Badge>{overview?.status}</Badge></div>
+              <div className="text-base sm:text-lg font-semibold truncate">
+                Current Plan: {overview?.plan || "Free"}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Status: <Badge>{overview?.status}</Badge>
+              </div>
               <div className="text-xs text-muted-foreground mt-1">{planDescription}</div>
               {isFreePlan && (
-                <div className="text-sm text-green-600 mt-1">You are on the Free plan. Upgrade to unlock more features!</div>
+                <div className="text-sm text-green-600 mt-1">
+                  You are on the Free plan. Upgrade to unlock more features!
+                </div>
               )}
               {isProPlan && (
-                <div className="text-sm text-blue-600 mt-1">You are on the Pro plan. Upgrade to Advanced for even more capabilities!</div>
+                <div className="text-sm text-blue-600 mt-1">
+                  You are on the Pro plan. Upgrade to Advanced for even more capabilities!
+                </div>
               )}
               {isAdvancedPlan && (
-                <div className="text-sm text-purple-600 mt-1">You are on the Advanced plan. Enjoy all features and priority support!</div>
+                <div className="text-sm text-purple-600 mt-1">
+                  You are on the Advanced plan. Enjoy all features and priority support!
+                </div>
               )}
               {overview?.cancel_at_period_end && (
-                <div className="text-sm text-yellow-600 mt-1">Subscription will cancel at period end.</div>
+                <div className="text-sm text-yellow-600 mt-1">
+                  Subscription will cancel at period end.
+                </div>
               )}
               {overview?.status === "past_due" && (
-                <div className="text-sm text-red-600 mt-1">Payment failed. Please update your payment method.</div>
+                <div className="text-sm text-red-600 mt-1">
+                  Payment failed. Please update your payment method.
+                </div>
               )}
               {overview?.status === "canceled" && (
-                <div className="text-sm text-red-600 mt-1">Your subscription is canceled.</div>
+                <div className="text-sm text-red-600 mt-1">
+                  Your subscription is canceled.
+                </div>
               )}
               {overview?.status === "trialing" && (
-                <div className="text-sm text-blue-600 mt-1">You are in a free trial.</div>
+                <div className="text-sm text-blue-600 mt-1">
+                  You are in a free trial.
+                </div>
               )}
             </div>
             <div className="flex flex-col gap-2 sm:items-end w-full sm:w-auto">
-              {!isFreePlan && <Button onClick={handlePortal} disabled={loading} className="w-full sm:w-auto">Manage Subscription</Button>}
+              {!isFreePlan && (
+                <Button onClick={handlePortal} disabled={loading} className="w-full sm:w-auto">
+                  Manage Subscription
+                </Button>
+              )}
               {!isFreePlan && overview?.status === "active" && !overview?.cancel_at_period_end && (
-                <Button variant="outline" onClick={handleCancel} disabled={loading} className="w-full sm:w-auto">Cancel Subscription</Button>
+                <Button variant="outline" onClick={handleCancel} disabled={loading} className="w-full sm:w-auto">
+                  Cancel Subscription
+                </Button>
               )}
               {!isFreePlan && overview?.cancel_at_period_end && (
-                <Button variant="outline" onClick={handleResume} disabled={loading} className="w-full sm:w-auto">Resume Subscription</Button>
+                <Button variant="outline" onClick={handleResume} disabled={loading} className="w-full sm:w-auto">
+                  Resume Subscription
+                </Button>
               )}
               {/* Upgrade button for Free and Pro users */}
               {(isFreePlan || isProPlan) && (
@@ -249,9 +298,15 @@ export default function BillingPage() {
           </div>
           <Separator className="my-4" />
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="text-sm text-muted-foreground">Next Payment Date: <span className="font-medium">{formatDate(overview?.current_period_end)}</span></div>
+            <div className="text-sm text-muted-foreground">
+              Next Payment Date: <span className="font-medium">{formatDate(overview?.current_period_end)}</span>
+            </div>
             {overview?.paymentMethod && (
-              <div className="text-sm text-muted-foreground mt-1">Payment Method: <span className="font-medium">{overview.paymentMethod.card?.brand?.toUpperCase()} ****{overview.paymentMethod.card?.last4}</span> (exp {overview.paymentMethod.card?.exp_month}/{overview.paymentMethod.card?.exp_year})</div>
+              <div className="text-sm text-muted-foreground mt-1">
+                Payment Method: <span className="font-medium">
+                  {overview.paymentMethod.card?.brand?.toUpperCase()} ****{overview.paymentMethod.card?.last4}
+                </span> (exp {overview.paymentMethod.card?.exp_month}/{overview.paymentMethod.card?.exp_year})
+              </div>
             )}
           </div>
         </Card>
@@ -291,49 +346,6 @@ export default function BillingPage() {
                 ))}
             </TableBody>
           </Table>
-          </Card>
-        )}
-      </section>
-
-      {/* Notifications Section */}
-      <section className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xl sm:text-2xl font-bold">Billing Notifications</h2>
-          <Button variant="ghost" size="sm" onClick={() => setShowNotifications((v) => !v)} aria-expanded={showNotifications} aria-controls="notifications-list">
-            <ChevronDown className={`size-5 transition-transform ${showNotifications ? 'rotate-180' : ''}`} />
-          </Button>
-        </div>
-        {notificationError && <div className="text-red-600 mb-2">{notificationError}</div>}
-        {showNotifications && (
-          <Card className="p-2 sm:p-4" id="notifications-list">
-            {notifications.length === 0 && <div className="text-muted-foreground">No notifications.</div>}
-            <ul className="space-y-2">
-              {notifications.map((n) => (
-                <li
-                  key={n.id}
-                  className={`flex flex-col sm:flex-row sm:items-center gap-2 py-2 border-b last:border-b-0 ${isMobile ? 'bg-zinc-50' : ''}`}
-                  onTouchStart={isMobile ? (e) => swipeHandlers.onTouchStart(e, n.id) : undefined}
-                  onTouchEnd={isMobile ? (e) => swipeHandlers.onTouchEnd(e, n.id) : undefined}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      {!n.read && <Badge>New</Badge>}
-                      <span className="font-medium truncate">{n.title}</span>
-                    </div>
-                    <p className="text-muted-foreground text-sm mt-1 whitespace-normal">{n.description}</p>
-                    <div className="text-xs text-muted-foreground mt-1">{formatDate(new Date(n.createdAt).getTime() / 1000)}</div>
-                  </div>
-                  <div className="flex-shrink-0">
-                    {!n.read && !isMobile && (
-                      <Button variant="ghost" size="sm" onClick={() => markNotificationRead(n.id)}>Mark as read</Button>
-                    )}
-                    {isMobile && !n.read && (
-                      <span className="text-xs text-zinc-400">Swipe left to mark as read</span>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
           </Card>
         )}
       </section>

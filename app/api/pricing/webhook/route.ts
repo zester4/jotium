@@ -1,3 +1,4 @@
+//app/api/pricing/webhook/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
@@ -26,6 +27,9 @@ export async function POST(req: NextRequest) {
     async function updateUserFromMetadata(metadata: any, updates: Partial<{stripeCustomerId: string, stripeSubscriptionId: string, subscriptionStatus: string, plan: string}>, notification?: {title: string, description?: string, type?: string}) {
       const userId = metadata?.userId;
       if (!userId) return;
+      
+      console.log(`Updating user ${userId} with:`, updates); // Add logging
+      
       await setStripeSubscription({
         userId,
         ...updates,
@@ -38,17 +42,33 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Helper function to extract plan from subscription
+    async function getPlanFromSubscription(subscriptionId: string): Promise<string | undefined> {
+      try {
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId, { 
+          expand: ["items.data.price"] 
+        });
+        return (subscription.items.data[0].price.nickname as string) || undefined;
+      } catch (error) {
+        console.error('Error retrieving subscription plan:', error);
+        return undefined;
+      }
+    }
+
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         const customerId = session.customer as string;
         const subscriptionId = session.subscription as string;
         const metadata = session.metadata;
-        let plan: string | undefined = undefined;
-        if (subscriptionId) {
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId, { expand: ["items.data.price"] });
-          plan = (subscription.items.data[0].price.nickname as string) || undefined;
+        
+        let plan: string | undefined = metadata?.plan; // First try metadata
+        
+        if (subscriptionId && !plan) {
+          // Fallback to subscription lookup if not in metadata
+          plan = await getPlanFromSubscription(subscriptionId);
         }
+        
         await updateUserFromMetadata(metadata, {
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscriptionId,
@@ -56,78 +76,96 @@ export async function POST(req: NextRequest) {
           plan,
         }, {
           title: 'Payment Successful',
-          description: 'Your payment was successful and your subscription is now active.',
+          description: `Your payment was successful and your ${plan || ''} subscription is now active.`,
           type: 'payment',
         });
         break;
       }
+      
       case 'customer.subscription.created': {
         const subscription = event.data.object as Stripe.Subscription;
         const status = subscription.status;
         const metadata = subscription.metadata;
-        const plan = (subscription.items.data[0].price.nickname as string) || undefined;
+        const plan = (subscription.items.data[0].price.nickname as string) || metadata?.plan || undefined;
+        
         await updateUserFromMetadata(metadata, {
           subscriptionStatus: status,
           plan,
         }, {
           title: 'Subscription Created',
-          description: 'Your subscription has been created.',
+          description: `Your ${plan || ''} subscription has been created.`,
           type: 'subscription',
         });
         break;
       }
+      
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         const status = subscription.status;
         const metadata = subscription.metadata;
-        const plan = (subscription.items.data[0].price.nickname as string) || undefined;
+        const plan = (subscription.items.data[0].price.nickname as string) || metadata?.plan || undefined;
+        
+        // This is crucial for plan upgrades/downgrades
         await updateUserFromMetadata(metadata, {
           subscriptionStatus: status,
-          plan,
+          plan, // Make sure plan is always updated
         }, {
           title: 'Subscription Updated',
-          description: `Your subscription status is now: ${status}.`,
+          description: `Your subscription has been updated to ${plan || 'new plan'} with status: ${status}.`,
           type: 'subscription',
         });
         break;
       }
+      
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
         const status = subscription.status;
         const metadata = subscription.metadata;
+        
         await updateUserFromMetadata(metadata, {
           subscriptionStatus: status,
+          plan: 'Free', // Reset to free plan when subscription is deleted
         }, {
           title: 'Subscription Canceled',
-          description: 'Your subscription has been canceled.',
+          description: 'Your subscription has been canceled and you have been moved to the Free plan.',
           type: 'subscription',
         });
         break;
       }
+      
       case 'invoice.paid': {
         const invoice = event.data.object as Stripe.Invoice;
         const subscriptionId = (invoice as any).subscription as string | undefined;
+        
         if (subscriptionId) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const metadata = subscription.metadata;
+          const plan = (subscription.items.data[0].price.nickname as string) || undefined;
+          
           await updateUserFromMetadata(metadata, {
             subscriptionStatus: 'active',
+            plan, // Update plan on successful payment too
           }, {
             title: 'Payment Received',
-            description: 'Your recurring payment was received and your subscription is active.',
+            description: `Your recurring payment was received and your ${plan || ''} subscription is active.`,
             type: 'payment',
           });
         }
         break;
       }
+      
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
         const subscriptionId = (invoice as any).subscription as string | undefined;
+        
         if (subscriptionId) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const metadata = subscription.metadata;
+          const plan = (subscription.items.data[0].price.nickname as string) || undefined;
+          
           await updateUserFromMetadata(metadata, {
             subscriptionStatus: 'past_due',
+            plan, // Keep current plan even if payment failed
           }, {
             title: 'Payment Failed',
             description: 'A payment for your subscription failed. Please update your payment method.',
@@ -136,6 +174,7 @@ export async function POST(req: NextRequest) {
         }
         break;
       }
+      
       case 'customer.subscription.trial_will_end': {
         const subscription = event.data.object as Stripe.Subscription;
         const metadata = subscription.metadata;
@@ -150,23 +189,28 @@ export async function POST(req: NextRequest) {
         }
         break;
       }
+      
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         // Optionally notify for one-time payments
         // No userId in metadata by default, so skip unless you add it
         break;
       }
+      
       case 'customer.updated': {
         // Optionally sync customer profile changes
         // No notification by default
         break;
       }
+      
       default:
-        // Ignore other events
+        console.log(`Unhandled event type: ${event.type}`);
         break;
     }
+    
     return NextResponse.json({ received: true });
   } catch (err) {
+    console.error('Webhook processing error:', err);
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
-} 
+}

@@ -4,8 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { AIAgent } from "@/ai/jotium";
 import { Message } from "@/ai/types";
 import { auth } from "@/app/(auth)/auth";
-import { saveChat, deleteChatById, getUserById } from "@/db/queries";
-import { getGeminiModelForPlan } from "@/lib/ai-models";
+import { saveChat, deleteChatById } from "@/db/queries";
+import { getUserAIModel } from "@/lib/user-model"; // Import the new function
 import { generateUUID } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
@@ -17,8 +17,11 @@ export async function POST(request: NextRequest) {
   }
 
   const userId = session.user.id as string;
-  const user = await getUserById(userId);
-  const model = getGeminiModelForPlan(user?.plan ?? 'Free') || 'gemini-2.0-flash';
+  
+  // Use the new function to get the correct model based on current plan
+  const model = await getUserAIModel(userId);
+  console.log(`Using model: ${model} for user: ${userId}`); // Optional: for debugging
+  
   const geminiApiKey = process.env.GOOGLE_API_KEY || '';
   const agent = new AIAgent(geminiApiKey, userId, undefined, model);
   await agent.initializeTools(userId);
