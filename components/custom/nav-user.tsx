@@ -90,9 +90,9 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="sm"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground px-2 py-1 min-h-0 h-7"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground px-3 py-2 min-h-0 h-9"
             >
-              <Avatar className="size-6 rounded-lg">
+              <Avatar className="size-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={displayName} />
                 <AvatarFallback className="rounded-lg text-xs">{getInitials()}</AvatarFallback>
               </Avatar>
@@ -126,7 +126,7 @@ export function NavUser({
               <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs">
                 <Link href="/pricing" className="flex items-center w-full">
                   <Sparkles className="size-4" />
-                  Upgrade to Pro
+                  Upgrade Plan
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
@@ -135,7 +135,7 @@ export function NavUser({
               <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs">
                 <Link href="/account" className="flex items-center w-full">
                   <BadgeCheck className="size-4" />
-                  Account
+                  Settings
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs">
