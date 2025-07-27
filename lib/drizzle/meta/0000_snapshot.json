@@ -1,5 +1,5 @@
 {
-  "id": "0991c83b-317f-4ae1-ab99-c3344b7229e5",
+  "id": "503420b4-f36b-4089-9ee3-b1308dd9bfe1",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -320,6 +320,19 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
+        },
+        "dailyMessageCount": {
+          "name": "dailyMessageCount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "lastMessageDate": {
+          "name": "lastMessageDate",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},

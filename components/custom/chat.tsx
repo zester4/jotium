@@ -2,7 +2,8 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { toast } from "sonner";
 
 import { Message } from "@/ai/types";
 import { Message as PreviewMessage } from "@/components/custom/message";
@@ -11,6 +12,8 @@ import { generateUUID } from "@/lib/utils";
 import { MultimodalInput } from "./multimodal-input";
 import { Overview } from "./overview";
 import { useScrollToBottom } from "./use-scroll-to-bottom";
+
+const MESSAGES_PER_PAGE = 10; // Define how many messages to fetch per page
 
 export function Chat({
   id,
@@ -23,8 +26,13 @@ export function Chat({
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [messagesContainerRef, messagesEndRef] =
-    useScrollToBottom<HTMLDivElement>([messages.length]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreMessages, setHasMoreMessages] = useState(
+    initialMessages.length === MESSAGES_PER_PAGE
+  ); // Assume more if initial load filled the page
+  const [loadingMore, setLoadingMore] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [messagesEndRef] = useScrollToBottom<HTMLDivElement>([messages.length]);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [firstName, setFirstName] = useState<string | undefined>(undefined);
 
@@ -35,6 +43,50 @@ export function Chat({
         if (data && data.firstName) setFirstName(data.firstName);
       });
   }, []);
+
+  const loadMoreMessages = useCallback(async () => {
+    if (!hasMoreMessages || loadingMore) return;
+
+    setLoadingMore(true);
+    const nextPage = currentPage + 1;
+    try {
+      const response = await fetch(
+        `/api/messages?chatId=${id}&page=${nextPage}&limit=${MESSAGES_PER_PAGE}`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch more messages");
+      }
+      const newMessages: Message[] = await response.json();
+
+      if (newMessages.length > 0) {
+        setMessages((prev) => [...newMessages, ...prev]);
+        setCurrentPage(nextPage);
+        setHasMoreMessages(newMessages.length === MESSAGES_PER_PAGE);
+      } else {
+        setHasMoreMessages(false);
+      }
+    } catch (err) {
+      console.error("Error loading more messages:", err);
+      toast.error("Failed to load more messages.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [id, currentPage, hasMoreMessages, loadingMore]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      // Check if scrolled to the very top
+      if (container.scrollTop === 0 && hasMoreMessages && !loadingMore) {
+        loadMoreMessages();
+      }
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [hasMoreMessages, loadingMore, loadMoreMessages]);
 
   const handleSubmit = async (e?: { preventDefault?: () => void }) => {
     if (e && typeof e.preventDefault === "function") {
@@ -63,7 +115,8 @@ export function Chat({
     });
 
     if (response.status === 429) {
-      setError("You have reached your daily message limit. Please upgrade your plan to continue.");
+      console.error("Error: Message limit reached.");
+      toast.error("You've reached your daily message limit. Please upgrade your plan for more messages.");
       setIsLoading(false);
       setMessages((prev) => prev.slice(0, prev.length - 1));
       return;
@@ -170,7 +223,12 @@ className="flex-1 overflow-y-auto custom-scrollbar pb-24 sm:pb-32"
             {/* Fixed max-width content area - This ensures stable layout */}
             <div className="max-w-4xl mx-auto layout-stable">
               <AnimatePresence mode="popLayout">
-                {messages.length === 0 && (
+                {loadingMore && (
+                  <div className="text-center py-2 text-sm text-muted-foreground">
+                    Loading more messages...
+                  </div>
+                )}
+                {messages.length === 0 && !loadingMore && (
                   <Overview firstName={firstName} key="overview" />
                 )}
 
@@ -195,19 +253,17 @@ className="flex-1 overflow-y-auto custom-scrollbar pb-24 sm:pb-32"
       </div>
 
       {/* Error Display - Same stable width */}
-      <AnimatePresence>
-        {error && (
-          <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-20 pb-4">
-            <div className="max-w-4xl mx-auto">
-              <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-xl p-4">
-                <p className="text-red-700 dark:text-red-300 text-sm text-center">
-                  {error}
-                </p>
-              </div>
+      {error && (
+        <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-20 pb-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-xl p-4">
+              <p className="text-red-700 dark:text-red-300 text-sm text-center">
+                {error}
+              </p>
             </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
 
       {/* Input Section - Stable width system */}
       <div className="fixed bottom-0 left-0 right-0 w-full z-10 border-t border-border/50 bg-background/80 backdrop-blur-sm">

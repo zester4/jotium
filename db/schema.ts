@@ -7,6 +7,8 @@ import {
   json,
   uuid,
   boolean,
+  integer,
+  date,
 } from "drizzle-orm/pg-core";
 
 export const user = pgTable("User", {
@@ -22,6 +24,8 @@ export const user = pgTable("User", {
   plan: varchar("plan", { length: 32 }).default("Free"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   isAdmin: boolean("isAdmin").notNull().default(false),
+  dailyMessageCount: integer("dailyMessageCount").default(0),
+  lastMessageDate: date("lastMessageDate"),
 });
 
 export type User = InferSelectModel<typeof user>;

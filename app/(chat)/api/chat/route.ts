@@ -4,9 +4,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { AIAgent } from "@/ai/jotium";
 import { Message } from "@/ai/types";
 import { auth } from "@/app/(auth)/auth";
-import { saveChat, deleteChatById } from "@/db/queries";
+import { saveChat, deleteChatById, getMessageCount, updateUserMessageCount, getUserById } from "@/db/queries";
 import { getUserAIModel } from "@/lib/user-model"; // Import the new function
 import { generateUUID } from "@/lib/utils";
+
+const planLimits: { [key: string]: number } = {
+  "Free": 5,
+  "Pro": 50,
+  "Advanced": Infinity,
+};
 
 export async function POST(request: NextRequest) {
   const { id, messages }: { id?: string; messages: Message[] } = await request.json();
@@ -17,6 +23,20 @@ export async function POST(request: NextRequest) {
   }
 
   const userId = session.user.id as string;
+
+  const user = await getUserById(userId);
+  const userPlan = user?.plan || "Free";
+  const limit = planLimits[userPlan];
+
+  const { count, lastDate } = await getMessageCount(userId);
+  const today = new Date().toISOString().split('T')[0];
+
+  if (lastDate === today && count >= limit) {
+    return new Response("Message limit reached for today.", { status: 429 });
+  }
+
+  let currentCount = lastDate === today ? count : 0;
+  await updateUserMessageCount(userId, currentCount + 1);
   
   // Use the new function to get the correct model based on current plan
   const model = await getUserAIModel(userId);

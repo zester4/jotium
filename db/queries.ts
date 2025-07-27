@@ -1,7 +1,7 @@
 import "server-only";
 
 import { genSaltSync, hashSync, compareSync } from "bcrypt-ts";
-import { desc, eq, and } from "drizzle-orm";
+import { desc, eq, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -110,10 +110,42 @@ export async function getChatsByUserId({ id }: { id: string }) {
 
 export async function getChatById({ id }: { id: string }) {
   try {
-    const [selectedChat] = await db.select().from(chat).where(eq(chat.id, id));
+    const [selectedChat] = await db.select({
+      id: chat.id,
+      createdAt: chat.createdAt,
+      userId: chat.userId,
+    }).from(chat).where(eq(chat.id, id));
     return selectedChat;
   } catch (error) {
     console.error("Failed to get chat by id from database");
+    throw error;
+  }
+}
+
+export async function getChatMessagesById({
+  id,
+  page = 1,
+  limit = 10,
+}: {
+  id: string;
+  page?: number;
+  limit?: number;
+}) {
+  try {
+    const offset = (page - 1) * limit;
+    const query = sql`
+      SELECT elem as message
+      FROM "Chat", jsonb_array_elements(messages) WITH ORDINALITY arr(elem, ord)
+      WHERE id = ${id}
+      ORDER BY ord DESC
+      LIMIT ${limit}
+      OFFSET ${offset};
+    `;
+    const result = await db.execute(query);
+    const messages = result.map((r: any) => r.message);
+    return messages.reverse(); // Reverse to maintain chronological order
+  } catch (error) {
+    console.error("Failed to get chat messages by id from database");
     throw error;
   }
 }
@@ -362,4 +394,16 @@ export async function getUserById(userId: string): Promise<User | undefined> {
     console.error("Failed to get user by id from database:", error);
     throw error;
   }
+}
+
+export async function getMessageCount(userId: string): Promise<{ count: number; lastDate: string | null }> {
+  const [u] = await db.select({ count: user.dailyMessageCount, lastDate: user.lastMessageDate }).from(user).where(eq(user.id, userId));
+  return { count: u?.count || 0, lastDate: u?.lastDate };
+}
+
+export async function updateUserMessageCount(userId: string, newCount: number) {
+  const today = new Date().toISOString().split('T')[0];
+  return await db.update(user)
+    .set({ dailyMessageCount: newCount, lastMessageDate: today })
+    .where(eq(user.id, userId));
 }
