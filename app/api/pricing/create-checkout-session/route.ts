@@ -62,7 +62,6 @@ export async function POST(req: NextRequest) {
       subscription_data: {
         metadata,
       },
-      metadata,
     });
     
     return NextResponse.json({ url: stripeSession.url });

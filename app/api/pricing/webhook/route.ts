@@ -103,6 +103,7 @@ export async function POST(req: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         const status = subscription.status;
         const metadata = subscription.metadata;
+        console.log('Subscription updated metadata:', metadata); // Verify metadata
         const plan = (subscription.items.data[0].price.nickname as string) || metadata?.plan || undefined;
         
         // This is crucial for plan upgrades/downgrades
