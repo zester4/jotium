@@ -137,7 +137,7 @@ export function Chat({
   };
 
   return (
-    <div className="flex flex-col h-screen pt-0 bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="flex flex-col h-screen pt-16 bg-gradient-to-br from-background via-background to-muted/20">
       {/* Messages Container - Stable width system */}
       <div
         ref={messagesContainerRef}

@@ -9,7 +9,7 @@ export function useScrollToBottom<T extends HTMLElement>(
   useEffect(() => {
     const end = endRef.current;
     if (end) {
-      end.scrollIntoView({ behavior: "instant", block: "end" });
+      end.scrollIntoView({ behavior: "smooth", block: "end" });
     }
     // Only run when deps change (e.g., messages.length)
     // eslint-disable-next-line react-hooks/exhaustive-deps
