@@ -141,7 +141,7 @@ export const History = ({ user }: { user: User | undefined }) => {
           setIsHistoryVisible(state);
         }}
       >
-        <SheetContent side="left" className="p-3 w-80 bg-muted">
+        <SheetContent side="left" className="p-3 w-80 bg-background/80 backdrop-blur-md border-r border-border/50">
           <SheetHeader>
             <VisuallyHidden.Root>
               <SheetTitle className="text-left">History</SheetTitle>
@@ -174,7 +174,7 @@ export const History = ({ user }: { user: User | undefined }) => {
               </Button>
             )}
 
-            <div className="flex flex-col overflow-y-scroll p-1 h-[calc(100dvh-220px)]">
+            <div className="flex flex-col overflow-y-scroll p-1 h-[calc(100dvh-220px)] tiny-scrollbar">
               {!user ? (
                 <div className="text-zinc-500 h-dvh w-full flex flex-row justify-center items-center text-sm gap-2">
                   <InfoIcon />

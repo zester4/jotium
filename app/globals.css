@@ -17,6 +17,21 @@
         --background-start-rgb: 0, 0, 0;
         --background-end-rgb: 0, 0, 0;
     }
+
+    /* Custom scrollbar styles for tiny scrollbar */
+    .tiny-scrollbar::-webkit-scrollbar {
+        width: 4px; /* For vertical scrollbar */
+        height: 4px; /* For horizontal scrollbar */
+    }
+
+    .tiny-scrollbar::-webkit-scrollbar-thumb {
+        background-color: transparent; /* Remove color from thumb */
+        border-radius: 2px;
+    }
+
+    .tiny-scrollbar::-webkit-scrollbar-track {
+        background-color: transparent; /* Remove color from track */
+    }
 }
 
 @layer utilities {
