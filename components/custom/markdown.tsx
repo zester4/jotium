@@ -53,37 +53,37 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
   const components = {
     // Beautiful heading hierarchy with proper spacing
     h1: (props: any) => (
-      <h1 className="scroll-m-20 text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 mt-8 mb-6 pb-3 border-b border-zinc-200 dark:border-zinc-700 first:mt-0" {...props} />
+      <h1 className="scroll-m-20 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 mt-6 sm:mt-8 mb-4 sm:mb-6 pb-2 sm:pb-3 border-b border-zinc-200 dark:border-zinc-700 first:mt-0" {...props} />
     ),
     h2: (props: any) => (
-      <h2 className="scroll-m-20 text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-8 mb-4 first:mt-0" {...props} />
+      <h2 className="scroll-m-20 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-6 sm:mt-8 mb-3 sm:mb-4 first:mt-0" {...props} />
     ),
     h3: (props: any) => (
-      <h3 className="scroll-m-20 text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-6 mb-3" {...props} />
+      <h3 className="scroll-m-20 text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-5 sm:mt-6 mb-2 sm:mb-3" {...props} />
     ),
     h4: (props: any) => (
-      <h4 className="scroll-m-20 text-lg sm:text-xl lg:text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-5 mb-2" {...props} />
+      <h4 className="scroll-m-20 text-base sm:text-lg md:text-xl lg:text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-4 sm:mt-5 mb-2" {...props} />
     ),
     h5: (props: any) => (
-      <h5 className="scroll-m-20 text-base sm:text-lg lg:text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-4 mb-2" {...props} />
+      <h5 className="scroll-m-20 text-sm sm:text-base md:text-lg lg:text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-3 sm:mt-4 mb-2" {...props} />
     ),
     h6: (props: any) => (
-      <h6 className="scroll-m-20 text-sm sm:text-base lg:text-lg font-semibold tracking-tight text-zinc-700 dark:text-zinc-300 mt-3 mb-2" {...props} />
+      <h6 className="scroll-m-20 text-xs sm:text-sm md:text-base lg:text-lg font-semibold tracking-tight text-zinc-700 dark:text-zinc-300 mt-3 mb-2" {...props} />
     ),
 
-    // Enhanced paragraphs with perfect typography
+    // Enhanced paragraphs with mobile-optimized typography and minimal spacing before code
     p: (props: any) => (
-      <p className="leading-7 text-base sm:text-lg text-zinc-700 dark:text-zinc-300 mb-4 [&:not(:first-child)]:mt-4" {...props} />
+      <p className="leading-6 sm:leading-7 text-sm sm:text-base md:text-lg text-zinc-700 dark:text-zinc-300 mb-2 sm:mb-4 [&:not(:first-child)]:mt-2 sm:[&:not(:first-child)]:mt-4 [&:has(+div>div>div>pre)]:mb-1 sm:[&:has(+div>div>div>pre)]:mb-2" {...props} />
     ),
 
-    // Beautiful code blocks without dark background
+    // Beautiful code blocks without dark background - MOBILE OPTIMIZED
     code({ node, inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || "");
       const codeContent = String(children).replace(/\n$/, "");
       
       return !inline && match ? (
-        <div className="my-6 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden shadow-sm">
-          <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-100/80 dark:bg-zinc-800/80 border-b border-zinc-200 dark:border-zinc-700">
+        <div className="my-2 sm:my-4 rounded-lg sm:rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden shadow-sm w-full">
+          <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 bg-zinc-100/80 dark:bg-zinc-800/80 border-b border-zinc-200 dark:border-zinc-700">
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
                 {match[1]}
@@ -91,21 +91,25 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
             </div>
             <CopyButton text={codeContent} />
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto w-full">
             <SyntaxHighlighter
               style={oneDark}
               language={match[1]}
               PreTag="div"
-              className="!m-0 !bg-transparent !text-sm sm:!text-base"
+              className="!m-0 !bg-transparent !text-xs sm:!text-sm md:!text-base w-full"
               customStyle={{
-                padding: '1.5rem',
+                padding: '1rem 1rem',
                 margin: 0,
                 background: 'transparent',
-                fontSize: 'inherit'
+                fontSize: 'inherit',
+                width: '100%',
+                minWidth: '100%'
               }}
               codeTagProps={{
                 style: {
-                  background: 'transparent'
+                  background: 'transparent',
+                  width: '100%',
+                  display: 'block'
                 }
               }}
               {...props}
@@ -116,7 +120,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
         </div>
       ) : (
         <code
-          className="relative rounded-md bg-zinc-100 dark:bg-zinc-800 px-2 py-1 font-mono text-sm font-medium text-rose-600 dark:text-rose-400 border border-zinc-200 dark:border-zinc-700/50"
+          className="relative rounded-md bg-zinc-100 dark:bg-zinc-800 px-1.5 sm:px-2 py-0.5 sm:py-1 font-mono text-xs sm:text-sm font-medium text-rose-600 dark:text-rose-400 border border-zinc-200 dark:border-zinc-700/50"
           {...props}
         >
           {children}
@@ -124,16 +128,16 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       );
     },
 
-    // Enhanced pre for fallback code blocks
+    // Enhanced pre for fallback code blocks - MOBILE OPTIMIZED
     pre: (props: any) => (
-      <pre className="p-6 overflow-x-auto font-mono text-sm sm:text-base text-zinc-800 dark:text-zinc-200 bg-transparent" {...props} />
+      <pre className="p-3 sm:p-6 overflow-x-auto font-mono text-xs sm:text-sm md:text-base text-zinc-800 dark:text-zinc-200 bg-transparent w-full" {...props} />
     ),
 
-    // Comprehensive table styling with mobile responsiveness
+    // Comprehensive table styling with mobile responsiveness - FULL WIDTH
     table: (props: any) => (
-      <div className="my-8 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm sm:text-base" {...props} />
+      <div className="my-4 sm:my-8 overflow-hidden rounded-lg sm:rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm w-full">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-xs sm:text-sm md:text-base min-w-full" {...props} />
         </div>
       </div>
     ),
@@ -141,27 +145,27 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       <thead className="bg-zinc-50 dark:bg-zinc-800/50" {...props} />
     ),
     th: (props: any) => (
-      <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-700" {...props} />
+      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-700" {...props} />
     ),
     td: (props: any) => (
-      <td className="px-4 sm:px-6 py-4 text-zinc-700 dark:text-zinc-300 border-b border-zinc-100 dark:border-zinc-800 last:border-b-0" {...props} />
+      <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-4 text-zinc-700 dark:text-zinc-300 border-b border-zinc-100 dark:border-zinc-800 last:border-b-0" {...props} />
     ),
     tr: (props: any) => (
       <tr className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors" {...props} />
     ),
 
-    // Beautiful list styling
+    // Beautiful list styling - MOBILE OPTIMIZED
     ul: (props: any) => (
-      <ul className="my-6 ml-6 list-disc space-y-2 text-zinc-700 dark:text-zinc-300 [&>li]:mt-2" {...props} />
+      <ul className="my-3 sm:my-6 ml-4 sm:ml-6 list-disc space-y-1 sm:space-y-2 text-zinc-700 dark:text-zinc-300 [&>li]:mt-1 sm:[&>li]:mt-2" {...props} />
     ),
     ol: (props: any) => (
-      <ol className="my-6 ml-6 list-decimal space-y-2 text-zinc-700 dark:text-zinc-300 [&>li]:mt-2" {...props} />
+      <ol className="my-3 sm:my-6 ml-4 sm:ml-6 list-decimal space-y-1 sm:space-y-2 text-zinc-700 dark:text-zinc-300 [&>li]:mt-1 sm:[&>li]:mt-2" {...props} />
     ),
     li: (props: any) => (
-      <li className="leading-7 text-base sm:text-lg pl-1" {...props} />
+      <li className="leading-6 sm:leading-7 text-sm sm:text-base md:text-lg pl-1" {...props} />
     ),
 
-    // Enhanced text formatting
+    // Enhanced text formatting - MOBILE OPTIMIZED
     strong: (props: any) => (
       <strong className="font-bold text-zinc-900 dark:text-zinc-100" {...props} />
     ),
@@ -175,21 +179,21 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       <mark className="bg-yellow-200 dark:bg-yellow-800/50 px-1 py-0.5 rounded text-zinc-900 dark:text-zinc-100" {...props} />
     ),
 
-    // Stunning blockquotes
+    // Stunning blockquotes - MOBILE OPTIMIZED
     blockquote: (props: any) => (
-      <blockquote className="relative my-8 pl-8 pr-6 py-6 bg-gradient-to-r from-blue-50/80 via-blue-50/40 to-transparent dark:from-blue-950/30 dark:via-blue-950/10 dark:to-transparent border-l-4 border-blue-500 dark:border-blue-400 rounded-r-xl shadow-sm" {...props}>
-        <div className="absolute top-3 left-3 text-blue-500/30 dark:text-blue-400/30">
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+      <blockquote className="relative my-4 sm:my-8 pl-6 sm:pl-8 pr-4 sm:pr-6 py-4 sm:py-6 bg-gradient-to-r from-blue-50/80 via-blue-50/40 to-transparent dark:from-blue-950/30 dark:via-blue-950/10 dark:to-transparent border-l-4 border-blue-500 dark:border-blue-400 rounded-r-lg sm:rounded-r-xl shadow-sm" {...props}>
+        <div className="absolute top-2 sm:top-3 left-2 sm:left-3 text-blue-500/30 dark:text-blue-400/30">
+          <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
             <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
           </svg>
         </div>
-        <div className="text-zinc-700 dark:text-zinc-300 text-lg leading-relaxed italic font-medium [&>*]:!mb-2 [&>*:last-child]:!mb-0">
+        <div className="text-zinc-700 dark:text-zinc-300 text-base sm:text-lg leading-relaxed italic font-medium [&>*]:!mb-1 sm:[&>*]:!mb-2 [&>*:last-child]:!mb-0">
           {props.children}
         </div>
       </blockquote>
     ),
 
-    // Enhanced links with beautiful hover effects
+    // Enhanced links with beautiful hover effects - MOBILE OPTIMIZED
     a: ({ node, href, children, ...props }: any) => (
       <Link
         href={href || "#"}
@@ -200,7 +204,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       >
         <span>{children}</span>
         <svg 
-          className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" 
+          className="w-3 h-3 sm:w-3.5 sm:h-3.5 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -210,15 +214,15 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       </Link>
     ),
 
-    // Stunning image display
+    // Stunning image display - MOBILE OPTIMIZED
     img: ({ node, ...props }: any) => (
-      <figure className="my-8 text-center">
-        <div className="group relative inline-block rounded-xl overflow-hidden shadow-lg bg-zinc-100 dark:bg-zinc-800 ring-1 ring-zinc-200 dark:ring-zinc-700">
+      <figure className="my-4 sm:my-8 text-center w-full">
+        <div className="group relative inline-block rounded-lg sm:rounded-xl overflow-hidden shadow-lg bg-zinc-100 dark:bg-zinc-800 ring-1 ring-zinc-200 dark:ring-zinc-700 w-full max-w-full">
           <Image
             {...props}
             width={800}
             height={600}
-            className="max-w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105"
+            className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105"
             alt={props.alt || "Image"}
             loading="lazy"
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, (max-width: 1024px) 80vw, 70vw"
@@ -226,16 +230,16 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
         {props.alt && (
-          <figcaption className="mt-3 text-sm text-zinc-600 dark:text-zinc-400 italic font-medium">
+          <figcaption className="mt-2 sm:mt-3 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 italic font-medium">
             {props.alt}
           </figcaption>
         )}
       </figure>
     ),
 
-    // Beautiful horizontal rule
+    // Beautiful horizontal rule - MOBILE OPTIMIZED
     hr: (props: any) => (
-      <div className="relative my-12 flex items-center" {...props}>
+      <div className="relative my-6 sm:my-12 flex items-center" {...props}>
         <div className="flex-grow border-t border-zinc-200 dark:border-zinc-700"></div>
         <div className="flex-shrink-0 px-4">
           <div className="w-2 h-2 bg-zinc-300 dark:bg-zinc-600 rounded-full"></div>
@@ -244,33 +248,33 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       </div>
     ),
 
-    // Task list items (GitHub Flavored Markdown)
+    // Task list items (GitHub Flavored Markdown) - MOBILE OPTIMIZED
     input: (props: any) => {
       if (props.type === 'checkbox') {
         return (
           <input
             {...props}
-            className="mr-2 h-4 w-4 rounded border-zinc-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-2"
+            className="mr-2 h-3 w-3 sm:h-4 sm:w-4 rounded border-zinc-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-2"
           />
         );
       }
       return <input {...props} />;
     },
 
-    // Enhanced details/summary for collapsible content
+    // Enhanced details/summary for collapsible content - MOBILE OPTIMIZED
     details: (props: any) => (
-      <details className="my-6 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-900/50 overflow-hidden" {...props} />
+      <details className="my-3 sm:my-6 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-900/50 overflow-hidden w-full" {...props} />
     ),
     summary: (props: any) => (
-      <summary className="px-4 py-3 cursor-pointer font-medium text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" {...props} />
+      <summary className="px-3 sm:px-4 py-2 sm:py-3 cursor-pointer font-medium text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-sm sm:text-base" {...props} />
     ),
 
-    // Keyboard key styling
+    // Keyboard key styling - MOBILE OPTIMIZED
     kbd: (props: any) => (
-      <kbd className="inline-flex items-center px-2 py-1 text-xs font-mono font-medium text-zinc-800 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded shadow-sm" {...props} />
+      <kbd className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-mono font-medium text-zinc-800 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded shadow-sm" {...props} />
     ),
 
-    // Subscript and superscript
+    // Subscript and superscript - MOBILE OPTIMIZED
     sub: (props: any) => (
       <sub className="text-xs" {...props} />
     ),
@@ -280,7 +284,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
   };
 
   return (
-    <div className="prose prose-zinc dark:prose-invert max-w-none w-full [&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0">
+    <div className="prose prose-zinc dark:prose-invert max-w-none w-full [&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0 overflow-hidden">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath, [remarkEmoji, { accessible: true }]]}
         rehypePlugins={[rehypeKatex, rehypeRaw]}
