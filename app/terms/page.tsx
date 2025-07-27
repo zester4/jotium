@@ -1,9 +1,27 @@
+"use client";
+
+import { ArrowLeft } from 'lucide-react';
+import { useRouter } from "next/navigation";
 import React from "react";
 
-const TermsOfServicePage = () => (
-  <main className="max-w-3xl mx-auto py-12 px-4">
-    <h1 className="text-3xl font-bold mb-6">Terms of Service</h1>
-    <section className="mb-6">
+import { Button } from '@/components/ui/button';
+
+const TermsOfServicePage = () => {
+  const router = useRouter();
+
+  return (
+    <main className="max-w-3xl mx-auto pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+      <Button
+        variant="outline"
+        size="sm"
+        className="my-4 flex items-center gap-2"
+        onClick={() => router.back()}
+      >
+        <ArrowLeft className="size-4" />
+        Back
+      </Button>
+      <h1 className="text-3xl font-bold mb-6">Terms of Service</h1>
+      <section className="mb-6">
       <h2 className="text-xl font-semibold mb-2">Acceptance of Terms</h2>
       <p>
         By accessing or using Jotium (&quot;the Service&quot;), you agree to be bound by these Terms of Service (&quot;Terms&quot;) and our Privacy Policy. If you do not agree to these Terms, please do not use Jotium.
@@ -101,6 +119,7 @@ const TermsOfServicePage = () => (
       </p>
     </section>
   </main>
-);
+  );
+};
 
 export default TermsOfServicePage;
