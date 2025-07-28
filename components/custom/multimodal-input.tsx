@@ -59,6 +59,7 @@ export function MultimodalInput({
   handleSubmit,
   messageCount,
   messageLimit,
+  messageLimitResetAt,
 }: {
   input: string;
   setInput: (value: string) => void;
@@ -79,6 +80,7 @@ export function MultimodalInput({
   ) => void;
   messageCount: number;
   messageLimit: number;
+  messageLimitResetAt: Date | null;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -267,6 +269,7 @@ export function MultimodalInput({
         <MessageLimitBanner
           messageCount={messageCount}
           messageLimit={messageLimit}
+          messageLimitResetAt={messageLimitResetAt}
         />
         <Textarea
           ref={textareaRef}
@@ -278,7 +281,7 @@ export function MultimodalInput({
           className={`
             min-h-[72px] sm:min-h-[88px] max-h-[250px] sm:max-h-[300px] overflow-y-auto resize-none 
             border-0 bg-transparent text-sm sm:text-base placeholder:text-muted-foreground/60 
-            focus-visible:ring-0 focus-visible:ring-offset-0 px-3 sm:px-4 py-3 sm:py-4 
+            focus-visible:ring-0 focus-visible:ring-offset-0 p-3 sm:p-4 
             pr-20 sm:pr-28 leading-relaxed
           `}
           rows={2}
@@ -298,7 +301,7 @@ export function MultimodalInput({
         {/* Action Buttons - Responsive positioning */}
         <div className="absolute bottom-2 sm:bottom-3 right-2 sm:right-3 flex items-center gap-1.5 sm:gap-2">
           <Button
-            className="rounded-full p-1.5 sm:p-2 h-8 w-8 sm:h-10 sm:w-10 border-border/50 bg-background/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-all duration-200"
+            className="rounded-full p-1.5 sm:p-2 size-8 sm:size-10 border-border/50 bg-background/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-all duration-200"
             onClick={(event) => {
               event.preventDefault();
               fileInputRef.current?.click();
@@ -307,24 +310,24 @@ export function MultimodalInput({
             disabled={isLoading}
             size="sm"
           >
-            <PaperclipIcon size={14} className="sm:w-4 sm:h-4" />
+            <PaperclipIcon size={14} className="sm:size-4" />
           </Button>
 
           {isLoading ? (
             <Button
-              className="rounded-full p-1.5 sm:p-2 h-8 w-8 sm:h-10 sm:w-10 bg-red-500 hover:bg-red-600 text-white transition-all duration-200"
+              className="rounded-full p-1.5 sm:p-2 size-8 sm:size-10 bg-red-500 hover:bg-red-600 text-white transition-all duration-200"
               onClick={(event) => {
                 event.preventDefault();
                 stop();
               }}
               size="sm"
             >
-              <StopIcon size={14} className="sm:w-4 sm:h-4" />
+              <StopIcon size={14} className="sm:size-4" />
             </Button>
           ) : (
             <Button
               className={`
-                rounded-full p-1.5 sm:p-2 h-8 w-8 sm:h-10 sm:w-10 transition-all duration-200
+                rounded-full p-1.5 sm:p-2 size-8 sm:size-10 transition-all duration-200
                 ${hasContent
                   ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg hover:scale-105"
                   : "bg-muted text-muted-foreground cursor-not-allowed"
@@ -337,7 +340,7 @@ export function MultimodalInput({
               disabled={!hasContent || uploadQueue.length > 0}
               size="sm"
             >
-              <ArrowUpIcon size={14} className="sm:w-4 sm:h-4" />
+              <ArrowUpIcon size={14} className="sm:size-4" />
             </Button>
           )}
         </div>

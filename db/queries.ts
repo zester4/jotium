@@ -396,14 +396,32 @@ export async function getUserById(userId: string): Promise<User | undefined> {
   }
 }
 
-export async function getMessageCount(userId: string): Promise<{ count: number; lastDate: string | null }> {
-  const [u] = await db.select({ count: user.dailyMessageCount, lastDate: user.lastMessageDate }).from(user).where(eq(user.id, userId));
-  return { count: u?.count || 0, lastDate: u?.lastDate };
+export async function getMessageCount(userId: string): Promise<{
+  count: number;
+  messageLimitResetAt: Date | null;
+}> {
+  const [u] = await db
+    .select({
+      count: user.dailyMessageCount,
+      messageLimitResetAt: user.messageLimitResetAt,
+    })
+    .from(user)
+    .where(eq(user.id, userId));
+  return {
+    count: u?.count || 0,
+    messageLimitResetAt: u?.messageLimitResetAt || null,
+  };
 }
 
 export async function updateUserMessageCount(userId: string, newCount: number) {
-  const today = new Date().toISOString().split('T')[0];
-  return await db.update(user)
-    .set({ dailyMessageCount: newCount, lastMessageDate: today })
+  const now = new Date();
+  const resetTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+  return await db
+    .update(user)
+    .set({
+      dailyMessageCount: newCount,
+      messageLimitResetAt: resetTime,
+    })
     .where(eq(user.id, userId));
 }

@@ -14,17 +14,21 @@ export default async function Page() {
 
   let messageCount = 0;
   let messageLimit = 5; // Default to Free plan limit
+  let messageLimitResetAt: Date | null = null;
 
   if (session?.user?.id) {
     const user = await getUserById(session.user.id);
     const userPlan = user?.plan || "Free";
-    const { count } = await getMessageCount(session.user.id);
+    const { count, messageLimitResetAt: resetAt } = await getMessageCount(
+      session.user.id
+    );
     messageCount = count;
+    messageLimitResetAt = resetAt;
 
     const planLimits: { [key: string]: number } = {
-      "Free": 5,
-      "Pro": 50,
-      "Advanced": Infinity,
+      Free: 5,
+      Pro: 50,
+      Advanced: Infinity,
     };
     messageLimit = planLimits[userPlan];
   }
@@ -36,6 +40,7 @@ export default async function Page() {
       initialMessages={chats[0]?.messages || []}
       messageCount={messageCount}
       messageLimit={messageLimit}
+      messageLimitResetAt={messageLimitResetAt}
     />
   );
 }

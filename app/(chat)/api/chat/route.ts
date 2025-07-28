@@ -28,15 +28,17 @@ export async function POST(request: NextRequest) {
   const userPlan = user?.plan || "Free";
   const limit = planLimits[userPlan];
 
-  const { count, lastDate } = await getMessageCount(userId);
-  const today = new Date().toISOString().split('T')[0];
+  const { count, messageLimitResetAt } = await getMessageCount(userId);
+  const now = new Date();
 
-  if (lastDate === today && count >= limit) {
-    return new Response("Message limit reached for today.", { status: 429 });
+  if (messageLimitResetAt && now < new Date(messageLimitResetAt) && count >= limit) {
+    return new Response("Message limit reached.", { status: 429 });
   }
 
-  let currentCount = lastDate === today ? count : 0;
-  await updateUserMessageCount(userId, currentCount + 1);
+  // Reset count if the reset time has passed
+  const newCount = (messageLimitResetAt && now > new Date(messageLimitResetAt)) ? 1 : count + 1;
+
+  await updateUserMessageCount(userId, newCount);
   
   // Use the new function to get the correct model based on current plan
   const model = await getUserAIModel(userId);
