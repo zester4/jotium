@@ -26,7 +26,9 @@ export default async function Page({ params }: { params: any }) {
   const user = await getUserById(userId);
   const userPlan = user?.plan || "Free";
   const messageLimit = planLimits[userPlan];
-  const { count: messageCount } = await getMessageCount(userId);
+  const { count: messageCount, messageLimitResetAt } = await getMessageCount(
+    userId
+  );
 
   const chatFromDb = await getChatById({ id });
   const initialMessages: Array<CoreMessage> = chatFromDb
@@ -53,6 +55,7 @@ export default async function Page({ params }: { params: any }) {
       initialMessages={chat ? chat.messages : []}
       messageCount={messageCount}
       messageLimit={messageLimit}
+      messageLimitResetAt={messageLimitResetAt}
     />
   );
 }

@@ -25,7 +25,7 @@ export const user = pgTable("User", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   isAdmin: boolean("isAdmin").notNull().default(false),
   dailyMessageCount: integer("dailyMessageCount").default(0),
-  lastMessageDate: date("lastMessageDate"),
+  messageLimitResetAt: timestamp("messageLimitResetAt"),
 });
 
 export type User = InferSelectModel<typeof user>;

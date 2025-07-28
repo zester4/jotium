@@ -20,11 +20,13 @@ export function Chat({
   initialMessages,
   messageCount,
   messageLimit,
+  messageLimitResetAt,
 }: {
-  id:string;
+  id: string;
   initialMessages: Array<Message>;
   messageCount: number;
   messageLimit: number;
+  messageLimitResetAt: Date | null;
 }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
@@ -270,7 +272,7 @@ className="flex-1 overflow-y-auto custom-scrollbar pb-24 sm:pb-32"
       )}
 
       {/* Input Section - Stable width system */}
-      <div className="fixed bottom-0 left-0 right-0 w-full z-10 border-t border-border/50 bg-background/80 backdrop-blur-sm">
+      <div className="fixed bottom-0 inset-x-0 w-full z-10 border-t border-border/50 bg-background/80 backdrop-blur-sm">
         <div className="p-4 sm:p-6 md:px-8 lg:px-12 xl:px-16 2xl:px-20">
           <div className="max-w-4xl mx-auto">
             <MultimodalInput
@@ -285,6 +287,7 @@ className="flex-1 overflow-y-auto custom-scrollbar pb-24 sm:pb-32"
               append={async () => null}
               messageCount={messageCount}
               messageLimit={messageLimit}
+              messageLimitResetAt={messageLimitResetAt}
             />
           </div>
         </div>
