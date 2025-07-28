@@ -174,7 +174,7 @@ export default function PricingPage() {
         <Button
           variant="outline"
           size="sm"
-          className="my-4 flex items-center gap-2 border-2 border-black bg-white"
+          className="my-4 flex items-center gap-2"
           onClick={() => router.back()}
         >
           <ArrowLeft className="size-4" />

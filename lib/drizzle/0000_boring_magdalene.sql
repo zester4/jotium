@@ -44,7 +44,9 @@ CREATE TABLE IF NOT EXISTS "User" (
 	"subscriptionStatus" varchar(32),
 	"plan" varchar(32) DEFAULT 'Free',
 	"createdAt" timestamp DEFAULT now() NOT NULL,
-	"isAdmin" boolean DEFAULT false NOT NULL
+	"isAdmin" boolean DEFAULT false NOT NULL,
+	"dailyMessageCount" integer DEFAULT 0,
+	"lastMessageDate" date
 );
 --> statement-breakpoint
 DO $$ BEGIN

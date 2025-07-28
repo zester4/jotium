@@ -1,9 +1,27 @@
+"use client";
+
+import { ArrowLeft } from 'lucide-react';
+import { useRouter } from "next/navigation";
 import React from "react";
 
-const PrivacyPolicyPage = () => (
-  <main className="max-w-3xl mx-auto py-12 px-4">
-    <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
-    <section className="mb-6">
+import { Button } from '@/components/ui/button';
+
+const PrivacyPolicyPage = () => {
+  const router = useRouter();
+
+  return (
+    <main className="max-w-3xl mx-auto pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+      <Button
+        variant="outline"
+        size="sm"
+        className="my-4 flex items-center gap-2"
+        onClick={() => router.back()}
+      >
+        <ArrowLeft className="size-4" />
+        Back
+      </Button>
+      <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
+      <section className="mb-6">
       <h2 className="text-xl font-semibold mb-2">Introduction</h2>
       <p>
         Welcome to Jotium (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;). We are dedicated to protecting your privacy and ensuring transparency about how your information is handled. This Privacy Policy describes in detail the types of information we collect, how we use and protect it, your rights, and how you can exercise those rights. By using Jotium, you agree to the practices described in this policy.
@@ -99,6 +117,7 @@ const PrivacyPolicyPage = () => (
       </p>
     </section>
   </main>
-);
+  );
+};
 
-export default PrivacyPolicyPage; 
+export default PrivacyPolicyPage;

@@ -27,6 +27,8 @@ const apiTools = [
   { name: "Stripe", keyName: "stripeSecretKey", placeholder: "sk_test_..." },
   { name: "Supabase URL", keyName: "supabaseUrl", placeholder: "https://<project-ref>.supabase.co" },
   { name: "Supabase Key", keyName: "supabaseKey", placeholder: "ey..." },
+  { name: "Trello", keyName: "trelloApiKey", placeholder: "key..." },
+  { name: "Trello Token", keyName: "trelloToken", placeholder: "token..." },
 ];
 
 export default function AccountPage() {
@@ -235,7 +237,7 @@ export default function AccountPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-16 px-4">
+    <div className="max-w-2xl mx-auto pt-20 pb-16 px-4 sm:px-6 lg:px-8 overflow-x-hidden">
       <Button
         variant="outline"
         size="sm"
@@ -248,15 +250,15 @@ export default function AccountPage() {
       <h1 className="text-3xl font-bold text-center mb-8 text-foreground">Account Settings</h1>
       <div className="bg-background rounded-xl shadow p-6 border border-border">
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="w-full flex justify-between mb-6 bg-background border border-border rounded-lg overflow-hidden">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="security">Security</TabsTrigger>
-            <TabsTrigger value="integrations">Integrations</TabsTrigger>
-            <TabsTrigger value="api-keys">API Keys</TabsTrigger>
+          <TabsList className="w-full flex flex-wrap justify-center md:justify-between mb-6 bg-background border border-border rounded-lg overflow-hidden p-1">
+            <TabsTrigger value="profile" className="flex-1">Profile</TabsTrigger>
+            <TabsTrigger value="security" className="flex-1">Security</TabsTrigger>
+            <TabsTrigger value="integrations" className="flex-1">Integrations</TabsTrigger>
+            <TabsTrigger value="api-keys" className="flex-1">API Keys</TabsTrigger>
           </TabsList>
 
           {/* Profile Tab */}
-          <TabsContent value="profile">
+          <TabsContent value="profile" className="overflow-x-hidden">
             <h2 className="text-xl font-semibold mb-4 text-foreground">Profile Information</h2>
             <form className="space-y-6" onSubmit={handleProfileSubmit}>
               <div className="flex items-center gap-4">
@@ -283,7 +285,7 @@ export default function AccountPage() {
           </TabsContent>
 
           {/* Security Tab */}
-          <TabsContent value="security">
+          <TabsContent value="security" className="overflow-x-hidden">
             <h2 className="text-xl font-semibold mb-4 text-foreground">Password & Security</h2>
             <form className="space-y-4 mb-8" onSubmit={handlePasswordChange}>
               <Label htmlFor="current-password" className="text-foreground">Current Password</Label>
@@ -318,7 +320,7 @@ export default function AccountPage() {
           </TabsContent>
 
           {/* Integrations Tab */}
-          <TabsContent value="integrations">
+          <TabsContent value="integrations" className="overflow-x-hidden">
             <h2 className="text-xl font-semibold mb-4 text-foreground">Connected Accounts</h2>
             <div className="space-y-4 mb-8">
               {/* Example connected accounts */}
@@ -368,7 +370,7 @@ export default function AccountPage() {
           </TabsContent>
 
           {/* API Keys Tab */}
-          <TabsContent value="api-keys">
+          <TabsContent value="api-keys" className="overflow-x-hidden">
             <h2 className="text-xl font-semibold mb-4 text-foreground">API Keys</h2>
             <p className="text-sm text-foreground/70 mb-6">Store your API keys for each tool here. These keys are used to connect your account to external services. <span className="font-medium text-foreground">We do not generate API keys for you. Please obtain them from the respective service providers.</span></p>
             <div className="space-y-6">
@@ -384,7 +386,7 @@ export default function AccountPage() {
                         value={inputValues[tool.keyName]}
                         onChange={(e) => handleInputChange(tool.keyName, e.target.value)}
                         autoComplete="off"
-                        className="mt-1 bg-background text-foreground border-border"
+                        className="mt-1 bg-background text-foreground border-border w-full"
                       />
                       {/* Only one Eye/EyeOff icon button per input */}
                       <Button size="icon" variant="ghost" type="button" onClick={() => handleShowToggle(tool.keyName)} aria-label={showKey[tool.keyName] ? "Hide key" : "Show key"} className="mt-1">
@@ -412,7 +414,7 @@ export default function AccountPage() {
                 placeholder="Custom Key Name (e.g. MyService)"
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
-                className="flex-1 bg-background text-foreground border-border"
+                className="flex-1 bg-background text-foreground border-border w-full"
                 autoComplete="off"
               />
               <Input
@@ -420,7 +422,7 @@ export default function AccountPage() {
                 placeholder="API Key Value"
                 value={customInputValue}
                 onChange={(e) => setCustomInputValue(e.target.value)}
-                className="flex-1 bg-background text-foreground border-border"
+                className="flex-1 bg-background text-foreground border-border w-full"
                 autoComplete="off"
               />
               <Button size="sm" variant="default" onClick={handleAddCustomKey} type="button">Add</Button>
@@ -436,7 +438,7 @@ export default function AccountPage() {
                           type={item.show ? "text" : "password"}
                           value={item.inputValue}
                           onChange={(e) => handleCustomInputChange(idx, e.target.value)}
-                          className="flex-1 bg-background text-foreground border-border"
+                          className="flex-1 bg-background text-foreground border-border w-full"
                           autoComplete="off"
                         />
                       ) : (
@@ -444,7 +446,7 @@ export default function AccountPage() {
                           type={item.show ? "text" : "password"}
                           value={item.value}
                           readOnly
-                          className="flex-1 bg-background text-foreground border-border"
+                          className="flex-1 bg-background text-foreground border-border w-full"
                           autoComplete="off"
                         />
                       )}
