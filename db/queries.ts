@@ -135,7 +135,7 @@ export async function getChatMessagesById({
     const offset = (page - 1) * limit;
     const query = sql`
       SELECT elem as message
-      FROM "Chat", jsonb_array_elements(messages) WITH ORDINALITY arr(elem, ord)
+      FROM "Chat", jsonb_array_elements(messages::jsonb) WITH ORDINALITY arr(elem, ord)
       WHERE id = ${id}
       ORDER BY ord DESC
       LIMIT ${limit}
