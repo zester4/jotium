@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { auth, signOut } from "@/app/(auth)/auth";
+import { getMessageCount, getUserById } from "@/db/queries";
 
 import { History } from "./history";
 import { SlashIcon } from "./icons";
@@ -17,7 +18,24 @@ import {
 } from "../ui/dropdown-menu";
 
 export const Navbar = async () => {
-  let session = await auth();
+  const session = await auth();
+  let messageCount = 0;
+  let messageLimit = 5; // Default to Free plan limit
+  let userPlan = "Free";
+
+  if (session?.user?.id) {
+    const user = await getUserById(session.user.id);
+    userPlan = user?.plan || "Free";
+    const { count } = await getMessageCount(session.user.id);
+    messageCount = count;
+
+    const planLimits: { [key: string]: number } = {
+      "Free": 5,
+      "Pro": 50,
+      "Advanced": Infinity,
+    };
+    messageLimit = planLimits[userPlan];
+  }
 
   return (
     <>
@@ -72,6 +90,11 @@ export const Navbar = async () => {
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
                     {session.user?.email}
+                  </p>
+                </div>
+                <div className="px-3 py-2 border-b border-border/50">
+                  <p className="text-xs text-muted-foreground">
+                    Messages: {messageCount} / {messageLimit === Infinity ? "Unlimited" : messageLimit}
                   </p>
                 </div>
                 <DropdownMenuItem className="px-3 py-2 hover:bg-muted/50 transition-colors duration-200">

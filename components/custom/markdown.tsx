@@ -1,3 +1,4 @@
+//components/custom/markdown.tsx
 import Image from "next/image";
 import Link from "next/link";
 import React, { memo, useState } from "react";
@@ -46,6 +47,119 @@ const CopyButton = ({ text }: { text: string }) => {
         </>
       )}
     </button>
+  );
+};
+
+// Helper function to check if a link should be rendered inline with subtle styling
+const isInlineLink = (href: string, children: any) => {
+  const childText = typeof children === 'string' ? children : 
+    (Array.isArray(children) ? children.join('') : '');
+  
+  // Check if it's a domain-only link or very short
+  const isShortDomain = href && (
+    href.includes('.org') || 
+    href.includes('.com') || 
+    href.includes('.net') || 
+    href.includes('.edu') ||
+    href.includes('.gov')
+  ) && childText.length < 30;
+  
+  return isShortDomain;
+};
+
+// Helper function to get favicon URL
+const getFaviconUrl = (url: string) => {
+  try {
+    const domain = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+  } catch {
+    return null;
+  }
+};
+
+// Helper function to check if link should show favicon (standalone links)
+const shouldShowFavicon = (href: string, children: any) => {
+  const childText = typeof children === 'string' ? children : 
+    (Array.isArray(children) ? children.join('') : '');
+  
+  // Show favicon for standalone links that aren't inline
+  return !isInlineLink(href, children) && href && childText.length > 0;
+};
+
+// Helper function to check if URL is a video
+const isVideoUrl = (url: string) => {
+  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi'];
+  const videoServices = ['youtube.com', 'youtu.be', 'vimeo.com', 'twitch.tv'];
+  
+  return videoExtensions.some(ext => url.toLowerCase().includes(ext)) ||
+         videoServices.some(service => url.toLowerCase().includes(service));
+};
+
+// YouTube video embed component
+const YouTubeEmbed = ({ url }: { url: string }) => {
+  const getYouTubeId = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const videoId = getYouTubeId(url);
+  if (!videoId) return null;
+
+  return (
+    <div className="relative w-full aspect-video rounded-md sm:rounded-lg md:rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 shadow-md sm:shadow-lg ring-1 ring-zinc-200 dark:ring-zinc-700">
+      <iframe
+        src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowFullScreen
+        className="w-full h-full border-0"
+        loading="lazy"
+        title="YouTube video"
+      />
+    </div>
+  );
+};
+
+// Vimeo video embed component
+const VimeoEmbed = ({ url }: { url: string }) => {
+  const getVimeoId = (url: string) => {
+    const regExp = /vimeo.com\/(\d+)/;
+    const match = url.match(regExp);
+    return match ? match[1] : null;
+  };
+
+  const videoId = getVimeoId(url);
+  if (!videoId) return null;
+
+  return (
+    <div className="relative w-full aspect-video rounded-md sm:rounded-lg md:rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 shadow-md sm:shadow-lg ring-1 ring-zinc-200 dark:ring-zinc-700">
+      <iframe
+        src={`https://player.vimeo.com/video/${videoId}?responsive=1&dnt=1`}
+        allow="autoplay; fullscreen; picture-in-picture"
+        allowFullScreen
+        className="w-full h-full border-0"
+        loading="lazy"
+        title="Vimeo video"
+      />
+    </div>
+  );
+};
+
+// Video component for direct video files
+const VideoPlayer = ({ src, ...props }: any) => {
+  return (
+    <div className="relative w-full rounded-md sm:rounded-lg md:rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 shadow-md sm:shadow-lg ring-1 ring-zinc-200 dark:ring-zinc-700">
+      <video
+        controls
+        className="w-full h-auto max-h-[50vh] sm:max-h-[60vh] md:max-h-[70vh] object-contain"
+        preload="metadata"
+        playsInline
+        {...props}
+      >
+        <source src={src} />
+        Your browser does not support the video tag.
+      </video>
+    </div>
   );
 };
 
@@ -193,49 +307,124 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       </blockquote>
     ),
 
-    // Enhanced links with beautiful hover effects - MOBILE OPTIMIZED
-    a: ({ node, href, children, ...props }: any) => (
-      <Link
-        href={href || "#"}
-        className="group inline-flex items-baseline gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium underline decoration-2 decoration-blue-500/30 hover:decoration-blue-500 underline-offset-2 transition-all duration-200"
-        target="_blank"
-        rel="noopener noreferrer"
-        {...props}
-      >
-        <span>{children}</span>
-        <svg 
-          className="w-3 h-3 sm:w-3.5 sm:h-3.5 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
+    // Enhanced links with beautiful hover effects, intelligent inline styling, and favicons
+    a: ({ node, href, children, ...props }: any) => {
+      const isInline = isInlineLink(href, children);
+      const showFavicon = shouldShowFavicon(href, children);
+      const faviconUrl = showFavicon ? getFaviconUrl(href) : null;
+      
+      // Handle video URLs
+      if (href && isVideoUrl(href)) {
+        return (
+          <figure className="my-3 sm:my-4 md:my-6 lg:my-8 w-full">
+            <div className="w-full max-w-4xl mx-auto">
+              {href.includes('youtube.com') || href.includes('youtu.be') ? (
+                <YouTubeEmbed url={href} />
+              ) : href.includes('vimeo.com') ? (
+                <VimeoEmbed url={href} />
+              ) : (
+                <VideoPlayer src={href} />
+              )}
+            </div>
+            {children && typeof children === 'string' && children !== href && (
+              <figcaption className="mt-2 sm:mt-3 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 italic font-medium text-center px-2">
+                {children}
+              </figcaption>
+            )}
+          </figure>
+        );
+      }
+      
+      if (isInline) {
+        // Subtle inline link styling for short domain links
+        return (
+          <Link
+            href={href || "#"}
+            className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 underline decoration-1 decoration-zinc-400 hover:decoration-zinc-600 underline-offset-2 transition-colors duration-200 font-medium"
+            target="_blank"
+            rel="noopener noreferrer"
+            {...props}
+          >
+            {children}
+          </Link>
+        );
+      }
+      
+      // Beautiful prominent link styling with favicon for standalone links
+      return (
+        <Link
+          href={href || "#"}
+          className="group inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium underline decoration-2 decoration-blue-500/30 hover:decoration-blue-500 underline-offset-2 transition-all duration-200 py-1"
+          target="_blank"
+          rel="noopener noreferrer"
+          {...props}
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-        </svg>
-      </Link>
-    ),
+          {faviconUrl && (
+            <img
+              src={faviconUrl}
+              alt=""
+              className="w-4 h-4 sm:w-5 sm:h-5 rounded-sm bg-white dark:bg-zinc-800 ring-1 ring-zinc-200 dark:ring-zinc-700 flex-shrink-0"
+              loading="lazy"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
+            />
+          )}
+          <span className="break-words">{children}</span>
+          <svg 
+            className="w-3 h-3 sm:w-3.5 sm:h-3.5 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200 flex-shrink-0" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </Link>
+      );
+    },
 
     // Stunning image display - MOBILE OPTIMIZED
-    img: ({ node, ...props }: any) => (
-      <figure className="my-4 sm:my-8 text-center w-full">
-        <div className="group relative inline-block rounded-lg sm:rounded-xl overflow-hidden shadow-lg bg-zinc-100 dark:bg-zinc-800 ring-1 ring-zinc-200 dark:ring-zinc-700 w-full max-w-full">
-          <Image
-            {...props}
-            width={800}
-            height={600}
-            className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105"
-            alt={props.alt || "Image"}
-            loading="lazy"
-            sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, (max-width: 1024px) 80vw, 70vw"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        </div>
-        {props.alt && (
-          <figcaption className="mt-2 sm:mt-3 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 italic font-medium">
-            {props.alt}
-          </figcaption>
-        )}
-      </figure>
-    ),
+    img: ({ node, src, alt, ...props }: any) => {
+      // Handle video files in img tags
+      if (src && isVideoUrl(src)) {
+        return (
+          <figure className="my-3 sm:my-4 md:my-6 lg:my-8 text-center w-full">
+            <div className="w-full max-w-4xl mx-auto">
+              <VideoPlayer src={src} {...props} />
+            </div>
+            {alt && (
+              <figcaption className="mt-2 sm:mt-3 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 italic font-medium px-2">
+                {alt}
+              </figcaption>
+            )}
+          </figure>
+        );
+      }
+
+      return (
+        <figure className="my-3 sm:my-4 md:my-6 lg:my-8 text-center w-full">
+          <div className="group relative inline-block rounded-md sm:rounded-lg md:rounded-xl overflow-hidden shadow-md sm:shadow-lg bg-zinc-100 dark:bg-zinc-800 ring-1 ring-zinc-200 dark:ring-zinc-700 w-full max-w-full">
+            <Image
+              src={src}
+              alt={alt || "Image"}
+              width={800}
+              height={600}
+              className="w-full h-auto transition-transform duration-300 group-hover:scale-105 max-h-[50vh] sm:max-h-[60vh] md:max-h-[70vh] object-contain"
+              loading="lazy"
+              sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, (max-width: 1024px) 80vw, 70vw"
+              {...props}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          </div>
+          {alt && (
+            <figcaption className="mt-2 sm:mt-3 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 italic font-medium px-2">
+              {alt}
+            </figcaption>
+          )}
+        </figure>
+      );
+    },
 
     // Beautiful horizontal rule - MOBILE OPTIMIZED
     hr: (props: any) => (
@@ -280,6 +469,15 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
     ),
     sup: (props: any) => (
       <sup className="text-xs" {...props} />
+    ),
+
+    // Video element support
+    video: (props: any) => (
+      <figure className="my-3 sm:my-4 md:my-6 lg:my-8 w-full">
+        <div className="w-full max-w-4xl mx-auto">
+          <VideoPlayer {...props} />
+        </div>
+      </figure>
     ),
   };
 

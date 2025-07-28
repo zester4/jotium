@@ -48,12 +48,13 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Toaster 
-            position="top-center" 
+          <Toaster
+            position="top-center"
             toastOptions={{
-              className: "text-sm sm:text-base",
+              className: "text-xs sm:text-sm", // Smaller text for mobile and slightly larger for small screens
               style: {
                 marginTop: "env(safe-area-inset-top, 0px)",
+                padding: "8px 12px", // Reduced padding
               },
             }}
           />
