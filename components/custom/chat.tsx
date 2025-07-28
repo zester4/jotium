@@ -18,9 +18,13 @@ const MESSAGES_PER_PAGE = 10; // Define how many messages to fetch per page
 export function Chat({
   id,
   initialMessages,
+  messageCount,
+  messageLimit,
 }: {
-  id: string;
+  id:string;
   initialMessages: Array<Message>;
+  messageCount: number;
+  messageLimit: number;
 }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
@@ -279,6 +283,8 @@ className="flex-1 overflow-y-auto custom-scrollbar pb-24 sm:pb-32"
               attachments={attachments}
               setAttachments={setAttachments}
               append={async () => null}
+              messageCount={messageCount}
+              messageLimit={messageLimit}
             />
           </div>
         </div>

@@ -15,6 +15,7 @@ import React, {
 import { toast } from "sonner";
 
 import { ArrowUpIcon, PaperclipIcon, StopIcon } from "./icons";
+import { MessageLimitBanner } from "./message-limit-banner";
 import { PreviewAttachment } from "./preview-attachment";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
@@ -56,6 +57,8 @@ export function MultimodalInput({
   messages,
   append,
   handleSubmit,
+  messageCount,
+  messageLimit,
 }: {
   input: string;
   setInput: (value: string) => void;
@@ -74,6 +77,8 @@ export function MultimodalInput({
     },
     chatRequestOptions?: ChatRequestOptions,
   ) => void;
+  messageCount: number;
+  messageLimit: number;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -178,7 +183,7 @@ export function MultimodalInput({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 w-full"
+              className="grid grid-cols-2 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 w-full"
             >
               {suggestedActions.map((suggestedAction, index) => (
                 <motion.div
@@ -186,24 +191,24 @@ export function MultimodalInput({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 * index }}
                   key={index}
-                  className={`block ${index > 1 ? "hidden md:block" : ""}`}
+                  className="block"
                 >
                   <button
                     onClick={() => {
                       setInput(suggestedAction.action);
                       textareaRef.current?.focus();
                     }}
-                    className="group w-full text-left bg-background/60 backdrop-blur-sm border border-border/50 hover:border-border transition-all duration-200 rounded-lg p-3 sm:p-4 hover:bg-muted/50 hover:shadow-sm hover:-translate-y-0.5"
+                    className="group w-full text-left bg-background/60 backdrop-blur-sm border border-border/50 hover:border-border transition-all duration-200 rounded-lg p-2 hover:bg-muted/50 hover:shadow-sm hover:-translate-y-0.5"
                   >
-                    <div className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-base sm:text-lg group-hover:scale-110 transition-transform duration-200 shrink-0">
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs group-hover:scale-110 transition-transform duration-200 shrink-0">
                         {suggestedAction.icon}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <span className="font-medium text-foreground block text-sm sm:text-base">
+                        <span className="font-medium text-foreground block text-xs">
                           {suggestedAction.title}
                         </span>
-                        <span className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mt-0.5">
+                        <span className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
                           {suggestedAction.label}
                         </span>
                       </div>
@@ -259,6 +264,10 @@ export function MultimodalInput({
         ${isFocused ? "border-primary/50 shadow-md ring-2 sm:ring-4 ring-primary/10" : "hover:border-border"}
         ${hasContent ? "border-primary/30" : ""}
       `}>
+        <MessageLimitBanner
+          messageCount={messageCount}
+          messageLimit={messageLimit}
+        />
         <Textarea
           ref={textareaRef}
           placeholder="Ask Jotium anything..."
