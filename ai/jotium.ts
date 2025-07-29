@@ -31,6 +31,7 @@ import { AlphaVantageTool } from './tools/alphavantage-tool';
 import { AirtableTool } from './tools/airtable-tool';
 import { SupabaseTool } from './tools/supabase-tool';
 import { TrelloTool } from './tools/trello';
+import { LinearManagementTool } from './tools/linear-tool';
 
 dotenv.config();
 
@@ -159,6 +160,13 @@ export class AIAgent {
     if (trelloApiKey && trelloToken) {
       const trelloTool = new TrelloTool({ apiKey: trelloApiKey, token: trelloToken });
       this.tools.set("trello_tool", trelloTool);
+    }
+
+    // Linear
+    const linearKey = await getKey("Linear", "LINEAR_API_KEY");
+    if (linearKey) {
+      const linearTool = new LinearManagementTool(linearKey);
+      this.tools.set("linear_management", linearTool);
     }
 
     console.log(`✅ Initialized ${this.tools.size} tools`);
