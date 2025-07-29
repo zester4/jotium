@@ -29,6 +29,7 @@ const apiTools = [
   { name: "Supabase Key", keyName: "supabaseKey", placeholder: "ey..." },
   { name: "Trello", keyName: "trelloApiKey", placeholder: "key..." },
   { name: "Trello Token", keyName: "trelloToken", placeholder: "token..." },
+  { name: "Linear", keyName: "linearApiKey", placeholder: "lin_api_..." },
 ];
 
 export default function AccountPage() {
