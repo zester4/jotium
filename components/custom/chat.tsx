@@ -13,7 +13,7 @@ import { MultimodalInput } from "./multimodal-input";
 import { Overview } from "./overview";
 import { useScrollToBottom } from "./use-scroll-to-bottom";
 
-const MESSAGES_PER_PAGE = 10; // Define how many messages to fetch per page
+const MESSAGES_PER_PAGE = 20; // Define how many messages to fetch per page
 
 export function Chat({
   id,
