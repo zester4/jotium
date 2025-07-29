@@ -1,5 +1,6 @@
 //app/layout.tsx
 import { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import Link from "next/link";
 import { Toaster } from "sonner";
 
@@ -8,6 +9,16 @@ import { ThemeProvider } from "@/components/custom/theme-provider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
 import "./globals.css";
+
+const geist = localFont({
+  src: "../public/fonts/geist.woff2",
+  variable: "--font-geist",
+});
+
+const geistMono = localFont({
+  src: "../public/fonts/geist-mono.woff2",
+  variable: "--font-geist-mono",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://jotium.vercel.app"),
@@ -32,16 +43,19 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${geist.variable} ${geistMono.variable}`}
+    >
       <head>
         <meta name="format-detection" content="telephone=no" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Jotium" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className="antialiased safe-area-padding">
+      <body className="font-sans antialiased safe-area-padding">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
