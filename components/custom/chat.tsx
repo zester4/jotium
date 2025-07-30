@@ -2,6 +2,7 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation"; 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
 
@@ -13,7 +14,7 @@ import { MultimodalInput } from "./multimodal-input";
 import { Overview } from "./overview";
 import { useScrollToBottom } from "./use-scroll-to-bottom";
 
-const MESSAGES_PER_PAGE = 20; // Define how many messages to fetch per page
+const MESSAGES_PER_PAGE = 25; // Define how many messages to fetch per page
 
 export function Chat({
   id,
@@ -41,6 +42,7 @@ export function Chat({
   const [messagesEndRef] = useScrollToBottom<HTMLDivElement>([messages.length]);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [firstName, setFirstName] = useState<string | undefined>(undefined);
+  const router = useRouter(); // Initialize useRouter
 
   useEffect(() => {
     fetch("/account/api/profile")
@@ -174,6 +176,8 @@ export function Chat({
                     msg.id === assistantMessage.id ? { ...assistantMessage } : msg
                   )
                 );
+                // Scroll to bottom during streaming
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
               } catch (error) {
                 console.error("Error parsing stream data:", error, jsonStr);
               }
@@ -191,6 +195,8 @@ export function Chat({
           msg.id === assistantMessage.id ? { ...assistantMessage } : msg
         )
       );
+      // Trigger a refresh of the current route to update Server Components (like Navbar)
+      router.refresh();
     }
     setIsLoading(false);
   };

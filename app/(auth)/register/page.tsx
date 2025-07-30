@@ -47,7 +47,7 @@ export default function Page() {
   };
 
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-background">
+    <div className="flex min-h-screen w-screen items-center justify-center bg-background pt-16 pb-8">
       <div className="w-full max-w-md overflow-hidden rounded-2xl gap-12 flex flex-col">
         <div className="flex flex-col items-center justify-center gap-2 px-4 text-center sm:px-16">
           <h3 className="text-xl font-semibold dark:text-zinc-50">Sign Up</h3>
@@ -56,37 +56,41 @@ export default function Page() {
           </p>
         </div>
         <AuthForm action={handleSubmit}>
-          <div className="flex flex-col gap-2">
-            <Label
-              htmlFor="firstName"
-              className="text-zinc-600 font-normal dark:text-zinc-400"
-            >
-              First Name
-            </Label>
-            <Input
-              id="firstName"
-              name="firstName"
-              className="bg-muted text-md md:text-sm border-none"
-              type="text"
-              placeholder="Jane"
-              required
-              defaultValue={firstName}
-            />
-            <Label
-              htmlFor="lastName"
-              className="text-zinc-600 font-normal dark:text-zinc-400"
-            >
-              Last Name
-            </Label>
-            <Input
-              id="lastName"
-              name="lastName"
-              className="bg-muted text-md md:text-sm border-none"
-              type="text"
-              placeholder="Smith"
-              required
-              defaultValue={lastName}
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
+              <Label
+                htmlFor="firstName"
+                className="text-zinc-600 font-normal dark:text-zinc-400"
+              >
+                First Name
+              </Label>
+              <Input
+                id="firstName"
+                name="firstName"
+                className="bg-muted text-md md:text-sm border-none"
+                type="text"
+                placeholder="Jane"
+                required
+                defaultValue={firstName}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label
+                htmlFor="lastName"
+                className="text-zinc-600 font-normal dark:text-zinc-400"
+              >
+                Last Name
+              </Label>
+              <Input
+                id="lastName"
+                name="lastName"
+                className="bg-muted text-md md:text-sm border-none"
+                type="text"
+                placeholder="Smith"
+                required
+                defaultValue={lastName}
+              />
+            </div>
           </div>
           <div className="flex flex-col gap-2">
             <Label

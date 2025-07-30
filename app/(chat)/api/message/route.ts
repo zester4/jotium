@@ -11,8 +11,8 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const chatId = searchParams.get("chatId");
-  const page = parseInt(searchParams.get("page") || "1", 10);
-  const limit = parseInt(searchParams.get("limit") || "10", 10);
+  const page = parseInt(searchParams.get("page") || "1", 25);
+  const limit = parseInt(searchParams.get("limit") || "25", 25);
 
   if (!chatId) {
     return new Response("Missing chatId", { status: 400 });

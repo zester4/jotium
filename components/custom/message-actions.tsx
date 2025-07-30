@@ -1,6 +1,6 @@
 "use client"
 
-import { Check, Copy, MoreVertical, RefreshCcw, Share2, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
+import { Check, Copy, MoreVertical, Share, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
 
@@ -57,28 +57,8 @@ export function MessageActions({ messageId, content, onRegenerate, className, is
     toast.success(type === "up" ? "Thanks for the positive feedback!" : "Thanks for the feedback!")
   }
 
-  const handleRegenerate = () => {
-    if (onRegenerate) {
-      onRegenerate(messageId)
-      toast.success("Regenerating response...")
-    }
-  }
-
   return (
     <div className={cn("flex items-center", "gap-0", className)}>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleRegenerate}
-        className={cn(
-          "text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors",
-          isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0",
-        )}
-        title="Regenerate response"
-      >
-        <RefreshCcw className={cn(isMobile ? "h-3 w-3" : "h-4 w-4")} />
-      </Button>
-
       <Button
         variant="ghost"
         size="sm"
@@ -106,7 +86,7 @@ export function MessageActions({ messageId, content, onRegenerate, className, is
         )}
         title="Share message"
       >
-        <Share2 className={cn(isMobile ? "h-3 w-3" : "h-4 w-4")} />
+        <Share className={cn(isMobile ? "h-3 w-3" : "h-4 w-4")} />
       </Button>
 
       <Button

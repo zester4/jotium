@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { auth, signOut } from "@/app/(auth)/auth";
-import { getMessageCount, getUserById } from "@/db/queries";
+import { getMessageCount, getUserById } from "@/db/queries"; 
 
 import { History } from "./history";
 import { SlashIcon } from "./icons";
@@ -21,20 +21,20 @@ export const Navbar = async () => {
   const session = await auth();
   let messageCount = 0;
   let messageLimit = 5; // Default to Free plan limit
-  let userPlan = "Free";
+  let messageLimitResetAt: Date | null = null;
 
   if (session?.user?.id) {
     const user = await getUserById(session.user.id);
-    userPlan = user?.plan || "Free";
-    const { count } = await getMessageCount(session.user.id);
+    const { count, messageLimitResetAt: resetAt } = await getMessageCount(session.user.id);
     messageCount = count;
+    messageLimitResetAt = resetAt;
 
     const planLimits: { [key: string]: number } = {
       "Free": 5,
       "Pro": 50,
       "Advanced": Infinity,
     };
-    messageLimit = planLimits[userPlan];
+    messageLimit = planLimits[user?.plan || "Free"];
   }
 
   return (
@@ -50,6 +50,7 @@ export const Navbar = async () => {
                 width={24}
                 alt="jotium logo"
                 className="group-hover:scale-105 transition-transform duration-200"
+                style={{ width: "auto", height: "auto" }}
               />
             </div>
             <div className="text-zinc-400 group-hover:text-zinc-500 transition-colors duration-200">

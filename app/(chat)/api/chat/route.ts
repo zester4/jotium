@@ -1,4 +1,5 @@
 //app/(chat)/api/chat/route.ts
+import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
 import { AIAgent } from "@/ai/jotium";
@@ -38,7 +39,13 @@ export async function POST(request: NextRequest) {
   // Reset count if the reset time has passed
   const newCount = (messageLimitResetAt && now > new Date(messageLimitResetAt)) ? 1 : count + 1;
 
+  const chatId = id || generateUUID(); // Declare chatId earlier
+
   await updateUserMessageCount(userId, newCount);
+
+  // Revalidate the chat page and the root path to update message count in Navbar
+  revalidatePath(`/chat/${chatId}`);
+  revalidatePath("/");
   
   // Use the new function to get the correct model based on current plan
   const model = await getUserAIModel(userId);
@@ -50,8 +57,6 @@ export async function POST(request: NextRequest) {
   const lastMessage = messages[messages.length - 1];
 
   const attachments = lastMessage.attachments || [];
-
-  const chatId = id || generateUUID();
 
   const stream = new ReadableStream({
     async start(controller) {
