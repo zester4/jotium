@@ -1,10 +1,10 @@
-
 "use client";
 
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
+import { toast } from "sonner"; // Import toast
 
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -32,8 +32,17 @@ const apiTools = [
   { name: "Linear", keyName: "linearApiKey", placeholder: "lin_api_..." },
 ];
 
+// List of OAuth providers
+const oauthProviders = [
+  { name: "Google", service: "google", icon: "/logo/google.svg" },
+  { name: "GitHub", service: "github", icon: "/logo/github.svg" },
+  { name: "Slack", service: "slack", icon: "/logo/slack.svg" },
+];
+
 export default function AccountPage() {
   const router = useRouter();
+  const searchParams = useSearchParams(); // Initialize useSearchParams
+
   // Which services have a key saved (from backend)
   const [savedServices, setSavedServices] = useState<string[]>([]);
   // Input values for adding/updating
@@ -43,6 +52,10 @@ export default function AccountPage() {
   const [customKeys, setCustomKeys] = useState<{ name: string; value: string; show: boolean; editing: boolean; inputValue: string }[]>([]);
   const [customName, setCustomName] = useState("");
   const [customInputValue, setCustomInputValue] = useState("");
+
+  // OAuth connections
+  const [oauthConnections, setOauthConnections] = useState<{ service: string; externalUserName?: string }[]>([]);
+  const [oauthLoading, setOauthLoading] = useState(true);
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -84,6 +97,41 @@ export default function AccountPage() {
       .catch(() => setProfileError("Failed to load profile info."))
       .finally(() => setProfileLoading(false));
   }, []);
+
+  // Fetch OAuth connections on mount
+  useEffect(() => {
+    setOauthLoading(true);
+    fetch("/api/oauth/connections") // New API endpoint to list connections
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch OAuth connections");
+        return res.json();
+      })
+      .then((data) => {
+        setOauthConnections(data.connections || []);
+      })
+      .catch((err) => {
+        console.error("Error fetching OAuth connections:", err);
+      })
+      .finally(() => {
+        setOauthLoading(false);
+      });
+  }, []);
+
+  // Handle OAuth success/error messages from URL params
+  useEffect(() => {
+    if (searchParams.get("oauth_success")) {
+      toast.success("OAuth connection successful!");
+      router.replace("/account", undefined); // Clean URL
+    }
+    if (searchParams.get("oauth_disconnected")) {
+      toast.info("OAuth connection disconnected.");
+      router.replace("/account", undefined); // Clean URL
+    }
+    if (searchParams.get("oauth_error")) {
+      toast.error("OAuth connection failed. Please try again.");
+      router.replace("/account", undefined); // Clean URL
+    }
+  }, [searchParams, router]);
 
   // Built-in API key logic
   const handleInputChange = (keyName: string, value: string) => {
@@ -324,36 +372,61 @@ export default function AccountPage() {
           <TabsContent value="integrations" className="overflow-x-hidden">
             <h2 className="text-xl font-semibold mb-4 text-foreground">Connected Accounts</h2>
             <div className="space-y-4 mb-8">
-              {/* Example connected accounts */}
-              <div className="flex items-center justify-between p-3 rounded bg-background border border-border">
-                <div className="flex items-center gap-3">
-                  <Image src="/logo/google.svg" alt="Google" width={24} height={24} className="size-6" />
-                  <span className="text-foreground">Google</span>
-                </div>
-                <Button size="sm" variant="secondary">Disconnect</Button>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded bg-background border border-border">
-                <div className="flex items-center gap-3">
-                  <Image src="/logo/asana.svg" alt="Asana" width={24} height={24} className="size-6" />
-                  <span className="text-foreground">Asana</span>
-                </div>
-                <Button size="sm">Connect</Button>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded bg-background border border-border">
-                <div className="flex items-center gap-3">
-                  <Image src="/logo/github.svg" alt="GitHub" width={24} height={24} className="size-6" />
-                  <span className="text-foreground">GitHub</span>
-                </div>
-                <Button size="sm">Connect</Button>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded bg-background border border-border">
-                <div className="flex items-center gap-3">
-                  <Image src="/logo/slack.svg" alt="Slack" width={24} height={24} className="size-6" />
-                  <span className="text-foreground">Slack</span>
-                </div>
-                <Button size="sm">Connect</Button>
-              </div>
-              {/* Add more as needed */}
+              {oauthLoading ? (
+                <div className="text-center text-muted-foreground">Loading integrations...</div>
+              ) : (
+                oauthProviders.map((provider) => {
+                  const isConnected = oauthConnections.some(
+                    (conn) => conn.service === provider.service
+                  );
+                  const connectedAs = oauthConnections.find(
+                    (conn) => conn.service === provider.service
+                  )?.externalUserName;
+
+                  return (
+                    <div
+                      key={provider.service}
+                      className="flex items-center justify-between p-3 rounded bg-background border border-border"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Image
+                          src={provider.icon}
+                          alt={provider.name}
+                          width={24}
+                          height={24}
+                          className="size-6"
+                        />
+                        <span className="text-foreground">{provider.name}</span>
+                        {isConnected && connectedAs && (
+                          <span className="text-xs text-muted-foreground">
+                            (Connected as: {connectedAs})
+                          </span>
+                        )}
+                      </div>
+                      {isConnected ? (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() =>
+                            router.push(`/api/oauth/${provider.service}/disconnect`)
+                          }
+                        >
+                          Disconnect
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() =>
+                            router.push(`/api/oauth/${provider.service}/initiate`)
+                          }
+                        >
+                          Connect
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
             <Separator className="my-6" />
             <h3 className="font-semibold mb-4 text-foreground">Scopes & Permissions</h3>

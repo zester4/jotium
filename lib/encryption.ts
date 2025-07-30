@@ -30,4 +30,27 @@ export function decryptApiKey(encrypted: string): string {
   let decrypted = decipher.update(encryptedText);
   decrypted = Buffer.concat([decrypted, decipher.final()]);
   return decrypted.toString("utf8");
-} 
+}
+
+export function encryptOAuthToken(rawToken: string): string {
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const key = crypto.createHash("sha256").update(ENCRYPTION_SECRET_STR).digest();
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  let encrypted = cipher.update(rawToken, "utf8");
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, encrypted]).toString("base64");
+}
+
+export function decryptOAuthToken(encrypted: string): string {
+  const data = Buffer.from(encrypted, "base64");
+  const iv = data.subarray(0, IV_LENGTH);
+  const tag = data.subarray(IV_LENGTH, IV_LENGTH + 16);
+  const encryptedText = data.subarray(IV_LENGTH + 16);
+  const key = crypto.createHash("sha256").update(ENCRYPTION_SECRET_STR).digest();
+  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+  decipher.setAuthTag(tag);
+  let decrypted = decipher.update(encryptedText);
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+  return decrypted.toString("utf8");
+}
