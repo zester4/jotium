@@ -166,6 +166,7 @@ export const History = ({ user }: { user: User | undefined }) => {
               <Button
                 className="font-normal text-sm flex flex-row justify-between text-white"
                 asChild
+                onClick={() => setIsHistoryVisible(false)} // Close sidebar on new chat click
               >
                 <Link href={`/chat/${generateUUID()}`} prefetch={false}>
                   <div>Start a new chat</div>
@@ -216,6 +217,7 @@ export const History = ({ user }: { user: User | undefined }) => {
                         "hover:bg-zinc-200 dark:hover:bg-zinc-700 justify-between p-0 text-sm font-normal flex flex-row items-center gap-2 pr-2 w-full transition-none",
                       )}
                       asChild
+                      onClick={() => setIsHistoryVisible(false)} // Close sidebar on chat link click
                     >
                       <Link
                         href={`/chat/${chat.id}`}
@@ -242,6 +244,7 @@ export const History = ({ user }: { user: User | undefined }) => {
                             onClick={() => {
                               setDeleteId(chat.id);
                               setShowDeleteDialog(true);
+                              setIsHistoryVisible(false); // Close sidebar on delete button click
                             }}
                           >
                             <TrashIcon />
@@ -266,6 +269,7 @@ export const History = ({ user }: { user: User | undefined }) => {
                   avatar: user.image || "", // always string
                   name: user.name || "", // always string
                 }}
+                onCloseSidebar={() => setIsHistoryVisible(false)} // Pass close handler to NavUser
               />
             )}
           </div>

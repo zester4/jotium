@@ -1,3 +1,4 @@
+//db/queries.ts
 import "server-only";
 
 import { genSaltSync, hashSync, compareSync } from "bcrypt-ts";
@@ -5,9 +6,9 @@ import { desc, eq, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-import { encryptApiKey, decryptApiKey } from "@/lib/encryption";
+import { encryptApiKey, decryptApiKey, encryptOAuthToken, decryptOAuthToken } from "@/lib/encryption"; // Add encryptOAuthToken, decryptOAuthToken
 
-import { user, chat, User, reservation, apiKey, ApiKey, notification } from "./schema";
+import { user, chat, User, reservation, apiKey, ApiKey, notification, oauthConnection, OAuthConnection } from "./schema"; // Add oauthConnection, OAuthConnection
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
@@ -30,9 +31,12 @@ export async function getUser(email: string): Promise<Array<User>> {
   }
 }
 
-export async function createUser(email: string, password: string, firstName: string, lastName: string) {
-  let salt = genSaltSync(10);
-  let hash = hashSync(password, salt);
+export async function createUser(email: string, password: string | null | undefined, firstName: string, lastName: string) {
+  let hash: string | undefined = undefined;
+  if (password) {
+    let salt = genSaltSync(10);
+    hash = hashSync(password, salt);
+  }
   // Admin emails
   const isAdmin = adminEmails.includes(email);
   try {
@@ -91,6 +95,15 @@ export async function deleteChatById({ id }: { id: string }) {
     return await db.delete(chat).where(eq(chat.id, id));
   } catch (error) {
     console.error("Failed to delete chat by id from database");
+    throw error;
+  }
+}
+
+export async function deleteAllChatsByUserId(userId: string) {
+  try {
+    return await db.delete(chat).where(eq(chat.userId, userId));
+  } catch (error) {
+    console.error("Failed to delete all chats by user id from database");
     throw error;
   }
 }
@@ -196,7 +209,7 @@ export async function updateReservation({
 export async function saveApiKey({ userId, service, rawKey }: { userId: string; service: string; rawKey: string }) {
   const salt = genSaltSync(10);
   const keyHash = hashSync(rawKey, salt);
-  const keyEncrypted = encryptApiKey(rawKey);
+  const keyEncrypted = await encryptApiKey(rawKey);
   // Check if key exists
   const existing = await db.select().from(apiKey).where(and(eq(apiKey.userId, userId), eq(apiKey.service, service)));
   if (existing.length > 0) {
@@ -220,7 +233,7 @@ export async function getApiKey({ userId, service }: { userId: string; service: 
 export async function getDecryptedApiKey({ userId, service }: { userId: string; service: string }) {
   const [key] = await db.select().from(apiKey).where(and(eq(apiKey.userId, userId), eq(apiKey.service, service)));
   if (!key?.keyEncrypted) return null;
-  return decryptApiKey(key.keyEncrypted);
+  return await decryptApiKey(key.keyEncrypted);
 }
 
 // Delete a user's API key for a service
@@ -424,4 +437,88 @@ export async function updateUserMessageCount(userId: string, newCount: number) {
       messageLimitResetAt: resetTime,
     })
     .where(eq(user.id, userId));
+}
+
+// Save (insert or update) an OAuth connection
+export async function saveOAuthConnection({
+  userId,
+  service,
+  accessToken,
+  refreshToken,
+  expiresAt,
+  scope,
+  externalUserId,
+  externalUserName,
+}: {
+  userId: string;
+  service: string;
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: Date | null;
+  scope?: string;
+  externalUserId: string;
+  externalUserName?: string;
+}) {
+  const encryptedAccessToken = await encryptOAuthToken(accessToken);
+  const encryptedRefreshToken = refreshToken ? await encryptOAuthToken(refreshToken) : undefined;
+
+  const existing = await db.select().from(oauthConnection).where(and(eq(oauthConnection.userId, userId), eq(oauthConnection.service, service)));
+
+  if (existing.length > 0) {
+    return await db.update(oauthConnection)
+      .set({
+        accessToken: encryptedAccessToken,
+        refreshToken: encryptedRefreshToken,
+        expiresAt,
+        scope,
+        externalUserId,
+        externalUserName,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(oauthConnection.userId, userId), eq(oauthConnection.service, service)));
+  } else {
+    return await db.insert(oauthConnection).values({
+      userId,
+      service,
+      accessToken: encryptedAccessToken,
+      refreshToken: encryptedRefreshToken,
+      expiresAt,
+      scope,
+      externalUserId,
+      externalUserName,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  }
+}
+
+// Get an OAuth connection (returns encrypted tokens)
+export async function getOAuthConnection({ userId, service }: { userId: string; service: string }): Promise<OAuthConnection | undefined> {
+  const [connection] = await db.select().from(oauthConnection).where(and(eq(oauthConnection.userId, userId), eq(oauthConnection.service, service)));
+  return connection;
+}
+
+// Get a decrypted OAuth access token
+export async function getDecryptedOAuthAccessToken({ userId, service }: { userId: string; service: string }): Promise<string | null> {
+  const [connection] = await db.select().from(oauthConnection).where(and(eq(oauthConnection.userId, userId), eq(oauthConnection.service, service)));
+  if (!connection?.accessToken) return null;
+  return await decryptOAuthToken(connection.accessToken);
+}
+
+// Get a decrypted OAuth refresh token
+export async function getDecryptedOAuthRefreshToken({ userId, service }: { userId: string; service: string }): Promise<string | null> {
+  const [connection] = await db.select().from(oauthConnection).where(and(eq(oauthConnection.userId, userId), eq(oauthConnection.service, service)));
+  if (!connection?.refreshToken) return null;
+  return await decryptOAuthToken(connection.refreshToken);
+}
+
+// Delete an OAuth connection
+export async function deleteOAuthConnection({ userId, service }: { userId: string; service: string }) {
+  return await db.delete(oauthConnection).where(and(eq(oauthConnection.userId, userId), eq(oauthConnection.service, service)));
+}
+
+// List all OAuth services connected by a user
+export async function listOAuthConnections({ userId }: { userId: string }) {
+  const connections = await db.select({ service: oauthConnection.service, externalUserName: oauthConnection.externalUserName }).from(oauthConnection).where(eq(oauthConnection.userId, userId));
+  return connections;
 }

@@ -15,6 +15,13 @@
       "when": 1753738969279,
       "tag": "0001_foamy_skin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1753870895089,
+      "tag": "0002_handy_omega_flight",
+      "breakpoints": true
     }
   ]
 }

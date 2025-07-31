@@ -76,3 +76,21 @@ export const notification = pgTable("Notification", {
 });
 
 export type Notification = InferSelectModel<typeof notification>;
+
+export const oauthConnection = pgTable("OAuthConnection", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  service: varchar("service", { length: 64 }).notNull(), // e.g. "google", "github", "slack"
+  accessToken: varchar("accessToken", { length: 512 }).notNull(), // encrypted
+  refreshToken: varchar("refreshToken", { length: 512 }), // encrypted, optional
+  expiresAt: timestamp("expiresAt"), // optional, for token expiry
+  scope: varchar("scope", { length: 512 }), // permissions granted
+  externalUserId: varchar("externalUserId", { length: 128 }).notNull(), // User's ID on the external service
+  externalUserName: varchar("externalUserName", { length: 255 }), // User's name/email on the external service
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type OAuthConnection = InferSelectModel<typeof oauthConnection>;

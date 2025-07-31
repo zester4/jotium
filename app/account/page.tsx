@@ -1,11 +1,21 @@
-
 "use client";
 
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
+import { toast } from "sonner"; // Import toast
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,8 +42,17 @@ const apiTools = [
   { name: "Linear", keyName: "linearApiKey", placeholder: "lin_api_..." },
 ];
 
+// List of OAuth providers
+const oauthProviders = [
+  { name: "Google", service: "google", icon: "/logo/google.svg" },
+  { name: "GitHub", service: "github", icon: "/logo/github.svg" },
+  { name: "Slack", service: "slack", icon: "/logo/slack.svg" },
+];
+
 export default function AccountPage() {
   const router = useRouter();
+  const searchParams = useSearchParams(); // Initialize useSearchParams
+
   // Which services have a key saved (from backend)
   const [savedServices, setSavedServices] = useState<string[]>([]);
   // Input values for adding/updating
@@ -43,6 +62,10 @@ export default function AccountPage() {
   const [customKeys, setCustomKeys] = useState<{ name: string; value: string; show: boolean; editing: boolean; inputValue: string }[]>([]);
   const [customName, setCustomName] = useState("");
   const [customInputValue, setCustomInputValue] = useState("");
+
+  // OAuth connections
+  const [oauthConnections, setOauthConnections] = useState<{ service: string; externalUserName?: string }[]>([]);
+  const [oauthLoading, setOauthLoading] = useState(true);
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -60,6 +83,10 @@ export default function AccountPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
+
+  // Delete All Chats state
+  const [showDeleteAllChatsDialog, setShowDeleteAllChatsDialog] = useState(false);
+  const [isDeletingAllChats, setIsDeletingAllChats] = useState(false);
 
   // Fetch saved API key services on mount
   useEffect(() => {
@@ -84,6 +111,41 @@ export default function AccountPage() {
       .catch(() => setProfileError("Failed to load profile info."))
       .finally(() => setProfileLoading(false));
   }, []);
+
+  // Fetch OAuth connections on mount
+  useEffect(() => {
+    setOauthLoading(true);
+    fetch("/api/oauth/connections") // New API endpoint to list connections
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch OAuth connections");
+        return res.json();
+      })
+      .then((data) => {
+        setOauthConnections(data.connections || []);
+      })
+      .catch((err) => {
+        console.error("Error fetching OAuth connections:", err);
+      })
+      .finally(() => {
+        setOauthLoading(false);
+      });
+  }, []);
+
+  // Handle OAuth success/error messages from URL params
+  useEffect(() => {
+    if (searchParams.get("oauth_success")) {
+      toast.success("OAuth connection successful!");
+      router.replace("/account", undefined); // Clean URL
+    }
+    if (searchParams.get("oauth_disconnected")) {
+      toast.info("OAuth connection disconnected.");
+      router.replace("/account", undefined); // Clean URL
+    }
+    if (searchParams.get("oauth_error")) {
+      toast.error("OAuth connection failed. Please try again.");
+      router.replace("/account", undefined); // Clean URL
+    }
+  }, [searchParams, router]);
 
   // Built-in API key logic
   const handleInputChange = (keyName: string, value: string) => {
@@ -237,6 +299,29 @@ export default function AccountPage() {
     }
   };
 
+  const handleDeleteAllChats = async () => {
+    setIsDeletingAllChats(true);
+    try {
+      const res = await fetch("/api/chat/delete-all", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (res.ok) {
+        toast.success("All chats deleted successfully!");
+        // Optionally redirect or refresh history if needed
+      } else {
+        toast.error("Failed to delete all chats.");
+      }
+    } catch (error) {
+      console.error("Error deleting all chats:", error);
+      toast.error("An error occurred while deleting chats.");
+    } finally {
+      setIsDeletingAllChats(false);
+      setShowDeleteAllChatsDialog(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto pt-20 pb-16 px-4 sm:px-6 lg:px-8 overflow-x-hidden">
       <Button
@@ -272,7 +357,7 @@ export default function AccountPage() {
                   <Input id="profile-picture" type="file" className="mt-1 bg-background text-foreground border-border" disabled />
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Input name="firstName" type="text" placeholder="First Name" className="bg-background text-foreground border-border" value={firstName} onChange={e => setFirstName(e.target.value)} disabled={profileLoading || profileSaving} />
                 <Input name="lastName" type="text" placeholder="Last Name" className="bg-background text-foreground border-border" value={lastName} onChange={e => setLastName(e.target.value)} disabled={profileLoading || profileSaving} />
               </div>
@@ -300,60 +385,98 @@ export default function AccountPage() {
               <Button type="submit" className="w-full" disabled={pwLoading}>{pwLoading ? "Updating..." : "Update Password"}</Button>
             </form>
             <Separator className="my-6" />
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
               <div>
-                <h3 className="font-semibold text-foreground">Two-Factor Authentication (2FA)</h3>
-                <p className="text-sm text-foreground/70">Add an extra layer of security to your account.</p>
+                <h3 className="font-semibold text-foreground">Delete All Chats</h3>
+                <p className="text-sm text-foreground/70">Permanently delete all your saved chats.</p>
               </div>
-              <Switch id="2fa-toggle" />
-            </div>
-            {/* Placeholder for 2FA setup flow (e.g., QR code) */}
-            <div className="bg-background rounded p-4 text-center text-foreground/70 text-sm mb-6 border border-border">
-              2FA setup flow will appear here when enabled.
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteAllChatsDialog(true)}
+                disabled={isDeletingAllChats}
+              >
+                {isDeletingAllChats ? "Deleting..." : "Delete All"}
+              </Button>
             </div>
             <Separator className="my-6" />
-            <h3 className="font-semibold mb-2 text-foreground">Recent Logins</h3>
-            <ul className="text-sm text-foreground/70 space-y-2">
-              <li>Chrome on Windows · New York, USA · 2 hours ago</li>
-              <li>Safari on iPhone · San Francisco, USA · Yesterday</li>
-              <li>Firefox on Mac · London, UK · 3 days ago</li>
-            </ul>
           </TabsContent>
+
+          <AlertDialog open={showDeleteAllChatsDialog} onOpenChange={setShowDeleteAllChatsDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete ALL your chats and remove them from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteAllChats} disabled={isDeletingAllChats}>
+                  {isDeletingAllChats ? "Deleting..." : "Continue"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* Integrations Tab */}
           <TabsContent value="integrations" className="overflow-x-hidden">
             <h2 className="text-xl font-semibold mb-4 text-foreground">Connected Accounts</h2>
             <div className="space-y-4 mb-8">
-              {/* Example connected accounts */}
-              <div className="flex items-center justify-between p-3 rounded bg-background border border-border">
-                <div className="flex items-center gap-3">
-                  <Image src="/logo/google.svg" alt="Google" width={24} height={24} className="size-6" />
-                  <span className="text-foreground">Google</span>
-                </div>
-                <Button size="sm" variant="secondary">Disconnect</Button>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded bg-background border border-border">
-                <div className="flex items-center gap-3">
-                  <Image src="/logo/asana.svg" alt="Asana" width={24} height={24} className="size-6" />
-                  <span className="text-foreground">Asana</span>
-                </div>
-                <Button size="sm">Connect</Button>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded bg-background border border-border">
-                <div className="flex items-center gap-3">
-                  <Image src="/logo/github.svg" alt="GitHub" width={24} height={24} className="size-6" />
-                  <span className="text-foreground">GitHub</span>
-                </div>
-                <Button size="sm">Connect</Button>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded bg-background border border-border">
-                <div className="flex items-center gap-3">
-                  <Image src="/logo/slack.svg" alt="Slack" width={24} height={24} className="size-6" />
-                  <span className="text-foreground">Slack</span>
-                </div>
-                <Button size="sm">Connect</Button>
-              </div>
-              {/* Add more as needed */}
+              {oauthLoading ? (
+                <div className="text-center text-muted-foreground">Loading integrations...</div>
+              ) : (
+                oauthProviders.map((provider) => {
+                  const isConnected = oauthConnections.some(
+                    (conn) => conn.service === provider.service
+                  );
+                  const connectedAs = oauthConnections.find(
+                    (conn) => conn.service === provider.service
+                  )?.externalUserName;
+
+                  return (
+                    <div
+                      key={provider.service}
+                      className="flex items-center justify-between p-3 rounded bg-background border border-border"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Image
+                          src={provider.icon}
+                          alt={provider.name}
+                          width={24}
+                          height={24}
+                          className="size-6"
+                        />
+                        <span className="text-foreground">{provider.name}</span>
+                        {isConnected && connectedAs && (
+                          <span className="text-xs text-muted-foreground">
+                            (Connected as: {connectedAs})
+                          </span>
+                        )}
+                      </div>
+                      {isConnected ? (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() =>
+                            router.push(`/api/oauth/${provider.service}/disconnect`)
+                          }
+                        >
+                          Disconnect
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() =>
+                            router.push(`/api/oauth/${provider.service}/initiate`)
+                          }
+                        >
+                          Connect
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
             <Separator className="my-6" />
             <h3 className="font-semibold mb-4 text-foreground">Scopes & Permissions</h3>
