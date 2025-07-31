@@ -138,7 +138,7 @@ export async function getChatById({ id }: { id: string }) {
 export async function getChatMessagesById({
   id,
   page = 1,
-  limit = 10,
+  limit = 25,
 }: {
   id: string;
   page?: number;
@@ -428,7 +428,9 @@ export async function getMessageCount(userId: string): Promise<{
 
 export async function updateUserMessageCount(userId: string, newCount: number) {
   const now = new Date();
-  const resetTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+  const resetTime = new Date(now);
+  resetTime.setDate(now.getDate() + 1);
+  resetTime.setHours(0, 0, 0, 0); // Set to midnight of the next day
 
   return await db
     .update(user)
