@@ -37,6 +37,7 @@ import {
 
 export function NavUser({
   user,
+  onCloseSidebar,
 }: {
   user: {
     firstName?: string;
@@ -45,6 +46,7 @@ export function NavUser({
     email: string;
     avatar: string;
   };
+  onCloseSidebar?: () => void;
 }) {
   const { isMobile } = useSidebar();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -90,9 +92,9 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="sm"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground px-3 py-2 min-h-0 h-9"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground px-4 py-3 min-h-0 h-11"
             >
-              <Avatar className="size-8 rounded-lg">
+              <Avatar className="size-9 rounded-lg">
                 <AvatarImage src={user.avatar} alt={displayName} />
                 <AvatarFallback className="rounded-lg text-xs">{getInitials()}</AvatarFallback>
               </Avatar>
@@ -123,7 +125,7 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs">
+              <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs" onClick={onCloseSidebar}>
                 <Link href="/pricing" className="flex items-center w-full">
                   <Sparkles className="size-4" />
                   Upgrade Plan
@@ -132,19 +134,19 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs">
+              <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs" onClick={onCloseSidebar}>
                 <Link href="/account" className="flex items-center w-full">
                   <BadgeCheck className="size-4" />
                   Settings
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs">
+              <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs" onClick={onCloseSidebar}>
                 <Link href="/billing" className="flex items-center w-full">
                   <CreditCard className="size-4" />
                   Billing
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs">
+              <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs" onClick={onCloseSidebar}>
                 <Link href="/notifications" className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-2">
                     <Bell className="size-4" />
@@ -160,7 +162,10 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => signOut({ callbackUrl: "/" })}
+              onClick={() => {
+                signOut({ callbackUrl: "/" });
+                onCloseSidebar?.(); // Close sidebar after sign out
+              }}
               className="gap-2 px-2 py-1 text-xs cursor-pointer"
             >
               <LogOut className="size-4" />
