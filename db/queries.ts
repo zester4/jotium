@@ -1,3 +1,4 @@
+//db/queries.ts
 import "server-only";
 
 import { genSaltSync, hashSync, compareSync } from "bcrypt-ts";
@@ -94,6 +95,15 @@ export async function deleteChatById({ id }: { id: string }) {
     return await db.delete(chat).where(eq(chat.id, id));
   } catch (error) {
     console.error("Failed to delete chat by id from database");
+    throw error;
+  }
+}
+
+export async function deleteAllChatsByUserId(userId: string) {
+  try {
+    return await db.delete(chat).where(eq(chat.userId, userId));
+  } catch (error) {
+    console.error("Failed to delete all chats by user id from database");
     throw error;
   }
 }
