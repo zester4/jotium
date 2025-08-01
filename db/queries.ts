@@ -138,7 +138,7 @@ export async function getChatById({ id }: { id: string }) {
 export async function getChatMessagesById({
   id,
   page = 1,
-  limit = 10,
+  limit = 25,
 }: {
   id: string;
   page?: number;
