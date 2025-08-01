@@ -233,7 +233,16 @@ export async function getApiKey({ userId, service }: { userId: string; service: 
 export async function getDecryptedApiKey({ userId, service }: { userId: string; service: string }) {
   const [key] = await db.select().from(apiKey).where(and(eq(apiKey.userId, userId), eq(apiKey.service, service)));
   if (!key?.keyEncrypted) return null;
-  return await decryptApiKey(key.keyEncrypted);
+
+  const decrypted = await decryptApiKey(key.keyEncrypted);
+
+  // Lazy migration: if the key was decrypted with a secondary key, re-encrypt with the primary and save.
+  if (decrypted.reEncrypt) {
+    console.log(`Re-encrypting API key for user ${userId}, service ${service}`);
+    await saveApiKey({ userId, service, rawKey: decrypted.value });
+  }
+
+  return decrypted.value;
 }
 
 // Delete a user's API key for a service
@@ -537,14 +546,38 @@ export async function getOAuthConnection({ userId, service }: { userId: string; 
 export async function getDecryptedOAuthAccessToken({ userId, service }: { userId: string; service: string }): Promise<string | null> {
   const [connection] = await db.select().from(oauthConnection).where(and(eq(oauthConnection.userId, userId), eq(oauthConnection.service, service)));
   if (!connection?.accessToken) return null;
-  return await decryptOAuthToken(connection.accessToken);
+  
+  const decrypted = await decryptOAuthToken(connection.accessToken);
+
+  // Lazy migration for access token
+  if (decrypted.reEncrypt) {
+    console.log(`Re-encrypting OAuth access token for user ${userId}, service ${service}`);
+    const newEncryptedToken = await encryptOAuthToken(decrypted.value);
+    await db.update(oauthConnection)
+      .set({ accessToken: newEncryptedToken })
+      .where(and(eq(oauthConnection.userId, userId), eq(oauthConnection.service, service)));
+  }
+
+  return decrypted.value;
 }
 
 // Get a decrypted OAuth refresh token
 export async function getDecryptedOAuthRefreshToken({ userId, service }: { userId: string; service: string }): Promise<string | null> {
   const [connection] = await db.select().from(oauthConnection).where(and(eq(oauthConnection.userId, userId), eq(oauthConnection.service, service)));
   if (!connection?.refreshToken) return null;
-  return await decryptOAuthToken(connection.refreshToken);
+
+  const decrypted = await decryptOAuthToken(connection.refreshToken);
+
+  // Lazy migration for refresh token
+  if (decrypted.reEncrypt) {
+    console.log(`Re-encrypting OAuth refresh token for user ${userId}, service ${service}`);
+    const newEncryptedToken = await encryptOAuthToken(decrypted.value);
+    await db.update(oauthConnection)
+      .set({ refreshToken: newEncryptedToken })
+      .where(and(eq(oauthConnection.userId, userId), eq(oauthConnection.service, service)));
+  }
+
+  return decrypted.value;
 }
 
 // Delete an OAuth connection
