@@ -11,26 +11,26 @@
     --background-end-rgb: 255, 255, 255;
 }
 
+/* Custom scrollbar styles for tiny scrollbar */
+.tiny-scrollbar::-webkit-scrollbar {
+    width: 4px; /* For vertical scrollbar */
+    height: 4px; /* For horizontal scrollbar */
+}
+
+.tiny-scrollbar::-webkit-scrollbar-thumb {
+    background-color: transparent; /* Remove color from thumb */
+    border-radius: 2px;
+}
+
+.tiny-scrollbar::-webkit-scrollbar-track {
+    background-color: transparent; /* Remove color from track */
+}
+
 @media (prefers-color-scheme: dark) {
     :root {
         --foreground-rgb: 255, 255, 255;
         --background-start-rgb: 0, 0, 0;
         --background-end-rgb: 0, 0, 0;
-    }
-
-    /* Custom scrollbar styles for tiny scrollbar */
-    .tiny-scrollbar::-webkit-scrollbar {
-        width: 4px; /* For vertical scrollbar */
-        height: 4px; /* For horizontal scrollbar */
-    }
-
-    .tiny-scrollbar::-webkit-scrollbar-thumb {
-        background-color: transparent; /* Remove color from thumb */
-        border-radius: 2px;
-    }
-
-    .tiny-scrollbar::-webkit-scrollbar-track {
-        background-color: transparent; /* Remove color from track */
     }
 }
 
@@ -192,3 +192,21 @@
     }
   }
 */
+
+.thin-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--border));
+  border-radius: 10px;
+  border: 3px solid hsl(var(--background));
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground));
+}

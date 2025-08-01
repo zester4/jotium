@@ -138,7 +138,7 @@ export async function getChatById({ id }: { id: string }) {
 export async function getChatMessagesById({
   id,
   page = 1,
-  limit = 10,
+  limit = 25,
 }: {
   id: string;
   page?: number;
@@ -413,13 +413,39 @@ export async function getMessageCount(userId: string): Promise<{
   count: number;
   messageLimitResetAt: Date | null;
 }> {
-  const [u] = await db
+  let [u] = await db
     .select({
       count: user.dailyMessageCount,
       messageLimitResetAt: user.messageLimitResetAt,
     })
     .from(user)
     .where(eq(user.id, userId));
+
+  const now = new Date();
+  // If the reset date is in the past, reset the count.
+  if (u && u.messageLimitResetAt && u.messageLimitResetAt < now) {
+    const resetTime = new Date(now);
+    resetTime.setDate(now.getDate() + 1);
+    resetTime.setHours(0, 0, 0, 0); // Set to midnight of the next day
+
+    await db
+      .update(user)
+      .set({
+        dailyMessageCount: 0,
+        messageLimitResetAt: resetTime,
+      })
+      .where(eq(user.id, userId));
+    
+    // Re-fetch the user to get the updated values
+    [u] = await db
+      .select({
+        count: user.dailyMessageCount,
+        messageLimitResetAt: user.messageLimitResetAt,
+      })
+      .from(user)
+      .where(eq(user.id, userId));
+  }
+
   return {
     count: u?.count || 0,
     messageLimitResetAt: u?.messageLimitResetAt || null,
@@ -427,15 +453,24 @@ export async function getMessageCount(userId: string): Promise<{
 }
 
 export async function updateUserMessageCount(userId: string, newCount: number) {
-  const now = new Date();
-  const resetTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+  const [u] = await db.select({ messageLimitResetAt: user.messageLimitResetAt }).from(user).where(eq(user.id, userId));
+
+  const updateData: { dailyMessageCount: number; messageLimitResetAt?: Date } = {
+    dailyMessageCount: newCount,
+  };
+
+  // If the reset date is not set or is in the past, set a new one.
+  if (!u.messageLimitResetAt || u.messageLimitResetAt < new Date()) {
+    const now = new Date();
+    const resetTime = new Date(now);
+    resetTime.setDate(now.getDate() + 1);
+    resetTime.setHours(0, 0, 0, 0); // Set to midnight of the next day
+    updateData.messageLimitResetAt = resetTime;
+  }
 
   return await db
     .update(user)
-    .set({
-      dailyMessageCount: newCount,
-      messageLimitResetAt: resetTime,
-    })
+    .set(updateData)
     .where(eq(user.id, userId));
 }
 

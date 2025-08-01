@@ -51,7 +51,7 @@ export function MessageLimitBanner({
   if (remainingMessages <= 0) {
     return (
       <div className="flex items-center justify-between text-xs text-muted-foreground p-2 bg-background/80 backdrop-blur-sm border-b border-border/50 rounded-t-xl">
-        <span>You are out of free messages until {resetTime}.</span>
+        <span>You are out of daily messages until {resetTime}.</span>
         <Button asChild size="sm" className="h-6 px-2 text-xs">
           <Link href="/pricing">Upgrade plan</Link>
         </Button>
