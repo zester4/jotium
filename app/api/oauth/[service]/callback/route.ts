@@ -48,7 +48,7 @@ export async function GET(
   };
 
   switch (service) {
-    case "google":
+    case "gmail":
       clientId = process.env.GOOGLE_CLIENT_ID;
       clientSecret = process.env.GOOGLE_CLIENT_SECRET;
       tokenUrl = "https://oauth2.googleapis.com/token";
@@ -138,7 +138,7 @@ export async function GET(
     let externalUserId: string = "";
     let externalUserName: string | undefined = undefined;
 
-    if (service === "google") {
+    if (service === "gmail") {
       const userRes = await fetch(userInfoUrl, {
         headers: { 
           Authorization: `Bearer ${accessToken}`,

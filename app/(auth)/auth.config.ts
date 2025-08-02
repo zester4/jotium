@@ -1,49 +1,47 @@
-//app(auth)/auth.config.ts
 import { NextAuthConfig } from "next-auth";
 
 export const authConfig = {
   pages: {
     signIn: "/login",
-    newUser: "/",
+    signOut: "/login",
+    error: "/login", 
+    verifyRequest: "/login",
+    newUser: "/", // Redirect new OAuth users to home
   },
-  providers: [
-    // added later in auth.ts since it requires bcrypt which is only compatible with Node.js
-    // while this file is also used in non-Node.js environments
-  ],
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isOnLogin = nextUrl.pathname.startsWith("/login");
       const isOnRegister = nextUrl.pathname.startsWith("/register");
+      const isOnAuth = nextUrl.pathname.startsWith("/api/auth");
 
-      if (!isLoggedIn && (isOnLogin || isOnRegister)) {
-        return true; // Allow unauthenticated users to access login and register
+      // Always allow access to auth API routes
+      if (isOnAuth) {
+        return true;
       }
-      if (!isLoggedIn) {
-        // Redirect unauthenticated users to login
+
+      // Allow unauthenticated users to access login and register pages
+      if (!isLoggedIn && (isOnLogin || isOnRegister)) {
+        return true;
+      }
+      
+      // Redirect unauthenticated users to login for protected routes
+      if (!isLoggedIn && !isOnLogin && !isOnRegister) {
         return Response.redirect(new URL("/login", nextUrl));
       }
+      
+      // Redirect authenticated users away from login/register to home
       if (isLoggedIn && (isOnLogin || isOnRegister)) {
-        // Redirect authenticated users away from login/register
         return Response.redirect(new URL("/", nextUrl));
       }
-      return true; // Authenticated users can access all other routes
-    },
-    async session({ session, token, user }) {
-      // Add id to session.user from user or token, but only if it's a string
-      if (user && typeof user.id === "string") {
-        session.user.id = user.id;
-      } else if (token && typeof token.id === "string") {
-        session.user.id = token.id;
-      }
-      return session;
-    },
-    async jwt({ token, user }) {
-      // Add id to token from user
-      if (user && typeof user.id === "string") {
-        token.id = user.id;
-      }
-      return token;
+      
+      // Allow authenticated users to access all other routes
+      return true;
     },
   },
+  providers: [], // Providers are added in auth.ts
 } satisfies NextAuthConfig;

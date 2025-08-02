@@ -354,7 +354,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       return (
         <Link
           href={href || "#"}
-          className="group inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium underline decoration-2 decoration-blue-500/30 hover:decoration-blue-500 underline-offset-2 transition-all duration-200 py-1"
+          className="group inline-flex items-center gap-2 rounded-full bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all duration-200"
           target="_blank"
           rel="noopener noreferrer"
           {...props}
@@ -363,7 +363,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
             <img
               src={faviconUrl}
               alt=""
-              className="w-4 h-4 sm:w-5 sm:h-5 rounded-sm bg-white dark:bg-zinc-800 ring-1 ring-zinc-200 dark:ring-zinc-700 flex-shrink-0"
+              className="w-4 h-4 rounded-full bg-white dark:bg-zinc-800 ring-1 ring-zinc-200 dark:ring-zinc-700"
               loading="lazy"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -371,11 +371,11 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
               }}
             />
           )}
-          <span className="break-words">{children}</span>
-          <svg 
-            className="w-3 h-3 sm:w-3.5 sm:h-3.5 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200 flex-shrink-0" 
-            fill="none" 
-            stroke="currentColor" 
+          <span className="break-all">{new URL(href).hostname}</span>
+          <svg
+            className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition-opacity duration-200"
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
