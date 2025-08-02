@@ -14,6 +14,7 @@ export async function GET(
 
   const { service } = params;
   const nextAuthUrl = process.env.NEXTAUTH_URL;
+  console.log("DEBUG: NEXTAUTH_URL in initiate route:", nextAuthUrl); // Added for debugging
   if (!nextAuthUrl) {
     console.error("NEXTAUTH_URL environment variable is not set.");
     return new Response("Server configuration error", { status: 500 });
@@ -33,10 +34,10 @@ export async function GET(
   let scope: string | undefined;
 
   switch (service) {
-    case "google":
+    case "gmail":
       clientId = process.env.GOOGLE_CLIENT_ID;
       // Updated scopes for Google OAuth 2.0
-      scope = "openid email profile";
+      scope = "openid email profile https://www.googleapis.com/auth/gmail.modify";
       if (!clientId) {
         console.error("GOOGLE_CLIENT_ID environment variable is not set.");
         return new Response("Google OAuth configuration error", { status: 500 });

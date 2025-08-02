@@ -16,7 +16,7 @@ export async function getUserAIModel(userId: string): Promise<string> {
     }
 
     const userPlan = user.plan || 'Free';
-    console.log(`User ${userId} has plan: ${userPlan}`);
+    // console.log(`User ${userId} has plan: ${userPlan}`);
     
     return getGeminiModelForPlan(userPlan);
   } catch (error) {

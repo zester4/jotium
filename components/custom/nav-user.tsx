@@ -162,9 +162,10 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => {
-                signOut({ callbackUrl: "/" });
-                onCloseSidebar?.(); // Close sidebar after sign out
+              onClick={async () => {
+                onCloseSidebar?.();
+                await signOut({ redirect: false });
+                window.location.reload();
               }}
               className="gap-2 px-2 py-1 text-xs cursor-pointer"
             >
