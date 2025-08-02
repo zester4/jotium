@@ -124,11 +124,13 @@ export class AIAgent {
     }
 
     // Stripe
-    const stripeKey = await getKey("Stripe", "STRIPE_SECRET_KEY");
-    if (stripeKey) {
-      const tool = new StripeManagementTool(stripeKey);
-      this.tools.set("stripe_tool", tool);
-      this.tools.set(tool.getDefinition().name || "stripe_management", tool);
+    if (userId) {
+        const stripeKey = await getDecryptedApiKey({ userId, service: "Stripe" });
+        if (stripeKey) {
+            const tool = new StripeManagementTool(stripeKey);
+            this.tools.set("stripe_tool", tool);
+            this.tools.set(tool.getDefinition().name || "stripe_management", tool);
+        }
     }
 
     // ClickUp
