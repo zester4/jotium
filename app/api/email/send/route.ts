@@ -1,23 +1,6 @@
 // app/api/email/send/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
-
-// Import email templates
-import { PasswordResetEmail } from '@/components/emails/password-reset-email';
-import { SubscriptionReceiptEmail } from '@/components/emails/subscription-receipt-email';
-import { WelcomeEmail } from '@/components/emails/welcome-email';
-
-// Explicitly check for RESEND_API_KEY
-if (!process.env.RESEND_API_KEY) {
-  console.error('RESEND_API_KEY is not set. Email sending will fail.');
-  // Optionally, you could throw an error here or handle it more gracefully
-  // For now, we\'ll let the Resend constructor handle it, but log it clearly.
-}
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-// Define email types
-export type EmailType = 'welcome' | 'subscription-receipt' | 'password-reset';
+import { sendEmail, EmailType } from '@/lib/email-utils';
 
 interface BaseEmailData {
   to: string;
@@ -51,48 +34,16 @@ interface PasswordResetEmailData extends BaseEmailData {
   lastName?: string;
   resetToken?: string;
   resetUrl?: string;
-  userAgent?: string;
-  ipAddress?: string;
 }
 
 type EmailData = WelcomeEmailData | SubscriptionReceiptEmailData | PasswordResetEmailData;
 
-// Email configuration
-const EMAIL_CONFIG = {
-  from: `${process.env.COMPANY_NAME || 'Jotium'} <${process.env.RESEND_FROM_EMAIL || 'noreply@yourdomain.com'}>`,
-  replyTo: process.env.RESEND_REPLY_TO_EMAIL || 'support@yourdomain.com',
-};
-
 export async function POST(req: NextRequest) {
   try {
-    // Debug logging
-    console.log('=== EMAIL API DEBUG START ===');
-    console.log('NODE_ENV:', process.env.NODE_ENV);
-    console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
-    console.log('RESEND_API_KEY length:', process.env.RESEND_API_KEY?.length || 0);
-    console.log('RESEND_API_KEY prefix:', process.env.RESEND_API_KEY?.substring(0, 5) || 'N/A');
-    console.log('Request URL:', req.url);
-    console.log('Request method:', req.method);
-    console.log('=== EMAIL API DEBUG END ===');
-
     // Ensure RESEND_API_KEY is set before proceeding
     if (!process.env.RESEND_API_KEY) {
-      console.error('RESEND_API_KEY is missing!');
       return NextResponse.json(
         { error: 'Email service is not configured. RESEND_API_KEY is missing.' },
-        { status: 500 }
-      );
-    }
-
-    // Test Resend initialization
-    try {
-      console.log('Initializing Resend client...');
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      console.log('Resend client initialized successfully');
-    } catch (resendError) {
-      console.error('Failed to initialize Resend:', resendError);
-      return NextResponse.json(
-        { error: 'Failed to initialize email service' },
         { status: 500 }
       );
     }
@@ -123,105 +74,37 @@ export async function POST(req: NextRequest) {
                      req.headers.get('x-real-ip') || 
                      'Unknown IP';
 
-    let emailComponent;
-    let subject: string;
-    let templateData: any = {};
+    // Prepare data with additional context
+    const emailData = {
+      ...body,
+      userAgent,
+      ipAddress,
+    };
 
-    // Prepare email based on type
-    switch (body.type) {
-      case 'welcome':
-        const welcomeData = body as WelcomeEmailData;
-        subject = `Welcome to Jotium!`;
-        templateData = {
-          firstName: welcomeData.firstName,
-          lastName: welcomeData.lastName,
-          plan: welcomeData.plan,
-        };
-        emailComponent = WelcomeEmail(templateData);
-        break;
-
-      case 'subscription-receipt':
-        const receiptData = body as SubscriptionReceiptEmailData;
-        const amount = receiptData.amount || '0.00';
-        const currency = receiptData.currency || 'USD';
-        const currencySymbol = currency === 'USD' ? '$' : currency;
-        
-        subject = `Payment Receipt - ${currencySymbol}${amount}`;
-        templateData = {
-          firstName: receiptData.firstName,
-          lastName: receiptData.lastName,
-          plan: receiptData.plan,
-          amount: receiptData.amount,
-          currency: receiptData.currency,
-          subscriptionId: receiptData.subscriptionId,
-          invoiceId: receiptData.invoiceId,
-          billingDate: receiptData.billingDate,
-          nextBillingDate: receiptData.nextBillingDate,
-          paymentMethod: receiptData.paymentMethod,
-        };
-        emailComponent = SubscriptionReceiptEmail(templateData);
-        break;
-
-      case 'password-reset':
-        const resetData = body as PasswordResetEmailData;
-        subject = `Reset your password - Jotium`;
-        templateData = {
-          firstName: resetData.firstName,
-          lastName: resetData.lastName,
-          resetToken: resetData.resetToken,
-          resetUrl: resetData.resetUrl,
-          userAgent,
-          ipAddress,
-        };
-        emailComponent = PasswordResetEmail(templateData);
-        break;
-
-      default:
-        return NextResponse.json(
-          { error: 'Invalid email type' },
-          { status: 400 }
-        );
-    }
-
-    // Send email using Resend
-    const result = await resend.emails.send({
-      from: EMAIL_CONFIG.from,
+    // Use the direct email service
+    const result = await sendEmail({
       to: body.to,
-      replyTo: EMAIL_CONFIG.replyTo,
-      subject,
-      react: emailComponent,
-      // Add tags for tracking
-      tags: [
-        { name: 'type', value: body.type },
-        { name: 'environment', value: process.env.NODE_ENV || 'development' },
-      ],
-    });
-
-    // Log successful send (optional)
-    console.log(`Email sent successfully:`, {
-      id: result.data?.id,
       type: body.type,
-      to: body.to,
-      timestamp: new Date().toISOString(),
+      data: emailData,
     });
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error || 'Failed to send email' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      emailId: result.data?.id,
-      message: `${body.type} email sent successfully`,
+      emailId: result.emailId,
+      message: result.message || `${body.type} email sent successfully`,
     });
 
   } catch (error: any) {
-    console.error('=== EMAIL API ERROR ===');
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    console.error('=== EMAIL API ERROR END ===');
+    console.error('Email API error:', error);
     
-    console.error('Email sending error:', error);
-    
-    // Handle Resend-specific errors
-    // Check for Resend error type if available, or specific messages
+    // Handle specific error types
     if (error.name === 'ResendError' || error.message?.includes('API key')) {
       return NextResponse.json(
         { error: 'Email service configuration error: Invalid or missing API key.' },
