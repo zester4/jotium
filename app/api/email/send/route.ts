@@ -7,6 +7,13 @@ import { PasswordResetEmail } from '@/components/emails/password-reset-email';
 import { SubscriptionReceiptEmail } from '@/components/emails/subscription-receipt-email';
 import { WelcomeEmail } from '@/components/emails/welcome-email';
 
+// Explicitly check for RESEND_API_KEY
+if (!process.env.RESEND_API_KEY) {
+  console.error('RESEND_API_KEY is not set. Email sending will fail.');
+  // Optionally, you could throw an error here or handle it more gracefully
+  // For now, we\'ll let the Resend constructor handle it, but log it clearly.
+}
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Define email types
@@ -52,12 +59,20 @@ type EmailData = WelcomeEmailData | SubscriptionReceiptEmailData | PasswordReset
 
 // Email configuration
 const EMAIL_CONFIG = {
-  from: process.env.RESEND_FROM_EMAIL || 'noreply@yourdomain.com',
+  from: `${process.env.COMPANY_NAME || 'Jotium'} <${process.env.RESEND_FROM_EMAIL || 'noreply@yourdomain.com'}>`,
   replyTo: process.env.RESEND_REPLY_TO_EMAIL || 'support@yourdomain.com',
 };
 
 export async function POST(req: NextRequest) {
   try {
+    // Ensure RESEND_API_KEY is set before proceeding
+    if (!process.env.RESEND_API_KEY) {
+      return NextResponse.json(
+        { error: 'Email service is not configured. RESEND_API_KEY is missing.' },
+        { status: 500 }
+      );
+    }
+
     // Parse request body
     const body: EmailData = await req.json();
     
@@ -176,9 +191,10 @@ export async function POST(req: NextRequest) {
     console.error('Email sending error:', error);
     
     // Handle Resend-specific errors
-    if (error.message?.includes('API key')) {
+    // Check for Resend error type if available, or specific messages
+    if (error.name === 'ResendError' || error.message?.includes('API key')) {
       return NextResponse.json(
-        { error: 'Email service configuration error' },
+        { error: 'Email service configuration error: Invalid or missing API key.' },
         { status: 500 }
       );
     }
