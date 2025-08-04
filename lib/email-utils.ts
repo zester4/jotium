@@ -1,5 +1,6 @@
 // lib/email-service.ts - Direct email service without HTTP calls
 import { Resend } from 'resend';
+
 import { PasswordResetEmail } from '@/components/emails/password-reset-email';
 import { SubscriptionReceiptEmail } from '@/components/emails/subscription-receipt-email';
 import { WelcomeEmail } from '@/components/emails/welcome-email';
@@ -276,3 +277,4 @@ export function formatEmailDate(date: Date | string): string {
     day: 'numeric',
   });
 }
+
