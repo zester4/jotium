@@ -5,37 +5,9 @@ import { AuthError } from "next-auth";
 import { z } from "zod";
 
 import { createUser, getUser } from "@/db/queries";
+import { sendWelcomeEmail } from "@/lib/email-utils"; // ✅ Import the direct function
 
 import { signIn } from "./auth";
-
-// Email sending function
-async function sendEmail(emailData: any) {
-  try {
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : 'http://localhost:3000';
-      
-    const response = await fetch(`${baseUrl}/api/email/send`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(emailData),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Email API responded with ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log('Email sent successfully:', result);
-    return result;
-  } catch (error) {
-    console.error('Failed to send welcome email:', error);
-    // Don't throw - we don't want email failures to break registration
-    return null;
-  }
-}
 
 const loginFormSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -180,17 +152,21 @@ export const register = async (
       const createdUsers = await createUser(email, password, firstName, lastName);
       const newUser = createdUsers[0]; // Get the first user from the array
       
-      // Send welcome email to new user
+      // ✅ Send welcome email using direct function call (no HTTP)
       if (newUser) {
-        await sendEmail({
+        const emailResult = await sendWelcomeEmail({
           to: newUser.email,
-          type: 'welcome',
           firstName: newUser.firstName,
           lastName: newUser.lastName,
           plan: newUser.plan || 'Free', // New users start with Free plan
-          createdAt: newUser.createdAt?.toISOString(),
-          email: newUser.email,
         });
+        
+        if (emailResult.success) {
+          console.log('Welcome email sent successfully:', emailResult.emailId);
+        } else {
+          console.error('Failed to send welcome email:', emailResult.error);
+          // Don't fail registration if email fails
+        }
       }
       
     } catch (createError) {
