@@ -65,10 +65,34 @@ const EMAIL_CONFIG = {
 
 export async function POST(req: NextRequest) {
   try {
+    // Debug logging
+    console.log('=== EMAIL API DEBUG START ===');
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+    console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
+    console.log('RESEND_API_KEY length:', process.env.RESEND_API_KEY?.length || 0);
+    console.log('RESEND_API_KEY prefix:', process.env.RESEND_API_KEY?.substring(0, 5) || 'N/A');
+    console.log('Request URL:', req.url);
+    console.log('Request method:', req.method);
+    console.log('=== EMAIL API DEBUG END ===');
+
     // Ensure RESEND_API_KEY is set before proceeding
     if (!process.env.RESEND_API_KEY) {
+      console.error('RESEND_API_KEY is missing!');
       return NextResponse.json(
         { error: 'Email service is not configured. RESEND_API_KEY is missing.' },
+        { status: 500 }
+      );
+    }
+
+    // Test Resend initialization
+    try {
+      console.log('Initializing Resend client...');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      console.log('Resend client initialized successfully');
+    } catch (resendError) {
+      console.error('Failed to initialize Resend:', resendError);
+      return NextResponse.json(
+        { error: 'Failed to initialize email service' },
         { status: 500 }
       );
     }
@@ -188,6 +212,12 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
+    console.error('=== EMAIL API ERROR ===');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('=== EMAIL API ERROR END ===');
+    
     console.error('Email sending error:', error);
     
     // Handle Resend-specific errors
