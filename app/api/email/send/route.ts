@@ -1,5 +1,6 @@
 // app/api/email/send/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+
 import { sendEmail, EmailType } from '@/lib/email-utils';
 
 interface BaseEmailData {
