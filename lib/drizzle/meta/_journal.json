@@ -22,6 +22,13 @@
       "when": 1753870895089,
       "tag": "0002_handy_omega_flight",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1754273813349,
+      "tag": "0003_glorious_pretty_boy",
+      "breakpoints": true
     }
   ]
 }

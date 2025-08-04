@@ -2,11 +2,12 @@
 import "server-only";
 
 import { genSaltSync, hashSync, compareSync } from "bcrypt-ts";
-import { desc, eq, and, sql } from "drizzle-orm";
+import { desc, eq, and, sql, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 import { encryptApiKey, decryptApiKey, encryptOAuthToken, decryptOAuthToken } from "@/lib/encryption"; // Add encryptOAuthToken, decryptOAuthToken
+import crypto from 'crypto';
 
 import { user, chat, User, reservation, apiKey, ApiKey, notification, oauthConnection, OAuthConnection } from "./schema"; // Add oauthConnection, OAuthConnection
 
@@ -31,7 +32,7 @@ export async function getUser(email: string): Promise<Array<User>> {
   }
 }
 
-export async function createUser(email: string, password: string | null | undefined, firstName: string, lastName: string) {
+export async function createUser(email: string, password: string | null | undefined, firstName: string, lastName: string): Promise<Array<User>> {
   let hash: string | undefined = undefined;
   if (password) {
     let salt = genSaltSync(10);
@@ -40,7 +41,7 @@ export async function createUser(email: string, password: string | null | undefi
   // Admin emails
   const isAdmin = adminEmails.includes(email);
   try {
-    return await db.insert(user).values({ email, password: hash, firstName, lastName, isAdmin });
+    return await db.insert(user).values({ email, password: hash, firstName, lastName, isAdmin }).returning();
   } catch (error) {
     console.error("Failed to create user in database");
     throw error;
@@ -589,4 +590,78 @@ export async function deleteOAuthConnection({ userId, service }: { userId: strin
 export async function listOAuthConnections({ userId }: { userId: string }) {
   const connections = await db.select({ service: oauthConnection.service, externalUserName: oauthConnection.externalUserName }).from(oauthConnection).where(eq(oauthConnection.userId, userId));
   return connections;
+}
+
+// Generate password reset token
+export async function createPasswordResetToken(email: string): Promise<string | null> {
+  try {
+    const users = await getUser(email);
+    if (users.length === 0) return null;
+
+    const userRecord = users[0];
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 3600000); // 1 hour from now
+
+    await db.update(user)
+      .set({
+        passwordResetToken: token,
+        passwordResetExpires: expires,
+      })
+      .where(eq(user.id, userRecord.id));
+
+    return token;
+  } catch (error) {
+    console.error("Failed to create password reset token:", error);
+    throw error;
+  }
+}
+
+// Verify password reset token
+export async function getUserByResetToken(token: string): Promise<User | null> {
+  try {
+    const [userResult] = await db
+      .select()
+      .from(user)
+      .where(
+        and(
+          eq(user.passwordResetToken, token),
+          gt(user.passwordResetExpires, new Date())
+        )
+      );
+
+    return userResult || null;
+  } catch (error) {
+    console.error("Failed to get user by reset token:", error);
+    throw error;
+  }
+}
+
+// Reset password with token
+export async function resetPasswordWithToken({
+  token,
+  newPassword,
+}: {
+  token: string;
+  newPassword: string;
+}): Promise<boolean> {
+  try {
+    const userResult = await getUserByResetToken(token);
+    if (!userResult) return false;
+
+    const salt = genSaltSync(10);
+    const hash = hashSync(newPassword, salt);
+
+    await db.update(user)
+      .set({
+        password: hash,
+        passwordResetToken: null,
+        passwordResetExpires: null,
+      })
+      .where(eq(user.id, userResult.id));
+
+    return true;
+  } catch (error) {
+    console.error("Failed to reset password:", error);
+    throw error;
+  }
 }

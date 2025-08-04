@@ -2,9 +2,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-import { setStripeSubscription, createNotification } from '@/db/queries';
+import { setStripeSubscription, createNotification, getUserById } from '@/db/queries';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-06-30.basil' });
+
+// Email sending function
+async function sendEmail(emailData: any) {
+  try {
+    const response = await fetch(`${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}/api/email/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(emailData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Email API responded with ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('Email sent successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('Failed to send email:', error);
+    // Don't throw - we don't want email failures to break webhooks
+    return null;
+  }
+}
 
 export async function POST(req: NextRequest) {
   const sig = req.headers.get('stripe-signature');
@@ -40,6 +65,10 @@ export async function POST(req: NextRequest) {
           ...notification,
         });
       }
+
+      // Get user details for email
+      const user = await getUserById(userId);
+      return user;
     }
 
     // Helper function to extract plan from subscription
@@ -69,7 +98,7 @@ export async function POST(req: NextRequest) {
           plan = await getPlanFromSubscription(subscriptionId);
         }
         
-        await updateUserFromMetadata(metadata, {
+        const user = await updateUserFromMetadata(metadata, {
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscriptionId,
           subscriptionStatus: 'active',
@@ -79,6 +108,17 @@ export async function POST(req: NextRequest) {
           description: `Your payment was successful and your ${plan || ''} subscription is now active.`,
           type: 'payment',
         });
+
+        // Send welcome email for new subscription
+        if (user?.email) {
+          await sendEmail({
+            to: user.email,
+            type: 'welcome',
+            firstName: user.firstName,
+            lastName: user.lastName,
+            plan: plan || 'Pro',
+          });
+        }
         break;
       }
       
@@ -143,7 +183,7 @@ export async function POST(req: NextRequest) {
           const metadata = subscription.metadata;
           const plan = (subscription.items.data[0].price.nickname as string) || undefined;
           
-          await updateUserFromMetadata(metadata, {
+          const user = await updateUserFromMetadata(metadata, {
             subscriptionStatus: 'active',
             plan, // Update plan on successful payment too
           }, {
@@ -151,6 +191,28 @@ export async function POST(req: NextRequest) {
             description: `Your recurring payment was received and your ${plan || ''} subscription is active.`,
             type: 'payment',
           });
+
+          // Send receipt email
+          if (user?.email) {
+            const now = new Date();
+            const nextMonth = new Date(now);
+            nextMonth.setMonth(now.getMonth() + 1);
+
+            await sendEmail({
+              to: user.email,
+              type: 'subscription-receipt',
+              firstName: user.firstName,
+              lastName: user.lastName,
+              plan: plan || 'Pro',
+              amount: (invoice.amount_paid / 100).toString(),
+              currency: invoice.currency.toUpperCase(),
+              subscriptionId: subscriptionId,
+              invoiceId: invoice.id,
+              billingDate: now.toLocaleDateString(),
+              nextBillingDate: nextMonth.toLocaleDateString(),
+              paymentMethod: '•••• ••••',
+            });
+          }
         }
         break;
       }

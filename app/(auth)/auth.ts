@@ -1,3 +1,4 @@
+//app/(auth)/auth.ts
 import { compare } from "bcrypt-ts";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
