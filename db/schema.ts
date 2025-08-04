@@ -1,3 +1,4 @@
+//db/schema.ts
 import { Message } from "@/ai/types";
 import { InferSelectModel } from "drizzle-orm";
 import {
@@ -26,6 +27,9 @@ export const user = pgTable("User", {
   isAdmin: boolean("isAdmin").notNull().default(false),
   dailyMessageCount: integer("dailyMessageCount").default(0),
   messageLimitResetAt: timestamp("messageLimitResetAt"),
+  // ADD THESE PASSWORD RESET FIELDS:
+  passwordResetToken: varchar("passwordResetToken", { length: 255 }),
+  passwordResetExpires: timestamp("passwordResetExpires"),
 });
 
 export type User = InferSelectModel<typeof user>;

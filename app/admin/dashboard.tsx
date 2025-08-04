@@ -52,7 +52,8 @@ export default function AdminDashboard() {
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [createdFrom, setCreatedFrom] = useState<Date | null>(null);
   const [createdTo, setCreatedTo] = useState<Date | null>(null);
-  const [expandedCard, setExpandedCard] = useState<string | null>('totalRevenue');
+  const [selectedMetric, setSelectedMetric] = useState<string>('totalRevenue');
+  const [chartTimeRange, setChartTimeRange] = useState<string>('15days'); // New state for chart time range
 
   const parentRef = useRef<HTMLDivElement>(null);
   const rowVirtualizer = useVirtualizer({
@@ -63,10 +64,12 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    fetch("/api/admin/analytics")
+    const params = new URLSearchParams();
+    if (chartTimeRange) params.append("timeRange", chartTimeRange);
+    fetch(`/api/admin/analytics?${params.toString()}`)
       .then((res) => res.json())
       .then(setAnalytics);
-  }, []);
+  }, [chartTimeRange]); // Re-fetch analytics when chartTimeRange changes
 
   useEffect(() => {
     setLoading(true);
@@ -170,272 +173,430 @@ export default function AdminDashboard() {
     }
   };
 
-  const CARD_CONFIG = [
+  const METRICS_CONFIG = [
     {
       key: 'totalRevenue',
       label: 'Total Revenue',
-      icon: '$',
-      valueKey: 'totalRevenue',
-      chartDataKey: 'revenuePerMonth',
-      valueFormatter: (v: number) => `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      subtext: '+20.1% from last month', // Placeholder, can be dynamic
+      value: analytics?.totalRevenue ?? 0,
+      chartData: analytics?.revenuePerMonth ?? [],
+      formatter: (v: number) => `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      change: '+20.1%',
       dataKey: 'amount',
+      color: '#3b82f6',
     },
     {
       key: 'totalUsers',
-      label: 'Users',
-      icon: '👥',
-      valueKey: 'totalUsers',
-      chartDataKey: 'usersPerMonth',
-      valueFormatter: (v: number) => v.toLocaleString(),
-      subtext: '+12% from last month', // Placeholder
+      label: 'Total Users',
+      value: analytics?.totalUsers ?? 0,
+      chartData: analytics?.usersPerMonth ?? [],
+      formatter: (v: number) => v.toLocaleString(),
+      change: '+12%',
       dataKey: 'count',
+      color: '#10b981',
     },
     {
       key: 'activeSubs',
-      label: 'Subscriptions',
-      icon: '📃',
-      valueKey: 'activeSubs',
-      chartDataKey: 'subsPerMonth',
-      valueFormatter: (v: number) => v.toLocaleString(),
-      subtext: '+8% from last month', // Placeholder
+      label: 'Active Subscriptions',
+      value: analytics?.activeSubs ?? 0,
+      chartData: analytics?.subsPerMonth ?? [],
+      formatter: (v: number) => v.toLocaleString(),
+      change: '+8%',
       dataKey: 'count',
+      color: '#f59e0b',
     },
     {
       key: 'freeUsers',
       label: 'Free Users',
-      icon: '🆓',
-      valueKey: 'freeUsers',
-      chartDataKey: 'freeUsersPerMonth',
-      valueFormatter: (v: number) => v.toLocaleString(),
-      subtext: '+5% from last month', // Placeholder
+      value: analytics?.freeUsers ?? 0,
+      chartData: analytics?.freeUsersPerMonth ?? [],
+      formatter: (v: number) => v.toLocaleString(),
+      change: '+5%',
       dataKey: 'count',
+      color: '#8b5cf6',
     },
   ];
 
+  const selectedMetricData = METRICS_CONFIG.find(m => m.key === selectedMetric);
+
   return (
-    <div className="p-2 sm:p-4 md:p-8 space-y-4 sm:space-y-6 md:space-y-8 mt-16">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-        {loading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-24"><Skeleton className="size-full" /></div>
-          ))
-        ) : (
-          CARD_CONFIG.map((card, i) => (
-            <div key={card.key} className="relative">
-              <div
-                className={`cursor-pointer rounded-xl border bg-white dark:bg-zinc-900 p-6 shadow-sm transition-all hover:shadow-md flex flex-col gap-2 ${expandedCard === card.key ? 'ring-2 ring-primary' : ''}`}
-                onClick={() => setExpandedCard(card.key)}
-                tabIndex={0}
-                role="button"
-                aria-pressed={expandedCard === card.key}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16"> {/* Added pt-16 to prevent overlap with fixed navbar */}
+      <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        </div>
+
+        {/* Metrics Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-24">
+                <Skeleton className="w-full h-full" />
+              </div>
+            ))
+          ) : (
+            METRICS_CONFIG.map((metric) => (
+              <Card 
+                key={metric.key} 
+                className={`cursor-pointer transition-all hover:shadow-lg border-l-4 ${
+                  selectedMetric === metric.key 
+                    ? 'border-l-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                    : 'border-l-gray-200 dark:border-l-gray-700'
+                }`}
+                onClick={() => setSelectedMetric(metric.key)}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-primary">{card.icon}</span>
-                  <span className="text-muted-foreground text-lg font-medium">{card.label}</span>
-                </div>
-                <div className="text-3xl font-extrabold mt-2">{card.valueFormatter(analytics?.[card.valueKey] ?? 0)}</div>
-                <div className="text-xs text-muted-foreground mt-1">{card.subtext}</div>
+                <CardContent className="p-4">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                      {metric.label}
+                    </p>
+                    <div className="flex items-end gap-2">
+                      <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                        {metric.formatter(metric.value)}
+                      </p>
+                      <p className="text-sm text-green-600 dark:text-green-400 font-medium mb-1">
+                        {metric.change}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+
+        {/* Chart Section */}
+        <Card className="mb-8">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <CardTitle className="text-lg font-semibold">
+                  {selectedMetricData?.label} Trends
+                </CardTitle>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Monthly performance overview
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Select value={chartTimeRange} onValueChange={setChartTimeRange}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Last 15 days" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="15days">Last 15 days</SelectItem>
+                    <SelectItem value="30days">Last 30 days</SelectItem>
+                    <SelectItem value="90days">Last 90 days</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value="all" onValueChange={() => {}}> {/* This select remains unchanged as it's not part of the current task */}
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="All Events" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Events</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-          ))
-        )}
-      </div>
-
-      {/* Analytics Chart for Selected Card */}
-      <div className="bg-card rounded-lg p-6 mt-4 min-h-[260px] max-w-xl mx-auto w-full shadow">
-        {(() => {
-          const card = CARD_CONFIG.find(c => c.key === expandedCard);
-          if (!card) return null;
-          if (loading || !analytics) return <div className="h-48 flex items-center justify-center text-muted-foreground">Loading chart...</div>;
-          return (
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={analytics[card.chartDataKey] || []} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <XAxis dataKey="month" tickFormatter={m => m.slice(0, 7)} />
-                <YAxis allowDecimals={false} />
-                <Line type="monotone" dataKey={card.dataKey} stroke="#6366f1" strokeWidth={2} />
-                <BarChartTooltip />
-              </LineChart>
-            </ResponsiveContainer>
-          );
-        })()}
-      </div>
-
-      {/* Filters Row */}
-      <div className="w-full flex justify-center mb-2 sm:mb-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:gap-4 items-stretch sm:items-end justify-center max-w-5xl w-full">
-          <Input
-            placeholder="Search users..."
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }}
-            className="w-full sm:w-56 text-sm sm:text-base"
-          />
-          <Select value={plan || "all"} onValueChange={v => { setPlan(v === "all" ? "" : v); setPage(1); }}>
-            <SelectTrigger className="w-full sm:w-40 text-sm sm:text-base">
-              <SelectValue placeholder="Plan" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Plans</SelectItem>
-              <SelectItem value="Free">Free</SelectItem>
-              <SelectItem value="Pro">Pro</SelectItem>
-              <SelectItem value="Advanced">Advanced</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={subscriptionStatus} onValueChange={v => { setSubscriptionStatus(v); setPage(1); }}>
-            <SelectTrigger className="w-full sm:w-40 text-sm sm:text-base">
-              <SelectValue placeholder="Subscription Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="canceled">Canceled</SelectItem>
-            </SelectContent>
-          </Select>
-          {/* Date Range Filter */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            <div>
-              <span className="block text-xs text-muted-foreground mb-1">From</span>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full sm:w-36 justify-start text-left text-xs sm:text-base">
-                    {createdFrom ? format(createdFrom, 'yyyy-MM-dd') : 'Pick date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="p-0 w-full sm:w-72">
-                  <Calendar
-                    mode="single"
-                    selected={createdFrom ?? undefined}
-                    onSelect={date => { setCreatedFrom(date ?? null); setPage(1); }}
-                    className="border-none bg-background"
-                    captionLayout="dropdown"
-                    fromYear={2022}
-                    toYear={new Date().getFullYear()}
-                  />
-                </PopoverContent>
-              </Popover>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              {loading || !analytics ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-gray-500">Loading chart...</div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart 
+                    data={selectedMetricData?.chartData || []} 
+                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={selectedMetricData?.color} stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor={selectedMetricData?.color} stopOpacity={0.05}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis 
+                      dataKey="month" 
+                      tickFormatter={m => format(new Date(m), 'MMM dd')}
+                      axisLine={false}
+                      tickLine={false}
+                      className="text-xs"
+                    />
+                    <YAxis 
+                      allowDecimals={false} 
+                      axisLine={false}
+                      tickLine={false}
+                      className="text-xs"
+                    />
+                    <BarChartTooltip 
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                      }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey={selectedMetricData!.dataKey} 
+                      stroke={selectedMetricData?.color}
+                      strokeWidth={2}
+                      fill="url(#colorMetric)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </div>
-            <div>
-              <span className="block text-xs text-muted-foreground mb-1">To</span>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full sm:w-36 justify-start text-left text-xs sm:text-base">
-                    {createdTo ? format(createdTo, 'yyyy-MM-dd') : 'Pick date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="p-0 w-full sm:w-72">
-                  <Calendar
-                    mode="single"
-                    selected={createdTo ?? undefined}
-                    onSelect={date => { setCreatedTo(date ?? null); setPage(1); }}
-                    className="border-none bg-background"
-                    captionLayout="dropdown"
-                    fromYear={2022}
-                    toYear={new Date().getFullYear()}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            {(createdFrom || createdTo) && (
-              <Button variant="ghost" size="sm" className="w-full sm:w-auto" onClick={() => { setCreatedFrom(null); setCreatedTo(null); setPage(1); }}>
-                Clear
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
+          </CardContent>
+        </Card>
 
-      {/* User Table */}
-      <div className="bg-card rounded-lg p-1 xs:p-2 sm:p-4 md:p-6 overflow-x-auto">
-        <div className="min-w-[400px] xs:min-w-[500px] sm:min-w-[600px]">
-          <div ref={parentRef} style={{ height: 480, overflow: 'auto' }}>
-            <Table className="text-xs xs:text-sm sm:text-base w-full min-w-[700px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10 p-2 align-middle text-center">{/* Checkbox */}</TableHead>
-                  <TableHead className="min-w-[140px] text-left font-semibold">Name</TableHead>
-                  <TableHead className="min-w-[200px] text-left font-semibold">Email</TableHead>
-                  <TableHead className="min-w-[100px] text-left font-semibold">Plan</TableHead>
-                  <TableHead className="min-w-[150px] text-left font-semibold">Subscription Status</TableHead>
-                  <TableHead className="min-w-[120px] text-left font-semibold">Signup Date</TableHead>
-                  <TableHead className="w-16 text-center font-semibold">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px` }}>
-                {rowVirtualizer.getVirtualItems().map((virtualRow: ReturnType<typeof rowVirtualizer.getVirtualItems>[number]) => {
-                  const u = users[virtualRow.index];
-                  if (!u) return null;
-                  return (
-                    <TableRow
-                      key={u.id}
-                      data-index={virtualRow.index}
-                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${virtualRow.start}px)` }}
-                    >
-                      <TableCell className="w-10 p-2 align-middle text-center">
+        {/* Filters Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>User Management</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                <Input
+                  placeholder="Search users..."
+                  value={search}
+                  onChange={e => { setSearch(e.target.value); setPage(1); }}
+                  className="col-span-1 sm:col-span-2"
+                />
+                <Select value={plan || "all"} onValueChange={v => { setPlan(v === "all" ? "" : v); setPage(1); }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Plan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Plans</SelectItem>
+                    <SelectItem value="Free">Free</SelectItem>
+                    <SelectItem value="Pro">Pro</SelectItem>
+                    <SelectItem value="Advanced">Advanced</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={subscriptionStatus} onValueChange={v => { setSubscriptionStatus(v); setPage(1); }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="canceled">Canceled</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="justify-start text-left">
+                      {createdFrom ? format(createdFrom, 'MMM dd, yyyy') : 'From date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="p-0">
+                    <Calendar
+                      mode="single"
+                      selected={createdFrom ?? undefined}
+                      onSelect={date => { setCreatedFrom(date ?? null); setPage(1); }}
+                      className="border-none"
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="justify-start text-left">
+                      {createdTo ? format(createdTo, 'MMM dd, yyyy') : 'To date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="p-0">
+                    <Calendar
+                      mode="single"
+                      selected={createdTo ?? undefined}
+                      onSelect={date => { setCreatedTo(date ?? null); setPage(1); }}
+                      className="border-none"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              {(createdFrom || createdTo) && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="self-start"
+                  onClick={() => { setCreatedFrom(null); setCreatedTo(null); setPage(1); }}
+                >
+                  Clear date filters
+                </Button>
+              )}
+            </div>
+
+            {/* User Table */}
+            <div className="border rounded-lg overflow-hidden">
+              <div ref={parentRef} style={{ height: 500, overflow: 'auto' }}>
+                <Table>
+                  <TableHeader className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
+                    <TableRow>
+                      <TableHead className="w-12 text-center">
                         <input
                           type="checkbox"
-                          aria-label={`Select user ${u.name}`}
-                          checked={selectedIds.includes(u.id)}
-                          onChange={e => setSelectedIds(e.target.checked ? [...selectedIds, u.id] : selectedIds.filter(id => id !== u.id))}
+                          checked={allSelected}
+                          onChange={e => setSelectedIds(e.target.checked ? users.map(u => u.id) : [])}
                         />
-                      </TableCell>
-                      <TableCell className="min-w-[140px] text-left">{u.name}</TableCell>
-                      <TableCell className="min-w-[200px] text-left">{u.email}</TableCell>
-                      <TableCell className="min-w-[100px] text-left">{u.plan}</TableCell>
-                      <TableCell className="min-w-[150px] text-left">{u.subscriptionStatus}</TableCell>
-                      <TableCell className="min-w-[120px] text-left">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "-"}</TableCell>
-                      <TableCell className="w-16 text-center">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
+                      </TableHead>
+                      <TableHead className="font-semibold text-left min-w-[140px]">Name</TableHead>
+                      <TableHead className="font-semibold text-left min-w-[200px] hidden sm:table-cell">Email</TableHead>
+                      <TableHead className="font-semibold text-center min-w-[120px]">Plan</TableHead>
+                      <TableHead className="font-semibold text-center min-w-[140px] hidden md:table-cell">Status</TableHead>
+                      <TableHead className="font-semibold text-center min-w-[120px] hidden lg:table-cell">Signup Date</TableHead>
+                      <TableHead className="w-16 text-center"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px` }}>
+                    {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                      const user = users[virtualRow.index];
+                      if (!user) return null;
+                      return (
+                        <TableRow
+                          key={user.id}
+                          data-index={virtualRow.index}
+                          style={{ 
+                            position: 'absolute', 
+                            top: 0, 
+                            left: 0, 
+                            width: '100%', 
+                            transform: `translateY(${virtualRow.start}px)`,
+                            height: `${virtualRow.size}px`
+                          }}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-800"
+                        >
+                          <TableCell className="w-12 text-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(user.id)}
+                              onChange={e => setSelectedIds(
+                                e.target.checked 
+                                  ? [...selectedIds, user.id] 
+                                  : selectedIds.filter(id => id !== user.id)
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium text-left min-w-[140px]">{user.name}</TableCell>
+                          <TableCell className="hidden sm:table-cell text-left min-w-[200px] text-gray-600">{user.email}</TableCell>
+                          <TableCell className="text-center min-w-[120px]">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              user.plan === 'Pro' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
+                              user.plan === 'Advanced' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
+                              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                            }`}>
+                              {user.plan}
+                            </span>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-center min-w-[140px]">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              user.subscriptionStatus === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                              user.subscriptionStatus === 'canceled' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
+                              'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+                            }`}>
+                              {user.subscriptionStatus}
+                            </span>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-center min-w-[120px] text-gray-600">
+                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "-"}
+                          </TableCell>
+                          <TableCell className="w-16 text-center">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  aria-label="More actions"
-                                  className="focus:outline-none"
-                                >
-                                  <MoreHorizontalIcon size={20} />
+                                <Button size="sm" variant="ghost">
+                                  <MoreHorizontalIcon size={16} />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onSelect={() => { setSelectedUser(u); setModalOpen(true); }} aria-label="View user">View</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => openEditModal(u)} aria-label="Edit user">Edit</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => openDeleteModal(u)} aria-label="Delete user" className="text-destructive">Delete</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => { setSelectedUser(user); setModalOpen(true); }}>
+                                  View
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => openEditModal(user)}>
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onSelect={() => openDeleteModal(user)}
+                                  className="text-red-600"
+                                >
+                                  Delete
+                                </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
-                          </TooltipTrigger>
-                          <TooltipContent>More actions</TooltipContent>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+
+            {/* Pagination */}
+            <div className="mt-6 flex justify-center">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      className={page === 1 ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: Math.min(5, Math.ceil(total / pageSize)) }, (_, i) => {
+                    const pageNum = i + 1;
+                    return (
+                      <PaginationItem key={pageNum}>
+                        <PaginationLink
+                          isActive={page === pageNum}
+                          onClick={() => setPage(pageNum)}
+                        >
+                          {pageNum}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() => setPage(p => p < Math.ceil(total / pageSize) ? p + 1 : p)}
+                      className={page === Math.ceil(total / pageSize) ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Bulk Actions Bar */}
         {anySelected && (
-          <div className="fixed bottom-2 left-1/2 -translate-x-1/2 bg-card border rounded-lg shadow-lg p-2 flex flex-col sm:flex-row gap-2 sm:gap-4 items-center z-50 w-[99vw] max-w-xl">
-            <span className="font-medium">{selectedIds.length} selected</span>
-            <Button
-              variant="destructive"
-              onClick={() => setBulkDeleteOpen(true)}
-              disabled={bulkActionLoading}
-            >
-              Delete
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={bulkActionLoading}
-              // onClick={...} // Change plan/admin (future step)
-            >
-              Change Plan/Admin
-            </Button>
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 flex items-center gap-4 z-50 min-w-80">
+            <span className="font-medium text-sm">
+              {selectedIds.length} user{selectedIds.length > 1 ? 's' : ''} selected
+            </span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setBulkDeleteOpen(true)}
+                disabled={bulkActionLoading}
+              >
+                Delete
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSelectedIds([])}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         )}
+
+        {/* All existing modals remain the same */}
         {/* Bulk Delete Confirmation Dialog */}
         <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
           <AlertDialogContent>
@@ -445,15 +606,20 @@ export default function AdminDashboard() {
             <AlertDialogDescription>
               Are you sure you want to delete {selectedIds.length} user{selectedIds.length > 1 ? 's' : ''}?
               {anySelectedAdmin && (
-                <div className="text-destructive font-semibold mt-2">Warning: One or more selected users are admins. This action is sensitive and cannot be undone!</div>
+                <div className="text-red-600 font-semibold mt-2">
+                  Warning: One or more selected users are admins. This action cannot be undone!
+                </div>
               )}
             </AlertDialogDescription>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <Button variant="destructive" disabled={bulkActionLoading} onClick={handleBulkDelete}>Delete</Button>
+              <Button variant="destructive" disabled={bulkActionLoading} onClick={handleBulkDelete}>
+                Delete
+              </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
         {/* User Details Modal */}
         <AlertDialog open={modalOpen} onOpenChange={setModalOpen}>
           <AlertDialogContent>
@@ -461,22 +627,23 @@ export default function AdminDashboard() {
               <AlertDialogTitle>User Details</AlertDialogTitle>
             </AlertDialogHeader>
             <AlertDialogDescription>
-              {selectedUser ? (
-                <div className="space-y-2">
-                  <div><b>Name:</b> {selectedUser.name}</div>
-                  <div><b>Email:</b> {selectedUser.email}</div>
-                  <div><b>Plan:</b> {selectedUser.plan}</div>
-                  <div><b>Subscription Status:</b> {selectedUser.subscriptionStatus}</div>
-                  <div><b>Signup Date:</b> {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleString() : "-"}</div>
-                  <div><b>Admin:</b> {selectedUser.isAdmin ? "Yes" : "No"}</div>
+              {selectedUser && (
+                <div className="space-y-3">
+                  <div><strong>Name:</strong> {selectedUser.name}</div>
+                  <div><strong>Email:</strong> {selectedUser.email}</div>
+                  <div><strong>Plan:</strong> {selectedUser.plan}</div>
+                  <div><strong>Subscription Status:</strong> {selectedUser.subscriptionStatus}</div>
+                  <div><strong>Signup Date:</strong> {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleString() : "-"}</div>
+                  <div><strong>Admin:</strong> {selectedUser.isAdmin ? "Yes" : "No"}</div>
                 </div>
-              ) : null}
+              )}
             </AlertDialogDescription>
             <AlertDialogFooter>
               <AlertDialogCancel>Close</AlertDialogCancel>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
         {/* Edit User Modal */}
         <AlertDialog open={editModalOpen} onOpenChange={setEditModalOpen}>
           <AlertDialogContent>
@@ -508,7 +675,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Admin</label>
-                <Select value={editForm?.isAdmin ? "yes" : "no"} onValueChange={v => handleEditChange("isAdmin", v === "yes") }>
+                <Select value={editForm?.isAdmin ? "yes" : "no"} onValueChange={v => handleEditChange("isAdmin", v === "yes")}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -518,14 +685,17 @@ export default function AdminDashboard() {
                   </SelectContent>
                 </Select>
               </div>
-              {editError && <div className="text-destructive text-sm">{editError}</div>}
+              {editError && <div className="text-red-600 text-sm">{editError}</div>}
               <AlertDialogFooter>
                 <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
-                <Button type="submit" disabled={editLoading}>{editLoading ? "Saving..." : "Save"}</Button>
+                <Button type="submit" disabled={editLoading}>
+                  {editLoading ? "Saving..." : "Save"}
+                </Button>
               </AlertDialogFooter>
             </form>
           </AlertDialogContent>
         </AlertDialog>
+
         {/* Delete User Modal */}
         <AlertDialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
           <AlertDialogContent>
@@ -533,8 +703,8 @@ export default function AdminDashboard() {
               <AlertDialogTitle>Delete User</AlertDialogTitle>
             </AlertDialogHeader>
             <AlertDialogDescription>
-              Are you sure you want to delete user <b>{selectedUser?.name}</b>? This action cannot be undone.
-              {deleteError && <div className="text-destructive text-sm mt-2">{deleteError}</div>}
+              Are you sure you want to delete user <strong>{selectedUser?.name}</strong>? This action cannot be undone.
+              {deleteError && <div className="text-red-600 text-sm mt-2">{deleteError}</div>}
             </AlertDialogDescription>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -544,36 +714,7 @@ export default function AdminDashboard() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-        <div className="mt-4 flex justify-center">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  aria-disabled={page === 1}
-                />
-              </PaginationItem>
-              {/* Simple page numbers, can be improved */}
-              {[...Array(Math.max(1, Math.ceil(total / pageSize)))].map((_, i) => (
-                <PaginationItem key={i}>
-                  <PaginationLink
-                    isActive={page === i + 1}
-                    onClick={() => setPage(i + 1)}
-                  >
-                    {i + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() => setPage((p) => p < Math.ceil(total / pageSize) ? p + 1 : p)}
-                  aria-disabled={page === Math.ceil(total / pageSize)}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
       </div>
     </div>
   );
-} 
+}

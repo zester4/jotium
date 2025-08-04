@@ -1,3 +1,4 @@
+//app/(auth)/actions.ts
 "use server";
 
 import { AuthError } from "next-auth";
@@ -7,6 +8,34 @@ import { createUser, getUser } from "@/db/queries";
 
 import { signIn } from "./auth";
 
+// Email sending function
+async function sendEmail(emailData: any) {
+  try {
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:3000';
+      
+    const response = await fetch(`${baseUrl}/api/email/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(emailData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Email API responded with ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('Email sent successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('Failed to send welcome email:', error);
+    // Don't throw - we don't want email failures to break registration
+    return null;
+  }
+}
 
 const loginFormSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -148,7 +177,22 @@ export const register = async (
 
     // Create new user
     try {
-      await createUser(email, password, firstName, lastName);
+      const createdUsers = await createUser(email, password, firstName, lastName);
+      const newUser = createdUsers[0]; // Get the first user from the array
+      
+      // Send welcome email to new user
+      if (newUser) {
+        await sendEmail({
+          to: newUser.email,
+          type: 'welcome',
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          plan: newUser.plan || 'Free', // New users start with Free plan
+          createdAt: newUser.createdAt?.toISOString(),
+          email: newUser.email,
+        });
+      }
+      
     } catch (createError) {
       console.error("User creation error:", createError);
       return {

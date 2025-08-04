@@ -8,11 +8,12 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
+     * - api/email/send (Email sending endpoint)
      * - api/pricing/webhook (Stripe webhook)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    '/((?!api/pricing/webhook|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api/email/send|api/pricing/webhook|_next/static|_next/image|favicon.ico).*)',
   ],
 };
