@@ -1,9 +1,10 @@
-// lib/email-utils.ts
-// Remove the import since we'll define the type here to avoid circular dependency
-export type EmailType = 'welcome' | 'subscription-receipt' | 'password-reset';
+// lib/email-service.ts - Direct email service without HTTP calls
+import { Resend } from 'resend';
+import { PasswordResetEmail } from '@/components/emails/password-reset-email';
+import { SubscriptionReceiptEmail } from '@/components/emails/subscription-receipt-email';
+import { WelcomeEmail } from '@/components/emails/welcome-email';
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+export type EmailType = 'welcome' | 'subscription-receipt' | 'password-reset';
 
 interface SendEmailOptions {
   to: string;
@@ -18,52 +19,112 @@ interface EmailResponse {
   error?: string;
 }
 
+// Initialize Resend
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Email configuration
+const EMAIL_CONFIG = {
+  from: `${process.env.COMPANY_NAME || 'Jotium'} <${process.env.RESEND_FROM_EMAIL || 'noreply@yourdomain.com'}>`,
+  replyTo: process.env.RESEND_REPLY_TO_EMAIL || 'support@yourdomain.com',
+};
+
 /**
- * Send an email using the internal API
+ * Send an email directly using Resend (no HTTP call)
  */
 export async function sendEmail({ to, type, data = {} }: SendEmailOptions): Promise<EmailResponse> {
   try {
     console.log(`Attempting to send ${type} email to ${to}`);
-    console.log(`Using URL: ${BASE_URL}/api/email/send`);
     
-    const response = await fetch(`${BASE_URL}/api/email/send`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        to,
-        type,
-        ...data,
-      }),
+    // Check if API key is available
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY is not configured');
+    }
+
+    // Validate email address format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(to)) {
+      throw new Error('Invalid email address format');
+    }
+
+    let emailComponent;
+    let subject: string;
+
+    // Prepare email based on type
+    switch (type) {
+      case 'welcome':
+        subject = `Welcome to Jotium!`;
+        emailComponent = WelcomeEmail({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          plan: data.plan,
+        });
+        break;
+
+      case 'subscription-receipt':
+        const amount = data.amount || '0.00';
+        const currency = data.currency || 'USD';
+        const currencySymbol = currency === 'USD' ? '$' : currency;
+        
+        subject = `Payment Receipt - ${currencySymbol}${amount}`;
+        emailComponent = SubscriptionReceiptEmail({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          plan: data.plan,
+          amount: data.amount,
+          currency: data.currency,
+          subscriptionId: data.subscriptionId,
+          invoiceId: data.invoiceId,
+          billingDate: data.billingDate,
+          nextBillingDate: data.nextBillingDate,
+          paymentMethod: data.paymentMethod,
+        });
+        break;
+
+      case 'password-reset':
+        subject = `Reset your password - Jotium`;
+        emailComponent = PasswordResetEmail({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          resetToken: data.resetToken,
+          resetUrl: data.resetUrl,
+          userAgent: data.userAgent || 'Unknown browser',
+          ipAddress: data.ipAddress || 'Unknown IP',
+        });
+        break;
+
+      default:
+        throw new Error('Invalid email type');
+    }
+
+    // Send email using Resend
+    const result = await resend.emails.send({
+      from: EMAIL_CONFIG.from,
+      to,
+      replyTo: EMAIL_CONFIG.replyTo,
+      subject,
+      react: emailComponent,
+      tags: [
+        { name: 'type', value: type },
+        { name: 'environment', value: process.env.NODE_ENV || 'development' },
+      ],
     });
 
-    console.log(`Response status: ${response.status}`);
-    console.log(`Response headers:`, Object.fromEntries(response.headers.entries()));
+    console.log(`Email sent successfully:`, {
+      id: result.data?.id,
+      type,
+      to,
+      timestamp: new Date().toISOString(),
+    });
 
-    // Get response text first to see what we're actually getting
-    const responseText = await response.text();
-    console.log(`Response text (first 200 chars):`, responseText.substring(0, 200));
+    return {
+      success: true,
+      emailId: result.data?.id,
+      message: `${type} email sent successfully`,
+    };
 
-    // Try to parse as JSON
-    let result;
-    try {
-      result = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('Failed to parse response as JSON:', parseError);
-      return {
-        success: false,
-        error: `Invalid response format. Expected JSON, got: ${responseText.substring(0, 100)}...`,
-      };
-    }
-
-    if (!response.ok) {
-      throw new Error(result.error || `HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    return result;
   } catch (error: any) {
     console.error('Email sending error:', error);
+    
     return {
       success: false,
       error: error.message || 'Failed to send email',
@@ -158,6 +219,11 @@ export async function sendPasswordResetEmail({
   resetToken: string;
   resetUrl?: string;
 }): Promise<EmailResponse> {
+  const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+    
+  const finalResetUrl = resetUrl || `${BASE_URL}/reset-password?token=${encodeURIComponent(resetToken)}`;
+  
   return sendEmail({
     to,
     type: 'password-reset',
@@ -165,7 +231,7 @@ export async function sendPasswordResetEmail({
       firstName,
       lastName,
       resetToken,
-      resetUrl,
+      resetUrl: finalResetUrl,
     },
   });
 }
@@ -174,11 +240,13 @@ export async function sendPasswordResetEmail({
  * Generate password reset URL
  */
 export function generatePasswordResetUrl(token: string): string {
+  const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
   return `${BASE_URL}/reset-password?token=${encodeURIComponent(token)}`;
 }
 
 /**
- * Generate a secure reset token (you might want to use a more sophisticated method)
+ * Generate a secure reset token
  */
 export function generateResetToken(): string {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
