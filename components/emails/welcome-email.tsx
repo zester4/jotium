@@ -157,7 +157,7 @@ export const WelcomeEmail = ({
                         <Text style={planFeatureAdvanced}>✓ Team collaboration</Text>
                         <Text style={planFeatureAdvanced}>✓ Analytics dashboard</Text>
                       </div>
-                      <Button style={planButtonAdvanced} href={`${baseUrl}/upgrade?plan=advanced`}>
+                      <Button style={planButtonAdvanced} href={`${baseUrl}/pricing?plan=advanced`}>
                         Choose Advanced
                       </Button>
                     </div>

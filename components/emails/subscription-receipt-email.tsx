@@ -154,11 +154,11 @@ export const SubscriptionReceiptEmail = ({
   
             {/* CTA */}
             <Section style={ctaSection}>
-              <Button style={ctaButton} href={`${baseUrl}/dashboard`}>
-                Access Dashboard
+              <Button style={ctaButton} href={`${baseUrl}`}>
+                Access Jotuim
               </Button>
               <Text style={ctaSubtext}>
-                <Link href={`${baseUrl}/dashboard/billing`} style={billingLink}>
+                <Link href={`${baseUrl}/billing`} style={billingLink}>
                   View billing details
                 </Link>
               </Text>
