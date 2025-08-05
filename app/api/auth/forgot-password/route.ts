@@ -1,30 +1,9 @@
+//app/api/auth/forgot-password/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { createPasswordResetToken, getUser } from '@/db/queries';
-
-// Email sending function
-async function sendEmail(emailData: any) {
-  try {
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : 'http://localhost:3000';
-      
-    const response = await fetch(`${baseUrl}/api/email/send`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(emailData),
-    });
-
-    const result = await response.json();
-    return result;
-  } catch (error) {
-    console.error('Failed to send reset email:', error);
-    throw error;
-  }
-}
+import { sendPasswordResetEmail, generatePasswordResetUrl } from '@/lib/email-utils'; // ✅ Import direct functions
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -61,14 +40,24 @@ export async function POST(req: NextRequest) {
       throw new Error('Failed to create reset token');
     }
 
-    // Send reset email
-    await sendEmail({
+    // Generate reset URL
+    const resetUrl = generatePasswordResetUrl(resetToken);
+
+    // ✅ Send reset email using direct function call
+    const emailResult = await sendPasswordResetEmail({
       to: email,
-      type: 'password-reset',
       firstName: user.firstName,
       lastName: user.lastName,
       resetToken: resetToken,
+      resetUrl: resetUrl,
     });
+
+    if (emailResult.success) {
+      console.log('Password reset email sent successfully:', emailResult.emailId);
+    } else {
+      console.error('Failed to send password reset email:', emailResult.error);
+      // Still return success to avoid revealing user existence
+    }
 
     return NextResponse.json({
       message: 'If an account with that email exists, we sent a password reset email.',
