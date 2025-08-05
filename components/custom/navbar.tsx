@@ -1,4 +1,5 @@
 //components/custom/navbar.tsx
+import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -11,6 +12,8 @@ import { UserMenu } from "./user-menu";
 import { Button } from "../ui/button";
 
 export const Navbar = async () => {
+  const heads = headers();
+  const pathname = heads.get("x-next-pathname");
   const session = await auth();
   let messageCount = 0;
   let messageLimit: number | "Unlimited" = 5; // Default to Free plan limit
@@ -33,24 +36,26 @@ export const Navbar = async () => {
       <div className="bg-background/80 backdrop-blur-md border-b border-border/50 fixed top-0 left-0 w-full py-3 px-4 justify-between flex flex-row items-center z-30 shadow-sm">
         <div className="flex flex-row gap-4 items-center">
           <History user={session?.user} />
-          <Link href="/" className="flex flex-row gap-3 items-center group">
-            <div className="relative">
-              <Image
-                src="/images/jotium.png"
-                height={24}
-                width={24}
-                alt="jotium logo"
-                className="group-hover:scale-105 transition-transform duration-200"
-                style={{ width: "auto", height: "auto" }}
-              />
-            </div>
-            <div className="text-zinc-400 group-hover:text-zinc-500 transition-colors duration-200">
-              <SlashIcon size={18} />
-            </div>
-            <div className="text-base font-semibold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent group-hover:from-primary group-hover:to-primary/70 transition-all duration-200 truncate w-32 md:w-fit">
-              Jotium Agent
-            </div>
-          </Link>
+          {pathname !== "/login" && pathname !== "/register" && (
+            <Link href="/" className="flex flex-row gap-3 items-center group">
+              <div className="relative">
+                <Image
+                  src="/images/jotium.png"
+                  height={24}
+                  width={24}
+                  alt="jotium logo"
+                  className="group-hover:scale-105 transition-transform duration-200"
+                  style={{ width: "auto", height: "auto" }}
+                />
+              </div>
+              <div className="text-zinc-400 group-hover:text-zinc-500 transition-colors duration-200">
+                <SlashIcon size={18} />
+              </div>
+              <div className="text-base font-semibold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent group-hover:from-primary group-hover:to-primary/70 transition-all duration-200 truncate w-32 md:w-fit">
+                Jotium Agent
+              </div>
+            </Link>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
