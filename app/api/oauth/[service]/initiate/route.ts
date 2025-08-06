@@ -37,7 +37,15 @@ export async function GET(
     case "gmail":
       clientId = process.env.GOOGLE_CLIENT_ID;
       // Updated scopes for Google OAuth 2.0
-      scope = "openid email profile https://www.googleapis.com/auth/gmail.modify";
+      scope = [
+        "openid",
+        "email",
+        "profile",
+        "https://www.googleapis.com/auth/gmail.modify",
+        "https://www.googleapis.com/auth/calendar",
+        "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/drive.file",
+      ].join(" ");
       if (!clientId) {
         console.error("GOOGLE_CLIENT_ID environment variable is not set.");
         return new Response("Google OAuth configuration error", { status: 500 });

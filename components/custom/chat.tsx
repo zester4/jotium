@@ -42,6 +42,8 @@ export function Chat({
   const [messagesEndRef] = useScrollToBottom<HTMLDivElement>([messages.length]);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [firstName, setFirstName] = useState<string | undefined>(undefined);
+  const [executingTools, setExecutingTools] = useState<string[]>([]); // New state for executing tools (array)
+  const [messageToolsMap, setMessageToolsMap] = useState<{[messageId: string]: string[]}>({});  // Track tools per message
   const router = useRouter(); // Initialize useRouter
 
   useEffect(() => {
@@ -165,6 +167,13 @@ export function Chat({
                   assistantMessage.content += data.content;
                 } else if (data.type === "error") {
                   setError(data.content);
+                } else if (data.type === "tool-start") {
+                  setExecutingTools(prev => [...prev, data.toolName]); // Add tool to executing array
+                  // Also store tools for this specific message
+                  setMessageToolsMap(prev => ({
+                    ...prev,
+                    [assistantMessage.id]: [...(prev[assistantMessage.id] || []), data.toolName]
+                  }));
                 }
                 if (data.attachments && Array.isArray(data.attachments)) {
                   pendingAttachments = data.attachments;
@@ -195,6 +204,7 @@ export function Chat({
           msg.id === assistantMessage.id ? { ...assistantMessage } : msg
         )
       );
+      setExecutingTools([]); // Reset executing tools after response
       // Trigger a refresh of the current route to update Server Components (like Navbar)
       router.refresh();
     }
@@ -244,7 +254,7 @@ className="flex-1 overflow-y-auto custom-scrollbar pb-24 sm:pb-32"
                   <Overview firstName={firstName} key="overview" />
                 )}
 
-                {messages.map((message) => (
+                {messages.map((message, index) => (
                   <PreviewMessage
                     key={message.id}
                     chatId={id}
@@ -254,6 +264,19 @@ className="flex-1 overflow-y-auto custom-scrollbar pb-24 sm:pb-32"
                     toolInvocations={message.toolCalls as any}
                     duration={message.duration}
                     attachments={message.attachments}
+                    executingTools={
+                      // Show executing tools for current streaming message OR completed tools for finished messages
+                      index === messages.length - 1 && 
+                      message.role === "assistant" && 
+                      isLoading 
+                        ? executingTools 
+                        : messageToolsMap[message.id] || []
+                    }
+                    isStreaming={
+                      index === messages.length - 1 && 
+                      message.role === "assistant" && 
+                      isLoading
+                    }
                   />
                 ))}
               </AnimatePresence>

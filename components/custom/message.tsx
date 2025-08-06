@@ -10,6 +10,7 @@ import { Markdown } from "./markdown";
 import { MessageActions } from "./message-actions";
 import { PreviewAttachment } from "./preview-attachment";
 import { MessageReasoning } from "./thoughts";
+import { ToolExecution } from "./tool-execution"; // Import the new component
 import { Weather } from "./weather";
 import { AuthorizePayment } from "../flights/authorize-payment";
 import { DisplayBoardingPass } from "../flights/boarding-pass";
@@ -27,6 +28,8 @@ export const Message = ({
   attachments,
   thoughts,
   duration,
+  executingTools, // Updated prop
+  isStreaming = false, // New prop to indicate if message is streaming
 }: {
   chatId: string;
   role: string;
@@ -35,6 +38,8 @@ export const Message = ({
   attachments?: Array<Attachment>;
   thoughts?: string;
   duration?: number;
+  executingTools?: string[]; // Updated prop type
+  isStreaming?: boolean; // New prop type
 }) => {
   return (
     <motion.div
@@ -63,6 +68,21 @@ export const Message = ({
         </div>
 
         <div className="flex flex-col gap-1.5 sm:gap-2 md:gap-3 w-full min-w-0 overflow-hidden">
+          {/* Tool Execution Display - Chained Layout */}
+          {executingTools && executingTools.length > 0 && role === "assistant" && (
+            <div className="mb-1 sm:mb-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                {executingTools.map((toolName, index) => (
+                  <ToolExecution 
+                    key={`${toolName}-${index}`} 
+                    toolName={toolName}
+                    isExecuting={isStreaming} // Pass streaming state to show different animation
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Thoughts/Reasoning - Mobile optimized */}
           {thoughts && (
             <div className="mb-1 sm:mb-2">
