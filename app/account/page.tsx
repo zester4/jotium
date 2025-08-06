@@ -44,7 +44,7 @@ const apiTools = [
 
 // List of OAuth providers
 const oauthProviders = [
-  { name: "Google", service: "google", icon: "/logo/google.svg" },
+  { name: "Google", service: "gmail", icon: "/logo/google.svg" },
   { name: "GitHub", service: "github", icon: "/logo/github.svg" },
   { name: "Slack", service: "slack", icon: "/logo/slack.svg" },
 ];
@@ -481,7 +481,7 @@ export default function AccountPage() {
             <Separator className="my-6" />
             <h3 className="font-semibold mb-4 text-foreground">Scopes & Permissions</h3>
             <div className="space-y-2 text-sm text-foreground/70">
-              <div>Review and adjust what each integration can access. (Coming soon)</div>
+              <div>Review and adjust what each integration can access.</div>
               <ul className="list-disc ml-6">
                 <li>Google: Profile, Email, Calendar</li>
                 <li>GitHub: Repos, Issues, Pull Requests</li>

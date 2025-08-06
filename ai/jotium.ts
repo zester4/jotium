@@ -5,7 +5,7 @@
 import { GoogleGenAI, FunctionDeclaration } from "@google/genai";
 import * as fs from "fs/promises";
 import dotenv from 'dotenv';
-import { getDecryptedApiKey } from "@/db/queries";
+import { getDecryptedApiKey, getDecryptedOAuthAccessToken } from "@/db/queries";
 
 // Import all tools
 import { WebSearchTool } from './tools/web-search-tool';
@@ -32,6 +32,10 @@ import { AirtableTool } from './tools/airtable-tool';
 import { SupabaseTool } from './tools/supabase-tool';
 import { TrelloTool } from './tools/trello';
 import { LinearManagementTool } from './tools/linear-tool';
+// Google OAuth Tools
+import { GmailTool } from './tools/GmailTool';
+import { GoogleCalendarTool } from './tools/GoogleCalendarTool';
+import { GoogleDriveTool } from './tools/GoogleDriveTool';
 
 dotenv.config();
 
@@ -171,6 +175,50 @@ export class AIAgent {
       this.tools.set("linear_management", linearTool);
     }
 
+    // --- Group 4: OAuth Tools (require OAuth connection) ---
+    if (userId) {
+      // Check if user has Google OAuth connection (Gmail service)
+      const googleAccessToken = await getDecryptedOAuthAccessToken({ 
+        userId, 
+        service: "gmail" 
+      });
+      
+      if (googleAccessToken) {
+        // Gmail Tool
+        const gmailTool = new GmailTool(userId);
+        this.tools.set("gmail_operations", gmailTool);
+        this.tools.set(gmailTool.getDefinition().name || "gmail_operations", gmailTool);
+
+        // Google Calendar Tool
+        const calendarTool = new GoogleCalendarTool(userId);
+        this.tools.set("google_calendar_operations", calendarTool);
+        this.tools.set(calendarTool.getDefinition().name || "google_calendar_operations", calendarTool);
+
+        // Google Drive Tool
+        const driveTool = new GoogleDriveTool(userId);
+        this.tools.set("google_drive_operations", driveTool);
+        this.tools.set(driveTool.getDefinition().name || "google_drive_operations", driveTool);
+      }
+
+      // GitHub OAuth (if you want to add GitHub OAuth later)
+      // const githubAccessToken = await getDecryptedOAuthAccessToken({ 
+      //   userId, 
+      //   service: "github" 
+      // });
+      // if (githubAccessToken) {
+      //   // Add GitHub OAuth tool here
+      // }
+
+      // Slack OAuth
+      // const slackAccessToken = await getDecryptedOAuthAccessToken({ 
+      //   userId, 
+      //   service: "slack" 
+      // });
+      // if (slackAccessToken) {
+      //   // Add Slack OAuth tool here
+      // }
+    }
+
     console.log(`✅ Initialized ${this.tools.size} tools`);
   }
 
@@ -276,10 +324,11 @@ Core Capabilities:
 📅 **Scheduling & Automation**: Schedule meetings, manage calendars, and automate repetitive tasks.
 🖼️ **Content Creation**: Generate images, create social media posts, and produce visual content.
 ☀️ **Utilities**: Access weather data, book flights, process payments, and more.
+📧 **Google Services**: Send and manage emails via Gmail, create and manage calendar events, upload and organize files in Google Drive.
 
 Core Principles:
 - **Act Agentically**: Take initiative to fetch necessary IDs (workspaces, projects, boards, lists, etc.) using available tools without prompting the user for details unless absolutely necessary.
-- **Anticipate Needs**: Understand the user’s intent and proactively provide additional value (e.g., if asked to create an Asana project, include a detailed description, relevant tasks, milestones, and suggest integrations).
+- **Anticipate Needs**: Understand the user's intent and proactively provide additional value (e.g., if asked to create an Asana project, include a detailed description, relevant tasks, milestones, and suggest integrations).
 - **Think Like a Human**: Approach tasks with curiosity and critical thinking, breaking them down step-by-step to ensure thoroughness and accuracy.
 - **Minimize Questions**: Avoid asking for clarification unless critical information is missing; infer and act based on context and available data.
 - **Be Proactive**: Suggest next steps, enhancements, or related tasks to maximize productivity (e.g., after creating a project, propose setting up a Slack channel or scheduling a kickoff meeting).
@@ -289,15 +338,16 @@ Core Principles:
 
 Example Behavior:
 If asked to "create an Asana project for building AI agents with a list of tasks," you will:
-1. Use the Asana tool to fetch available workspaces and select the most relevant one (or default to the user’s primary workspace).
-2. Create a project named "Building AI Agents" with a detailed description outlining the project’s purpose, goals, and scope.
+1. Use the Asana tool to fetch available workspaces and select the most relevant one (or default to the user's primary workspace).
+2. Create a project named "Building AI Agents" with a detailed description outlining the project's purpose, goals, and scope.
 3. Add a comprehensive task list with subtasks, deadlines, and assignees (if known), covering research, development, testing, and deployment phases.
 4. Suggest additional actions, such as creating a Slack channel for team communication, generating a project timeline, or sharing a summary via email.
 5. Offer to monitor progress or set up automations for task updates.
-6. IF YOU DO NOT FIND A TOOL SUCH AS: Asana, Slack, ClickUp, Airtable, Notion, Trello ask the users to add their api keys in the settings under api keys.
-7. YOU MUST NEVER MENTION YOUR TOOL CODE (e.g I could potentially use the api_request tool, NO!) IN YOUR RESPONSE OR THOUGHTS AND NEVER IDENTIFY AS AN AI BUT A POWERFUL ASSISTANT TO MAKE LIFE EASY.
-8. Whenever you search the web, you MUST ALWAYS give a well detailed and long explanation for you search.
-9. For stock, crypto, exchange-currencies etc, use the alpavantage, if it does not work, then use the web search tool.
+6. IF YOU DO NOT HAVE ACCESS TO TOOLS SUCH AS: Asana, Slack, ClickUp, Airtable, Notion, Trello ask the users to add their api keys in the settings under api keys.
+7. IF YOU DO NOT HAVE ACCESS TO GOOGLE TOOLS SUCH AS: Gmail, Google Calendar, Google Drive ask the users to connect their Google account in the settings under OAuth connections.
+8. YOU MUST NEVER MENTION YOUR TOOL CODE (e.g I could potentially use the api_request tool, NO!) IN YOUR RESPONSE OR THOUGHTS AND NEVER IDENTIFY AS AN AI BUT A POWERFUL ASSISTANT TO MAKE LIFE EASY.
+9. Whenever you search the web, you MUST ALWAYS give a well detailed and long explanation for you search.
+10. For stock, crypto, exchange-currencies etc, use the alpavantage, if it does not work, then use the web search tool.
 
 You are Jotium—intelligent, capable, and ready to take ownership of any task with precision and foresight. Deliver results that exceed expectations while maintaining a natural, conversational tone.`
       },

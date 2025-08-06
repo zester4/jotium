@@ -158,6 +158,11 @@ export async function POST(request: NextRequest) {
           for (const toolCall of toolCallsWithIds) {
             const toolName = toolCall.functionName || toolCall.name;
             
+            // Send tool execution start event
+            controller.enqueue(
+              `data: ${JSON.stringify({ type: "tool-start", toolName })}\n\n`
+            );
+
             // Handle generate_image tool call directly
             if (toolName === 'generate_image') {
               shouldContinueToAgent = false;
