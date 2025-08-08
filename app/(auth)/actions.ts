@@ -4,8 +4,8 @@
 import { AuthError } from "next-auth";
 import { z } from "zod";
 
-import { createUser, getUser } from "@/db/queries";
-import { sendWelcomeEmail } from "@/lib/email-utils"; // ✅ Import the direct function
+import { createUser, getUser, createPasswordResetToken } from "@/db/queries";
+import { sendWelcomeEmail, sendPasswordResetEmail } from "@/lib/email-utils"; // ✅ Import the direct function
 
 import { signIn } from "./auth";
 
@@ -26,6 +26,23 @@ export interface LoginActionState {
   errors?: {
     email?: string[];
     password?: string[];
+    general?: string[];
+  };
+}
+
+export interface RequestPasswordResetActionState {
+  status: "idle" | "in_progress" | "success" | "failed" | "invalid_data";
+  errors?: {
+    email?: string[];
+    general?: string[];
+  };
+}
+
+export interface ResetPasswordActionState {
+  status: "idle" | "in_progress" | "success" | "failed" | "invalid_data" | "invalid_token";
+  errors?: {
+    password?: string[];
+    confirmPassword?: string[];
     general?: string[];
   };
 }
@@ -92,6 +109,138 @@ export const login = async (
       status: "failed",
       errors: {
         general: ["An unexpected error occurred"],
+      },
+    };
+  }
+};
+
+export const requestPasswordReset = async (
+  _: RequestPasswordResetActionState,
+  formData: FormData,
+): Promise<RequestPasswordResetActionState> => {
+  try {
+    const result = loginFormSchema.pick({ email: true }).safeParse({
+      email: formData.get("email"),
+    });
+
+    if (!result.success) {
+      return {
+        status: "invalid_data",
+        errors: result.error.flatten().fieldErrors,
+      };
+    }
+
+    const { email } = result.data;
+
+    const token = await createPasswordResetToken(email);
+
+    if (!token) {
+      return {
+        status: "failed",
+        errors: {
+          general: ["Failed to generate reset token or user not found."],
+        },
+      };
+    }
+
+    // Send email with reset link
+    const resetLink = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
+    const emailResult = await sendPasswordResetEmail({
+      to: email,
+      resetToken: token,
+      resetUrl: resetLink,
+    });
+
+    if (emailResult.success) {
+      console.log('Password reset email sent successfully:', emailResult.emailId);
+    } else {
+      console.error('Failed to send password reset email:', emailResult.error);
+      return {
+        status: "failed",
+        errors: {
+          general: ["Failed to send reset email. Please try again."],
+        },
+      };
+    }
+
+    return { status: "success" };
+  } catch (error) {
+    console.error("Request password reset error:", error);
+    return {
+      status: "failed",
+      errors: {
+        general: ["An unexpected error occurred while requesting password reset."],
+      },
+    };
+  }
+};
+
+export const resetPassword = async (
+  _: ResetPasswordActionState,
+  formData: FormData,
+): Promise<ResetPasswordActionState> => {
+  try {
+    const result = z.object({
+      token: z.string().min(1, "Token is required"),
+      password: z.string().min(6, "Password must be at least 6 characters"),
+      confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+    }).superRefine(({ confirmPassword, password }, ctx) => {
+      if (confirmPassword !== password) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Passwords do not match",
+          path: ['confirmPassword']
+        });
+      }
+    }).safeParse({
+      token: formData.get("token"),
+      password: formData.get("password"),
+      confirmPassword: formData.get("confirmPassword"),
+    });
+
+    if (!result.success) {
+      return {
+        status: "invalid_data",
+        errors: result.error.flatten().fieldErrors,
+      };
+    }
+
+    const { token, password } = result.data;
+
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      if (response.status === 400 && data.error === 'Invalid or expired reset token') {
+        return {
+          status: "invalid_token",
+          errors: {
+            general: ["Invalid or expired reset token."],
+          },
+        };
+      }
+      return {
+        status: "failed",
+        errors: {
+          general: [data.error || "Failed to reset password."],
+        },
+      };
+    }
+
+    return { status: "success" };
+  } catch (error) {
+    console.error("Reset password error:", error);
+    return {
+      status: "failed",
+      errors: {
+        general: ["An unexpected error occurred while resetting password."],
       },
     };
   }
