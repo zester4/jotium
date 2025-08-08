@@ -1,10 +1,10 @@
 "use client";
 
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Key, Plug, Shield, User } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { toast } from "sonner"; // Import toast
+import { toast } from "sonner";
 
 import {
   AlertDialog,
@@ -21,10 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// List of tools that require API keys (from /ai/tools)
 const apiTools = [
   { name: "Airtable", keyName: "airtableApiKey", placeholder: "key..." },
   { name: "Ayrshare", keyName: "ayrshareApiKey", placeholder: "ayr-..." },
@@ -47,11 +44,13 @@ const oauthProviders = [
   { name: "Google", service: "gmail", icon: "/logo/google.svg" },
   { name: "GitHub", service: "github", icon: "/logo/github.svg" },
   { name: "Slack", service: "slack", icon: "/logo/slack.svg" },
+  { name: "X", service: "x", icon: "/logo/x-twitter.svg" },
 ];
 
 export default function AccountPage() {
   const router = useRouter();
-  const searchParams = useSearchParams(); // Initialize useSearchParams
+  const searchParams = useSearchParams();   
+  const [activeSection, setActiveSection] = useState<"profile" | "security" | "integrations" | "api-keys">("profile");
 
   // Which services have a key saved (from backend)
   const [savedServices, setSavedServices] = useState<string[]>([]);
@@ -135,15 +134,15 @@ export default function AccountPage() {
   useEffect(() => {
     if (searchParams.get("oauth_success")) {
       toast.success("OAuth connection successful!");
-      router.replace("/account", undefined); // Clean URL
+      router.replace("/account", undefined); //
     }
     if (searchParams.get("oauth_disconnected")) {
       toast.info("OAuth connection disconnected.");
-      router.replace("/account", undefined); // Clean URL
+      router.replace("/account", undefined); //
     }
     if (searchParams.get("oauth_error")) {
       toast.error("OAuth connection failed. Please try again.");
-      router.replace("/account", undefined); // Clean URL
+      router.replace("/account", undefined); //
     }
   }, [searchParams, router]);
 
@@ -323,28 +322,52 @@ export default function AccountPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto pt-20 pb-16 px-4 sm:px-6 lg:px-8 overflow-x-hidden">
-      <Button
-        variant="outline"
-        size="sm"
-        className="mb-4 flex items-center gap-2"
-        onClick={() => router.back()}
-      >
-        <ArrowLeft className="size-4" />
-        Back
-      </Button>
-      <h1 className="text-3xl font-bold text-center mb-8 text-foreground">Account Settings</h1>
-      <div className="bg-background rounded-xl shadow p-6 border border-border">
-        <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="w-full flex flex-wrap justify-center md:justify-between mb-6 bg-background border border-border rounded-lg overflow-hidden p-1">
-            <TabsTrigger value="profile" className="flex-1">Profile</TabsTrigger>
-            <TabsTrigger value="security" className="flex-1">Security</TabsTrigger>
-            <TabsTrigger value="integrations" className="flex-1">Integrations</TabsTrigger>
-            <TabsTrigger value="api-keys" className="flex-1">API Keys</TabsTrigger>
-          </TabsList>
+    <div className="mx-auto max-w-5xl pt-20 pb-16 px-4 sm:px-6 lg:px-8">
+      <div className="mb-6 flex items-center justify-between">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+          onClick={() => router.back()}
+        >
+          <ArrowLeft className="size-4" />
+          Back
+        </Button>
+        <h1 className="text-2xl font-semibold text-foreground">Account Settings</h1>
+      </div>
 
-          {/* Profile Tab */}
-          <TabsContent value="profile" className="overflow-x-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-[240px,1fr] gap-6">
+        {/* Sidebar */}
+        <aside className="bg-background border border-border rounded-lg p-2 md:p-3 h-fit">
+          <nav className="space-y-1">
+            {[
+              { id: "profile", label: "Profile", Icon: User },
+              { id: "security", label: "Security", Icon: Shield },
+              { id: "integrations", label: "Integrations", Icon: Plug },
+              { id: "api-keys", label: "API Keys", Icon: Key },
+            ].map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveSection(id as typeof activeSection)}
+                className={`w-full flex items-center justify-between rounded-md px-3 py-2 text-sm transition border ${
+                  activeSection === id
+                    ? "bg-muted text-foreground border-border"
+                    : "bg-background text-foreground/80 border-transparent hover:bg-muted/60"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <Icon className="size-4" />
+                  {label}
+                </span>
+              </button>
+            ))}
+          </nav>
+        </aside>
+
+        {/* Content */}
+        <div className="bg-background rounded-lg border border-border p-4 md:p-6">
+          {activeSection === "profile" && (
+            <>
             <h2 className="text-xl font-semibold mb-4 text-foreground">Profile Information</h2>
             <form className="space-y-6" onSubmit={handleProfileSubmit}>
               <div className="flex items-center gap-4">
@@ -368,10 +391,11 @@ export default function AccountPage() {
               {profileSuccess && <div className="text-green-600 text-sm">{profileSuccess}</div>}
               <Button type="submit" className="w-full" disabled={profileLoading || profileSaving}>{profileSaving ? "Saving..." : "Save Changes"}</Button>
             </form>
-          </TabsContent>
+            </>
+          )}
 
-          {/* Security Tab */}
-          <TabsContent value="security" className="overflow-x-hidden">
+          {activeSection === "security" && (
+            <>
             <h2 className="text-xl font-semibold mb-4 text-foreground">Password & Security</h2>
             <form className="space-y-4 mb-8" onSubmit={handlePasswordChange}>
               <Label htmlFor="current-password" className="text-foreground">Current Password</Label>
@@ -399,7 +423,8 @@ export default function AccountPage() {
               </Button>
             </div>
             <Separator className="my-6" />
-          </TabsContent>
+            </>
+          )}
 
           <AlertDialog open={showDeleteAllChatsDialog} onOpenChange={setShowDeleteAllChatsDialog}>
             <AlertDialogContent>
@@ -418,8 +443,8 @@ export default function AccountPage() {
             </AlertDialogContent>
           </AlertDialog>
 
-          {/* Integrations Tab */}
-          <TabsContent value="integrations" className="overflow-x-hidden">
+          {activeSection === "integrations" && (
+            <>
             <h2 className="text-xl font-semibold mb-4 text-foreground">Connected Accounts</h2>
             <div className="space-y-4 mb-8">
               {oauthLoading ? (
@@ -486,15 +511,17 @@ export default function AccountPage() {
                 <li>Google: Profile, Email, Calendar</li>
                 <li>GitHub: Repos, Issues, Pull Requests</li>
                 <li>Slack: Channels, Messages</li>
+                <li>X: Post and engage with tweets, access profile information and settings</li>
                 <li>ClickUp: Tasks, Spaces</li>
                 <li>Cal.com: Bookings, Events</li>
                 {/* Add more as needed */}
               </ul>
             </div>
-          </TabsContent>
+            </>
+          )}
 
-          {/* API Keys Tab */}
-          <TabsContent value="api-keys" className="overflow-x-hidden">
+          {activeSection === "api-keys" && (
+            <>
             <h2 className="text-xl font-semibold mb-4 text-foreground">API Keys</h2>
             <p className="text-sm text-foreground/70 mb-6">Store your API keys for each tool here. These keys are used to connect your account to external services. <span className="font-medium text-foreground">We do not generate API keys for you. Please obtain them from the respective service providers.</span></p>
             <div className="space-y-6">
@@ -595,8 +622,9 @@ export default function AccountPage() {
                 </div>
               ))}
             </div>
-          </TabsContent>
-        </Tabs>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

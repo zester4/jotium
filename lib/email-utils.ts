@@ -1,12 +1,13 @@
 // lib/email-utils.ts
 import { Resend } from 'resend';
 
+import FeedbackEmail from '@/components/emails/feedback-email';
 import { PasswordResetEmail } from '@/components/emails/password-reset-email';
 import { SubscriptionReceiptEmail } from '@/components/emails/subscription-receipt-email';
 import { WelcomeEmail } from '@/components/emails/welcome-email';
 
 // Remove the import since we'll define the type here to avoid circular dependency
-export type EmailType = 'welcome' | 'subscription-receipt' | 'password-reset';
+export type EmailType = 'welcome' | 'subscription-receipt' | 'password-reset' | 'feedback';
 
 // Initialize Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -101,6 +102,15 @@ export async function sendEmail({ to, type, data = {} }: SendEmailOptions): Prom
           resetUrl: data.resetUrl,
           userAgent,
           ipAddress,
+        });
+        break;
+
+      case 'feedback':
+        subject = `New Feedback from Jotium User`;
+        emailComponent = FeedbackEmail({
+          feedbackText: data.feedbackText,
+          sentiment: data.sentiment,
+          timestamp: data.timestamp,
         });
         break;
 

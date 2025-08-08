@@ -2,7 +2,7 @@
 
 import { Attachment, ToolInvocation } from "ai";
 import { motion } from "framer-motion";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 
 import { BotIcon, UserIcon } from "./icons";
 import { Markdown } from "./markdown";
@@ -29,6 +29,8 @@ export const Message = ({
   duration,
   executingTools, // Updated prop
   isStreaming = false, // New prop to indicate if message is streaming
+  onEditMessage,
+  onUseAsInput,
 }: {
   chatId: string;
   role: string;
@@ -39,10 +41,57 @@ export const Message = ({
   duration?: number;
   executingTools?: string[]; // Updated prop type
   isStreaming?: boolean; // New prop type
+  onEditMessage?: (newContent: string) => void;
+  onUseAsInput?: (content: string) => void;
 }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftContent, setDraftContent] = useState(
+    typeof content === "string" ? content : ""
+  );
+  const [showActionsMobile, setShowActionsMobile] = useState(false);
+  const hideActionsTimeoutRef = useRef<number | null>(null);
+
+  const handleTouchRevealActions = () => {
+    setShowActionsMobile(true);
+    if (hideActionsTimeoutRef.current) {
+      window.clearTimeout(hideActionsTimeoutRef.current);
+    }
+    hideActionsTimeoutRef.current = window.setTimeout(() => {
+      setShowActionsMobile(false);
+    }, 2500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hideActionsTimeoutRef.current) {
+        window.clearTimeout(hideActionsTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const canEdit = role === "user" && typeof content === "string" && !!onEditMessage;
+
+  const handleSaveEdit = () => {
+    if (!onEditMessage) return;
+    const trimmed = draftContent.trim();
+    if (trimmed.length === 0) {
+      // Do not save empty edits
+      setIsEditing(false);
+      setDraftContent(typeof content === "string" ? content : "");
+      return;
+    }
+    onEditMessage(trimmed);
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setDraftContent(typeof content === "string" ? content : "");
+  };
+
   return (
     <motion.div
-      className={`group flex flex-col w-full py-3 sm:py-4 md:py-6 ${
+      className={`group flex flex-col w-full py-1.5 sm:py-2.5 md:py-3.5 ${
         role === "assistant" ? "" : ""
       } first-of-type:pt-12 sm:first-of-type:pt-16 md:first-of-type:pt-20`}
       initial={{ y: 10, opacity: 0 }}
@@ -108,8 +157,11 @@ export const Message = ({
           )}
 
           {/* Main Content - Full width on mobile with optimized spacing */}
-          {content && typeof content === "string" && (
-            <div className="flex flex-col gap-1 sm:gap-2 w-full overflow-hidden">
+          {typeof content === "string" && !isEditing && (
+            <div
+              className="flex flex-col gap-1 sm:gap-2 w-full overflow-hidden"
+              onTouchStart={canEdit ? handleTouchRevealActions : undefined}
+            >
               <div className={`
                 prose prose-sm sm:prose-base max-w-none w-full overflow-hidden
                 ${role === "assistant" 
@@ -155,22 +207,51 @@ export const Message = ({
                 [&_code]:max-w-full
                 [&_table]:w-full
               `}>
-                <Markdown>{content}</Markdown>
+                <Markdown showTypewriter={isStreaming && role === "assistant"}>{content}</Markdown>
               </div>
               
               {/* Message Actions - Mobile optimized positioning */}
-              {role === "assistant" && (
-                <div className="w-full mt-1 sm:mt-2">
-                  <MessageActions
-                    messageId={
-                      chatId +
-                      "-" +
-                      (typeof content === "string" ? content.slice(0, 8) : "")
-                    }
-                    content={content}
-                  />
-                </div>
-              )}
+              {/* Actions visibility: hover on desktop (lg+); tap on mobile/tablet */}
+              <div
+                className={`w-full mt-1 sm:mt-2 transition-opacity ${
+                  canEdit && showActionsMobile ? "opacity-100" : "opacity-0"
+                } group-hover:opacity-100`}
+              >
+                <MessageActions
+                  messageId={
+                    chatId +
+                    "-" +
+                    (typeof content === "string" ? content.slice(0, 8) : "")
+                  }
+                  content={content}
+                  onEdit={canEdit ? () => setIsEditing(true) : undefined}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Editing UI for user messages */}
+          {typeof content === "string" && isEditing && (
+            <div className="flex flex-col gap-2 w-full">
+              <textarea
+                className="w-full min-h-[120px] rounded-2xl sm:rounded-2xl md:rounded-3xl border border-border bg-background p-3 sm:p-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+                value={draftContent}
+                onChange={(e) => setDraftContent(e.target.value)}
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  className="inline-flex items-center rounded-full bg-primary px-4 py-1.5 text-xs sm:text-sm font-medium text-primary-foreground hover:opacity-90 shadow"
+                  onClick={handleSaveEdit}
+                >
+                  Save
+                </button>
+                <button
+                  className="inline-flex items-center rounded-full border px-4 py-1.5 text-xs sm:text-sm font-medium hover:bg-muted"
+                  onClick={handleCancelEdit}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
 

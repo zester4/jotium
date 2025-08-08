@@ -1,6 +1,6 @@
 "use client"
 
-import { Check, Copy, MoreVertical, Share, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
+import { Check, Copy, MoreVertical, Pencil, Share, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
 
@@ -13,9 +13,10 @@ interface MessageActionsProps {
   onRegenerate?: (messageId: string) => void
   className?: string
   isMobile?: boolean
+  onEdit?: () => void
 }
 
-export function MessageActions({ messageId, content, onRegenerate, className, isMobile = false }: MessageActionsProps) {
+export function MessageActions({ messageId, content, onRegenerate, className, isMobile = false, onEdit }: MessageActionsProps) {
   const [feedback, setFeedback] = useState<"up" | "down" | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -57,8 +58,27 @@ export function MessageActions({ messageId, content, onRegenerate, className, is
     toast.success(type === "up" ? "Thanks for the positive feedback!" : "Thanks for the feedback!")
   }
 
+  const isUserMessage = Boolean(onEdit)
+
   return (
     <div className={cn("flex items-center", "gap-0", className)}>
+      {onEdit && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onEdit}
+          className={cn(
+            "text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors",
+            isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0",
+          )}
+          title="Edit message"
+       >
+          <Pencil className={cn(isMobile ? "h-3 w-3" : "h-4 w-4")} />
+        </Button>
+      )}
+
+      {/* Removed Add-to-input button for responses */}
+
       <Button
         variant="ghost"
         size="sm"
@@ -76,46 +96,52 @@ export function MessageActions({ messageId, content, onRegenerate, className, is
         )}
       </Button>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleShare}
-        className={cn(
-          "text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors",
-          isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0",
-        )}
-        title="Share message"
-      >
-        <Share className={cn(isMobile ? "h-3 w-3" : "h-4 w-4")} />
-      </Button>
+      {!isUserMessage && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleShare}
+          className={cn(
+            "text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors",
+            isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0",
+          )}
+          title="Share message"
+        >
+          <Share className={cn(isMobile ? "h-3 w-3" : "h-4 w-4")} />
+        </Button>
+      )}
 
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => handleFeedback("up")}
-        className={cn(
-          "text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors",
-          isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0",
-          feedback === "up" && "text-green-600 bg-green-50",
-        )}
-        title="Good response"
-      >
-        <ThumbsUp className={cn(isMobile ? "h-3 w-3" : "h-4 w-4")} />
-      </Button>
+      {!isUserMessage && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleFeedback("up")}
+          className={cn(
+            "text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors",
+            isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0",
+            feedback === "up" && "text-green-600 bg-green-50",
+          )}
+          title="Good response"
+        >
+          <ThumbsUp className={cn(isMobile ? "h-3 w-3" : "h-4 w-4")} />
+        </Button>
+      )}
 
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => handleFeedback("down")}
-        className={cn(
-          "text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors",
-          isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0",
-          feedback === "down" && "text-red-600 bg-red-50",
-        )}
-        title="Poor response"
-      >
-        <ThumbsDown className={cn(isMobile ? "h-3 w-3" : "h-4 w-4")} />
-      </Button>
+      {!isUserMessage && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleFeedback("down")}
+          className={cn(
+            "text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors",
+            isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0",
+            feedback === "down" && "text-red-600 bg-red-50",
+          )}
+          title="Poor response"
+        >
+          <ThumbsDown className={cn(isMobile ? "h-3 w-3" : "h-4 w-4")} />
+        </Button>
+      )}
     </div>
   )
 }

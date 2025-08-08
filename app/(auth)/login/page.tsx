@@ -214,6 +214,12 @@ export default function Page() {
                 {showPassword ? "Hide" : "Show"}
               </button>
             </div>
+            <Link
+              href="/reset-password"
+              className="text-sm text-gray-600 hover:underline dark:text-zinc-400 text-right mt-1"
+            >
+              Forgot password?
+            </Link>
           </div>
           <SubmitButton>Sign in</SubmitButton>
           <p className="text-center text-sm text-gray-600 mt-4 dark:text-zinc-400">

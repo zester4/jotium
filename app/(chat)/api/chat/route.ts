@@ -10,13 +10,13 @@ import { getUserAIModel } from "@/lib/user-model"; // Import the new function
 import { generateUUID } from "@/lib/utils";
 
 const planLimits: { [key: string]: number } = {
-  "Free": 5,
+  "Free": 25,
   "Pro": 50,
   "Advanced": Infinity,
 };
 
 export async function POST(request: NextRequest) {
-  const { id, messages }: { id?: string; messages: Message[] } = await request.json();
+  const { id, messages, regenerate }: { id?: string; messages: Message[]; regenerate?: boolean } = await request.json();
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -312,8 +312,10 @@ export async function POST(request: NextRequest) {
       ];
 
       if (session.user && session.user.id) {
-        // Increment message count only when a response is successfully generated
-        await updateUserMessageCount(userId, newCount);
+        // Increment message count only when not regenerating
+        if (!regenerate) {
+          await updateUserMessageCount(userId, newCount);
+        }
 
         // Revalidate the chat page and the root path to update message count in Navbar
         revalidatePath(`/chat/${chatId}`);
