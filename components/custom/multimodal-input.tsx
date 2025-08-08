@@ -22,28 +22,28 @@ import { Textarea } from "../ui/textarea";
 
 const suggestedActions = [
   {
-    title: "Search the web",
-    label: "Ask a question and get real-time web results",
-    action: "Search the web for the latest news on AI advancements.",
-    icon: "🔍",
+    title: "Project & Communication",
+    label: "Create a Linear project, schedule a meeting, and send an email.",
+    action: "Please create a new project in Linear called 'Jotium AI Feature Development'. Add initial tasks: 'Implement new user authentication flow', 'Develop real-time chat functionality', and 'Integrate third-party API for data enrichment'. Once the project is set up, schedule a project kickoff meeting for next Wednesday at 11 AM in Google Calendar, and send an email to devteam@example.com with the project overview and meeting invitation.",
+    icon: "💼",
   },
   {
-    title: "Explain an image",
-    label: "Upload an image and ask for an explanation",
-    action: "Explain what is happening in this image.",
-    icon: "🖼️",
+    title: "Financial Analysis & Report",
+    label: "Analyze stock performance and email a report.",
+    action: "Provide a detailed market analysis for Tesla stock (TSLA) covering its performance over the past three months. Include key trends and a summary of recent news affecting its price. Once complete, email the full report to finance.updates@example.com.",
+    icon: "📈",
   },
   {
-    title: "Draft an email",
-    label: "Get help writing a professional email",
-    action: "Draft a professional email about our upcoming project.",
-    icon: "✉️",
+    title: "Flight Booking & Itinerary",
+    label: "Find flights, add to calendar, and email details.",
+    action: "Find the cheapest round-trip flights from San Francisco (SFO) to Tokyo (NRT) for a two-week trip starting exactly two weeks from today. Once you find suitable flights, please add the travel dates to my Google Calendar and send an email with the flight details and itinerary to my.travel@example.com.",
+    icon: "✈️",
   },
   {
-    title: "Generate a story",
-    label: "Ask for a creative story or idea",
-    action: "Write a short creative story about a robot and a cat.",
-    icon: "📚",
+    title: "Code & Communication",
+    label: "Create GitHub issue, email team, and set calendar reminder.",
+    action: "For the 'Jotium AI Feature Development' project in Linear, please create a new GitHub issue titled 'Refactor AgenticDecisionEngine for better extensibility'. Assign it to developer@example.com. Once the issue is created, send an email to team-leads@example.com notifying them about this new refactoring task and its importance, and add a reminder to my Google Calendar for next Monday to follow up on this issue.",
+    icon: "💻",
   },
 ];
 
@@ -84,12 +84,23 @@ export function MultimodalInput({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     if (textareaRef.current) {
       adjustHeight();
     }
   }, [input]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768); // Assuming 768px as the mobile breakpoint
+    };
+
+    handleResize(); // Set initial value
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const adjustHeight = () => {
     if (textareaRef.current) {
@@ -172,10 +183,22 @@ export function MultimodalInput({
     [setAttachments],
   );
 
+
+  const handleRemoveAttachment = useCallback(
+    (attachmentToRemove: Attachment) => {
+      setAttachments((currentAttachments) =>
+        currentAttachments.filter(
+          (attachment) => attachment.url !== attachmentToRemove.url,
+        ),
+      );
+    },
+    [setAttachments],
+  );
+
   const hasContent = input.trim().length > 0 || attachments.length > 0;
 
   return (
-    <div className="relative w-full flex flex-col gap-3 sm:gap-4">
+    <div className="relative w-full flex flex-col gap-1 sm:gap-1">
       {/* Suggested Actions - Responsive grid */}
       <AnimatePresence>
         {messages.length === 0 &&
@@ -238,10 +261,14 @@ export function MultimodalInput({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="flex flex-row gap-2 overflow-x-auto pb-2"
+            className="flex flex-row gap-2 overflow-x-auto pb-1"
           >
             {attachments.map((attachment) => (
-              <PreviewAttachment key={attachment.url} attachment={attachment} />
+              <PreviewAttachment 
+                key={attachment.url} 
+                attachment={attachment} 
+                onRemove={() => handleRemoveAttachment(attachment)} 
+              />
             ))}
 
             {uploadQueue.map((filename) => (
@@ -287,12 +314,18 @@ export function MultimodalInput({
           rows={2}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-
-              if (isLoading) {
-                toast.error("Please wait for the agent to finish its response!");
+              if (isMobile) {
+                // On mobile, prevent default to allow new line
+                // Message will only be sent via the submit button
+                event.preventDefault();
               } else {
-                submitForm();
+                // On desktop, send message
+                event.preventDefault();
+                if (isLoading) {
+                  toast.error("Please wait for the agent to finish its response!");
+                } else {
+                  submitForm();
+                }
               }
             }
           }}

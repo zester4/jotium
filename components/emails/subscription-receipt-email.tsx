@@ -161,13 +161,8 @@ export const SubscriptionReceiptEmail = ({
         <Preview>Payment confirmed: {currencySymbol}{amount} for Jotium {plan}</Preview>
         <Body className="bg-offwhite font-sans text-base">
           <Container className="text-center">
-            <Img
-              src={`${baseUrl}/images/jotium.png`}
-              width="170"
-              // height="68"
-              alt="Jotium"
-              className="mx-auto my-20"
-            />
+            <Heading className="my-0 text-center leading-8 text-4xl font-bold text-brand">Jotium</Heading>
+            <Text className="text-lg text-gray-600">Your Autonomous AI Agent</Text>
             <div className="inline-flex items-center gap-2 bg-green-500 rounded-full px-5 py-2 mb-6">
               <span className="text-white text-sm font-bold tracking-wide">✅ PAYMENT CONFIRMED</span>
             </div>

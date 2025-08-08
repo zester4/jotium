@@ -42,7 +42,7 @@ export const WelcomeEmail = ({
       id: 1,
       description: (
         <li className="mb-20" key={1}>
-          <strong>🤖 AI Assistant.</strong> Smart Agent that anticipates your needs and helps you accomplish tasks effortlessly.
+          <strong>🤖 Autonomous Task Management.</strong> Jotium understands your workflow and automatically manages tasks across all your platforms without constant guidance.
         </li>
       ),
     },
@@ -50,8 +50,7 @@ export const WelcomeEmail = ({
       id: 2,
       description: (
         <li className="mb-20" key={2}>
-          <strong>🔗 Seamless Integration.</strong> Connect with 50+ tools you already use. 
-          <Link className="text-amber-600 underline ml-1">Explore integrations</Link>.
+          <strong>🤖 Predictive Intelligence.</strong> Learn your work patterns and predict your next steps, preparing everything you need before you even ask.
         </li>
       ),
     },
@@ -59,8 +58,7 @@ export const WelcomeEmail = ({
       id: 3,
       description: (
         <li className="mb-20" key={3}>
-          <strong>⚡ Lightning Fast.</strong> Execute complex tasks in seconds, not hours. 
-          <Link className="text-amber-600 underline ml-1">See what is possible</Link>.
+          <strong>🤖 One Chat, All Tools.</strong> No more switching between apps. Manage Gmail, Calendar, project tools, and more through simple conversation.
         </li>
       ),
     },
@@ -68,6 +66,14 @@ export const WelcomeEmail = ({
       id: 4,
       description: (
         <li className="mb-20" key={4}>
+          <strong>🤖 Complex Task Automation.</strong> Say goodbye to repetitive workflows. Jotium handles complex multi-step processes across different platforms seamlessly.
+        </li>
+      ),
+    },
+    {
+      id: 5,
+      description: (
+        <li className="mb-20" key={5}>
           <strong>📋 Current Plan: {plan}.</strong> You are all set to start transforming your productivity. 
           {plan === 'Free' && (
             <Link className="text-amber-600 underline ml-1">Upgrade for more features</Link>
@@ -75,12 +81,6 @@ export const WelcomeEmail = ({
         </li>
       ),
     },
-  ];
-
-  const quickLinks = [
-    { title: 'Get Support', href: `${baseUrl}/support` },
-    { title: 'Read the Docs', href: `${baseUrl}/docs` },
-    { title: 'Join Community', href: `${baseUrl}/community` },
   ];
 
   return (
@@ -109,16 +109,12 @@ export const WelcomeEmail = ({
         <Preview>🚀 Welcome to Jotium - Your AI-powered workspace awaits!</Preview>
         <Body className="bg-offwhite font-sans text-base">
           <Container className="text-center">
-            <Img
-              src={`${baseUrl}/images/jotium.png`}
-              width="170"
-              // height="68"
-              alt="Jotium"
-              className="mx-auto my-20"
-            />
+            <Heading className="my-0 text-center leading-8 text-4xl font-bold text-brand">Jotium</Heading>
+            <Text className="text-lg text-gray-600">Your Autonomous AI Agent</Text>
             <div className="inline-flex items-center gap-2 bg-brand rounded-full px-5 py-2 mb-6">
-              <span className="text-white text-sm font-bold tracking-wide">✨ WELCOME ABOARD</span>
+              <span className="text-white text-sm font-bold tracking-wide">🚀 You are all set to start!</span>
             </div>
+            <Text className="text-base text-gray-600">You have 5 messages per day to explore the capabilities of Jotium</Text>
           </Container>
 
           <Container className="bg-white p-45 rounded-lg shadow-sm">
@@ -127,95 +123,86 @@ export const WelcomeEmail = ({
             </Heading>
 
             <Section>
-              <Row>
-                <Text className="text-base text-gray-600 text-center">
-                  You have just joined thousands of users who are transforming their productivity 
-                  with AI-powered assistance. Your journey to effortless automation starts now.
-                </Text>
+              <Text className="text-base text-gray-600 text-center">
+                Jotium seamlessly integrates with all your favorite tools and platforms, understanding your work patterns to predict and execute your next steps autonomously.
+              </Text>
+            </Section>
 
-                <Text className="text-base font-semibold">Here is what you get with Jotium:</Text>
+            <Section className="text-center my-8">
+              <Row>
+                <Column>
+                  <Text className="text-2xl">📧</Text>
+                  <Text className="text-sm">Gmail</Text>
+                </Column>
+                <Column>
+                  <Text className="text-2xl">📅</Text>
+                  <Text className="text-sm">Google Calendar</Text>
+                </Column>
+                <Column>
+                  <Text className="text-2xl">📋</Text>
+                  <Text className="text-sm">Asana</Text>
+                </Column>
+                <Column>
+                  <Text className="text-2xl">⚡</Text>
+                  <Text className="text-sm">ClickUp</Text>
+                </Column>
               </Row>
+              <Row>
+                <Column>
+                  <Text className="text-2xl">🔧</Text>
+                  <Text className="text-sm">GitHub</Text>
+                </Column>
+                <Column>
+                  <Text className="text-2xl">📊</Text>
+                  <Text className="text-sm">Linear</Text>
+                </Column>
+                <Column>
+                  <Text className="text-2xl">🗂️</Text>
+                  <Text className="text-sm">Trello</Text>
+                </Column>
+                <Column>
+                  <Text className="text-2xl">🗄️</Text>
+                  <Text className="text-sm">Airtable</Text>
+                </Column>
+              </Row>
+              <Text className="text-base font-bold">➕ And More!</Text>
             </Section>
 
             <ul className="list-none pl-0">{features?.map(({ description }) => description)}</ul>
 
-            <Section className="text-center my-8">
-              <Button 
-                className="rounded-full bg-brand px-8 py-4 text-white font-bold text-lg shadow-lg"
-                href={`${baseUrl}/dashboard`}
-              >
-                🎯 Talk to Jotium
-              </Button>
-              <Text className="text-sm text-gray-500 mt-3">
-                Start your first tasks in under 2 minutes
+            {/* Upgrade Section */}
+            <Section className="bg-accent rounded-lg p-6 my-8">
+              <div className="text-center">
+                <Text className="text-xl font-bold mb-2">Upgrade to Pro</Text>
+                <Text className="text-base text-gray-700 mb-4">
+                  Recommended
+                </Text>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4 border border-gray-200">
+                <Text className="font-bold text-lg mb-2">Pro</Text>
+                <Text className="text-2xl font-bold mb-3">
+                  $12.99<span className="text-sm text-gray-500">/mo</span>
+                </Text>
+                <Text className="text-sm text-gray-600 mb-1">✓ 50 messages per day</Text>
+                <Text className="text-sm text-gray-600 mb-1">✓ Smarter, more helpful Agentic responses</Text>
+                <Text className="text-sm text-gray-600 mb-1">✓ Everything in Free</Text>
+                <Text className="text-sm text-gray-600 mb-1">✓ Unlimited chat history</Text>
+                <Text className="text-sm text-gray-600 mb-1">✓ Priority support</Text>
+                <Text className="text-sm text-gray-600 mb-1">✓ Early access to new features</Text>
+                <Text className="text-sm text-gray-600 mb-1">✓ Advanced integrations</Text>
+                <Text className="text-sm text-gray-600 mb-1">✓ Code generation</Text>
+                <Text className="text-sm text-gray-600 mb-3">✓ Agent thoughts and reasoning enabled</Text>
+                <Button 
+                  className="inline-block rounded-lg bg-brand text-white py-2 px-4 text-sm font-semibold"
+                  href={`${baseUrl}/pricing?plan=pro`}
+                >
+                  Upgrade to Pro Now
+                </Button>
+              </div>
+              <Text className="text-center text-base text-gray-700 mt-4">
+                Ready to supercharge your productivity with autonomous AI?
               </Text>
-            </Section>
-
-            {/* Upgrade Section - Only for Free plan */}
-            {plan === 'Free' && (
-              <Section className="bg-accent rounded-lg p-6 my-8">
-                <div className="text-center">
-                  <Text className="text-xl font-bold mb-2">👑 Ready to unlock your full potential?</Text>
-                  <Text className="text-base text-gray-700 mb-4">
-                    Upgrade now and get <strong>20% off your first month!</strong>
-                  </Text>
-                </div>
-                
-                <Row className="gap-4">
-                  <Column className="bg-white rounded-lg p-4 border border-gray-200">
-                    <Text className="font-bold text-lg mb-2">Pro</Text>
-                    <Text className="text-2xl font-bold mb-3">
-                      $12.99<span className="text-sm text-gray-500">/mo</span>
-                    </Text>
-                    <Text className="text-sm text-gray-600 mb-1">✓ 50 messages per day</Text>
-                    <Text className="text-sm text-gray-600 mb-1">✓ Smarter Agentic responses</Text>
-                    <Text className="text-sm text-gray-600 mb-1">✓ Unlimited chat history</Text>
-                    <Text className="text-sm text-gray-600 mb-3">✓ Priority support</Text>
-                    <Button 
-                      className="w-full rounded-lg bg-brand text-white py-2 px-4 text-sm font-semibold"
-                      href={`${baseUrl}/pricing?plan=pro`}
-                    >
-                      Choose Pro
-                    </Button>
-                  </Column>
-                  
-                  <Column className="bg-brand rounded-lg p-4 text-white relative">
-                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-white text-brandDark px-3 py-1 rounded-full text-xs font-bold">
-                      MOST POPULAR
-                    </div>
-                    <Text className="font-bold text-lg mb-2 text-white">Advanced</Text>
-                    <Text className="text-2xl font-bold mb-3 text-white">
-                      $30.99<span className="text-sm opacity-80">/mo</span>
-                    </Text>
-                    <Text className="text-sm mb-1 opacity-90">✓ Unlimited messages per day</Text>
-                    <Text className="text-sm mb-1 opacity-90">✓ Everything in Pro</Text>
-                    <Text className="text-sm mb-1 opacity-90">✓ Most advanced Agentic reasoning</Text>
-                    <Text className="text-sm mb-3 opacity-90">✓ Custom AI workflows</Text>
-                    <Button 
-                      className="w-full rounded-lg bg-white text-brandDark py-2 px-4 text-sm font-bold shadow-sm"
-                      href={`${baseUrl}/pricing?plan=advanced`}
-                    >
-                      Choose Advanced
-                    </Button>
-                  </Column>
-                </Row>
-              </Section>
-            )}
-
-            <Section className="mt-45">
-              <Row>
-                {quickLinks?.map((link) => (
-                  <Column key={link.title}>
-                    <Link
-                      className="font-bold text-black underline"
-                      href={link.href}
-                    >
-                      {link.title}
-                    </Link>{' '}
-                    <span className="text-amber-500">→</span>
-                  </Column>
-                ))}
-              </Row>
             </Section>
           </Container>
 

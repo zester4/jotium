@@ -1,4 +1,3 @@
-//components/custom/message.tsx
 "use client";
 
 import { Attachment, ToolInvocation } from "ai";
@@ -8,7 +7,7 @@ import { ReactNode } from "react";
 import { BotIcon, UserIcon } from "./icons";
 import { Markdown } from "./markdown";
 import { MessageActions } from "./message-actions";
-import { PreviewAttachment } from "./preview-attachment";
+import { MessageImageDisplay } from "./message-image-display"; // New component for displaying images in messages
 import { MessageReasoning } from "./thoughts";
 import { ToolExecution } from "./tool-execution"; // Import the new component
 import { Weather } from "./weather";
@@ -91,6 +90,20 @@ export const Message = ({
                 reasoning={thoughts} 
                 duration={duration} 
               />
+            </div>
+          )}
+
+          {/* Attachments - Mobile optimized grid - Moved before content for better UX */}
+          {attachments && attachments.length > 0 && (
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 mb-2 sm:mb-3 w-full">
+              {attachments.map((attachment, index) => (
+                <MessageImageDisplay 
+                  key={attachment.url || index} 
+                  attachment={attachment}
+                  allAttachments={attachments}
+                  currentIndex={index}
+                />
+              ))}
             </div>
           )}
 
@@ -208,20 +221,8 @@ export const Message = ({
               })}
             </div>
           )}
-
-          {/* Attachments - Mobile optimized grid */}
-          {attachments && attachments.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 w-full">
-              {attachments.map((attachment) => (
-                <PreviewAttachment 
-                  key={attachment.url} 
-                  attachment={attachment} 
-                />
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </motion.div>
   );
-};
+}

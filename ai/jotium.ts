@@ -36,6 +36,8 @@ import { LinearManagementTool } from './tools/linear-tool';
 import { GmailTool } from './tools/GmailTool';
 import { GoogleCalendarTool } from './tools/GoogleCalendarTool';
 import { GoogleDriveTool } from './tools/GoogleDriveTool';
+// Import Agentic Decision Engine
+import { AgenticDecisionEngine, ActionIntent } from './actions';
 
 dotenv.config();
 
@@ -43,9 +45,10 @@ export class AIAgent {
   private ai: GoogleGenAI;
   private memory: AgentMemory;
   private memoryPath: string;
-  private maxMessages: number = 10;
+  private maxMessages: number = 19;
   private tools: Map<string, Tool> = new Map();
   private model: string;
+  private agenticEngine!: AgenticDecisionEngine;
 
   constructor(
     geminiApiKey: string,
@@ -220,6 +223,8 @@ export class AIAgent {
     }
 
     console.log(`✅ Initialized ${this.tools.size} tools`);
+    // Initialize the Agentic Decision Engine
+    this.agenticEngine = new AgenticDecisionEngine(this.tools);
   }
 
   // Memory Management
@@ -386,7 +391,7 @@ You are Jotium—intelligent, capable, and ready to take ownership of any task w
     console.log();
   }
 
-  // Custom chat function
+  // Enhanced chat function with Agentic Decision Engine
   async chat(userMessage: string, stopLoading?: () => void): Promise<void> {
     // Add user message to memory
     const userMsg: Message = {
@@ -397,15 +402,77 @@ You are Jotium—intelligent, capable, and ready to take ownership of any task w
     };
     this.addMessageToMemory(userMsg);
 
-    // Get conversation history
-    const conversationHistory = this.getConversationHistory();
-    // Add current user message
-    conversationHistory.push({
-      role: "user",
-      parts: [{ text: userMessage }]
-    });
-
     try {
+      // 1. AGENTIC DECISION ENGINE - Classify intent and check for proactive workflows
+      const intent: ActionIntent = this.agenticEngine.classifyIntent(userMessage);
+      
+      console.log(`🎯 Detected intent: ${intent.category} -> ${intent.action} (confidence: ${intent.confidence})`);
+      
+      // 2. PROACTIVE WORKFLOW EXECUTION - For high-confidence intents, execute agentic workflows
+      if (intent.confidence >= 0.8 && intent.action !== 'intelligent_assistance') {
+        console.log(`🚀 Executing agentic workflow: ${intent.action}`);
+        
+        try {
+          const workflowResult = await this.agenticEngine.executeAgenticWorkflow(
+            intent, 
+            userMessage, 
+            this.executeToolCall.bind(this)
+          );
+
+          stopLoading?.();
+
+          if (workflowResult.success) {
+            // Workflow completed successfully
+            let responseText = `✅ ${workflowResult.summary}\n\n`;
+            
+            if (workflowResult.actions && workflowResult.actions.length > 0) {
+              responseText += `**Actions Completed:**\n${workflowResult.actions.map((action: string) => `• ${action}`).join('\n')}\n\n`;
+            }
+            
+            if (workflowResult.recommendations && workflowResult.recommendations.length > 0) {
+              responseText += `**Recommendations:**\n${workflowResult.recommendations.map((rec: string) => `• ${rec}`).join('\n')}\n\n`;
+            }
+            
+            if (workflowResult.nextSteps && workflowResult.nextSteps.length > 0) {
+              responseText += `**Next Steps:**\n${workflowResult.nextSteps.map((step: string) => `• ${step}`).join('\n')}\n\n`;
+            }
+
+            console.log("Jotium:", responseText);
+
+            // Save to memory
+            this.addMessageToMemory({
+              id: generateUUID(),
+              role: "assistant",
+              content: responseText,
+              timestamp: Date.now()
+            });
+
+            await this.saveMemoryToFile();
+            return;
+          } else if (workflowResult.useDefaultFlow) {
+            // Workflow indicates to use default flow
+            console.log(`🔄 Workflow deferred to default flow`);
+          } else {
+            // Workflow failed, continue with default flow
+            console.log(`❌ Workflow failed: ${workflowResult.error}`);
+          }
+        } catch (workflowError) {
+          console.log(`⚠️  Workflow execution error: ${workflowError instanceof Error ? workflowError.message : String(workflowError)}`);
+          // Continue with default flow
+        }
+      }
+
+      // 3. DEFAULT FLOW - Use normal agent behavior for low-confidence intents or workflow failures
+      console.log(`📝 Using default agent flow`);
+      
+      // Get conversation history
+      const conversationHistory = this.getConversationHistory();
+      // Add current user message
+      conversationHistory.push({
+        role: "user",
+        parts: [{ text: userMessage }]
+      });
+
       // Generate content with tools and thinking
       const response = await this.generateContentStream(conversationHistory);
 
@@ -425,26 +492,29 @@ You are Jotium—intelligent, capable, and ready to take ownership of any task w
         if (chunk.candidates && chunk.candidates[0] && chunk.candidates[0].content) {
           const parts = chunk.candidates[0].content.parts;
           for (const part of parts) {
-            if (!part.text) continue;
-            
-            if (part.thought) {
-              thoughts += part.text;
-            } else {
-              fullResponse += part.text;
-            }
-          }
-        }
-
-        // Handle function calls
-        if (chunk.functionCalls && chunk.functionCalls.length > 0) {
-          hasToolCalls = true;
-          for (const fc of chunk.functionCalls) {
-            if (fc.name) {
-              toolCalls.push({
-                name: fc.name,
-                args: fc.args,
-                id: `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-              });
+            if (part.text) {
+              if ((part as any).thought) {
+                thoughts += part.text;
+              } else {
+                fullResponse += part.text;
+              }
+            } else if (part.functionCall) {
+              hasToolCalls = true;
+              const fc = part.functionCall;
+              if (fc.name) {
+                // We need to handle streaming of arguments. A function call might be split
+                // into multiple parts. We'll aggregate the arguments.
+                const lastToolCall = toolCalls[toolCalls.length - 1];
+                if (lastToolCall && lastToolCall.name === fc.name && !lastToolCall.args) {
+                  lastToolCall.args = fc.args;
+                } else {
+                  toolCalls.push({
+                    name: fc.name,
+                    args: fc.args,
+                    id: `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+                  });
+                }
+              }
             }
           }
         }
