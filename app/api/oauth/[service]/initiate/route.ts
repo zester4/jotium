@@ -104,6 +104,46 @@ export async function GET(
       
       authorizationUrl = `https://slack.com/oauth/v2/authorize?${slackParams.toString()}`;
       break;
+    
+    case "x":
+      clientId = process.env.X_CLIENT_ID;
+      // Updated comprehensive scopes for X/Twitter API v2
+      scope = [
+        "tweet.read",           // Read tweets
+        "tweet.write",          // Post, delete tweets
+        "users.read",           // Read user profiles
+        "follows.read",         // Read following/followers (needed for some user operations)
+        "follows.write",        // Follow/unfollow users
+        "like.read",            // Read likes
+        "like.write",           // Like/unlike tweets  
+        "list.read",            // Read lists (useful for advanced features)
+        "space.read",           // Read Spaces (if you want to support this)
+        "mute.read",            // Read muted accounts
+        "mute.write",           // Mute/unmute accounts
+        "block.read",           // Read blocked accounts
+        "block.write",          // Block/unblock accounts
+        "bookmark.read",        // Read bookmarks
+        "bookmark.write",       // Add/remove bookmarks
+        "offline.access"        // Refresh token capability
+      ].join(" ");
+
+      if (!clientId) {
+        console.error("X_CLIENT_ID environment variable is not set.");
+        return new Response("X OAuth configuration error", { status: 500 });
+      }
+
+      const xParams = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: "code",
+        scope: scope,
+        state: state,
+        code_challenge_method: "plain",
+        code_challenge: "challenge"
+      });
+
+      authorizationUrl = `https://x.com/i/oauth2/authorize?${xParams.toString()}`;
+      break;
 
     default:
       return new Response("Unsupported OAuth service", { status: 400 });
@@ -111,6 +151,7 @@ export async function GET(
 
   console.log(`OAuth ${service} redirect URI:`, redirectUri);
   console.log(`OAuth ${service} authorization URL:`, authorizationUrl);
+  console.log(`OAuth ${service} scopes requested:`, scope);
 
   const response = NextResponse.redirect(authorizationUrl);
   

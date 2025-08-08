@@ -89,6 +89,20 @@ export async function GET(
       });
       break;
 
+    case "x":
+      clientId = process.env.X_CLIENT_ID;
+      clientSecret = process.env.X_CLIENT_SECRET;
+      tokenUrl = "https://api.x.com/2/oauth2/token";
+      userInfoUrl = "https://api.x.com/2/users/me";
+      tokenRequestBody = new URLSearchParams({
+        code: code,
+        grant_type: "authorization_code",
+        redirect_uri: redirectUri,
+        code_verifier: "challenge",
+      });
+      headers["Authorization"] = `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`;
+      break;
+
     default:
       return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/account?oauth_error=true`);
   }
@@ -164,6 +178,18 @@ export async function GET(
         const userData = await userRes.json();
         externalUserId = userData.id.toString();
         externalUserName = userData.email || userData.login;
+      }
+    } else if (service === "x") {
+      const userRes = await fetch(userInfoUrl, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/json",
+        },
+      });
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        externalUserId = userData.data.id;
+        externalUserName = userData.data.username;
       }
     } else if (service === "slack") {
       // Use the identity endpoint which works with user tokens
