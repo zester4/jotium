@@ -277,6 +277,111 @@ className="flex-1 overflow-y-auto custom-scrollbar pb-24 sm:pb-32"
                       message.role === "assistant" && 
                       isLoading
                     }
+                    onEditMessage={
+                      message.role === "user" && typeof message.content === "string"
+                        ? async (newContent: string) => {
+                            try {
+                              setIsLoading(true);
+                              setError(null);
+                              setExecutingTools([]);
+                              // Trim conversation to the edited message (inclusive)
+                              const baseMessages = messages
+                                .slice(0, index + 1)
+                                .map((m, i) => (i === index ? { ...m, content: newContent } : m));
+
+                              // Update UI to reflect trimmed history
+                              setMessages(baseMessages);
+
+                              const response = await fetch("/api/chat", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ id, messages: baseMessages, regenerate: true }),
+                              });
+
+                              if (!response.ok) {
+                                throw new Error("Failed to regenerate response");
+                              }
+
+                              if (response.body) {
+                                const reader = response.body.getReader();
+                                const decoder = new TextDecoder();
+                                let assistantMessage: Message = {
+                                  id: generateUUID(),
+                                  role: "assistant",
+                                  content: "",
+                                  thoughts: "",
+                                  timestamp: Date.now(),
+                                  attachments: [],
+                                };
+                                setMessages((prev) => [...prev, assistantMessage]);
+
+                                const startTime = Date.now();
+                                let pendingAttachments: any[] = [];
+
+                                while (true) {
+                                  const { done, value } = await reader.read();
+                                  if (done) break;
+
+                                  const chunk = decoder.decode(value, { stream: true });
+                                  const lines = chunk.split("\n\n");
+
+                                  for (const line of lines) {
+                                    if (line.startsWith("data: ")) {
+                                      const jsonStr = line.substring(6);
+                                      if (jsonStr.trim().startsWith("{") && jsonStr.trim().endsWith("}")) {
+                                        try {
+                                          const data = JSON.parse(jsonStr);
+                                          if (data.type === "thought") {
+                                            assistantMessage.thoughts += data.content;
+                                          } else if (data.type === "response") {
+                                            assistantMessage.content += data.content;
+                                          } else if (data.type === "error") {
+                                            setError(data.content);
+                                          } else if (data.type === "tool-start") {
+                                            setExecutingTools(prev => [...prev, data.toolName]);
+                                            setMessageToolsMap(prev => ({
+                                              ...prev,
+                                              [assistantMessage.id]: [...(prev[assistantMessage.id] || []), data.toolName]
+                                            }));
+                                          }
+                                          if (data.attachments && Array.isArray(data.attachments)) {
+                                            pendingAttachments = data.attachments;
+                                            assistantMessage.attachments = pendingAttachments;
+                                          }
+                                          assistantMessage.duration = Date.now() - startTime;
+                                          setMessages((prev) => prev.map((msg) => msg.id === assistantMessage.id ? { ...assistantMessage } : msg));
+                                          messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+                                        } catch (error) {
+                                          console.error("Error parsing stream data:", error, jsonStr);
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+
+                                assistantMessage.duration = Date.now() - startTime;
+                                if (pendingAttachments.length > 0) {
+                                  assistantMessage.attachments = pendingAttachments;
+                                }
+                                setMessages((prev) => prev.map((msg) => msg.id === assistantMessage.id ? { ...assistantMessage } : msg));
+                                setExecutingTools([]);
+                                router.refresh();
+                              }
+                            } catch (err) {
+                              console.error(err);
+                              toast.error("Failed to regenerate response");
+                            } finally {
+                              setIsLoading(false);
+                            }
+                          }
+                        : undefined
+                    }
+                    onUseAsInput={(text: string) => {
+                      setInput(prev => {
+                        const base = prev ?? "";
+                        return base.length ? `${base}${base.endsWith(" ") ? "" : " "}${text}` : text;
+                      });
+                    }}
                   />
                 ))}
               </AnimatePresence>

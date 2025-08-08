@@ -32,6 +32,7 @@ import { AirtableTool } from './tools/airtable-tool';
 import { SupabaseTool } from './tools/supabase-tool';
 import { TrelloTool } from './tools/trello';
 import { LinearManagementTool } from './tools/linear-tool';
+import { DataVisualizationTool } from './tools/dataviz-tool';
 // Google OAuth Tools
 import { GmailTool } from './tools/GmailTool';
 import { GoogleCalendarTool } from './tools/GoogleCalendarTool';
@@ -92,6 +93,7 @@ export class AIAgent {
     this.tools.set("get_weather", new GetWeatherTool());
     this.tools.set("code_execution", new CodeExecutionTool());
     this.tools.set("datetime_tool", new DateTimeTool());
+    this.tools.set("data_visualization", new DataVisualizationTool());
 
     // --- Group 3: User-Configurable Tools (user key OR .env fallback) ---
     const getKey = async (serviceName: string, envVar: string): Promise<string> => {
@@ -202,7 +204,6 @@ export class AIAgent {
         this.tools.set("google_drive_operations", driveTool);
         this.tools.set(driveTool.getDefinition().name || "google_drive_operations", driveTool);
       }
-
       // GitHub OAuth (if you want to add GitHub OAuth later)
       // const githubAccessToken = await getDecryptedOAuthAccessToken({ 
       //   userId, 

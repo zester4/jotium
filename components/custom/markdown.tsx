@@ -1,16 +1,42 @@
 //components/custom/markdown.tsx
 import Image from "next/image";
 import Link from "next/link";
-import React, { memo, useState } from "react";
+import React, { memo, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import "katex/dist/katex.min.css";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  ZAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ScatterChart,
+  Scatter,
+  ComposedChart,
+} from "recharts";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
 import remarkEmoji from "remark-emoji";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import "katex/dist/katex.min.css";
 
 const CopyButton = ({ text }: { text: string }) => {
   const [copied, setCopied] = useState(false);
@@ -163,7 +189,62 @@ const VideoPlayer = ({ src, ...props }: any) => {
   );
 };
 
-const NonMemoizedMarkdown = ({ children }: { children: string }) => {
+const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: string; showTypewriter?: boolean }) => {
+  const [displayed, setDisplayed] = useState<string>("");
+  const displayedRef = useRef<string>("");
+  const [isSmallScreen, setIsSmallScreen] = useState<boolean>(false);
+
+  useEffect(() => {
+    displayedRef.current = displayed;
+  }, [displayed]);
+
+  useEffect(() => {
+    const update = () => setIsSmallScreen(typeof window !== 'undefined' && window.innerWidth < 640);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  useEffect(() => {
+    const full = children ?? "";
+    if (!showTypewriter) {
+      setDisplayed(full);
+      return;
+    }
+
+    // Determine starting point: append if the new content extends the previous displayed content
+    const startIndex = full.startsWith(displayedRef.current)
+      ? displayedRef.current.length
+      : 0;
+
+    if (startIndex === 0) {
+      setDisplayed("");
+    }
+
+    if (full.length === startIndex) {
+      setDisplayed(full);
+      return;
+    }
+
+    // Typing speed scales with content length; minimum 1 char per tick
+    const remaining = full.length - startIndex;
+    const step = Math.max(1, Math.floor(remaining / 120));
+    const interval = window.setInterval(() => {
+      const current = displayedRef.current;
+      const nextLen = Math.min(full.length, (current.startsWith(full.slice(0, startIndex)) ? current.length : startIndex) + step);
+      const next = full.slice(0, nextLen);
+      setDisplayed(next);
+      if (nextLen >= full.length) {
+        window.clearInterval(interval);
+      }
+    }, 16);
+
+    return () => {
+      // Cleanup on content change or unmount
+      window.clearInterval(interval);
+    };
+  }, [children, showTypewriter]);
+
   const components = {
     // Beautiful heading hierarchy with proper spacing
     h1: (props: any) => (
@@ -190,11 +271,201 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       <p className="leading-6 sm:leading-7 text-sm sm:text-base md:text-lg text-zinc-700 dark:text-zinc-300 mb-2 sm:mb-4 [&:not(:first-child)]:mt-2 sm:[&:not(:first-child)]:mt-4 [&:has(+div>div>div>pre)]:mb-1 sm:[&:has(+div>div>div>pre)]:mb-2" {...props} />
     ),
 
-    // Beautiful code blocks without dark background - MOBILE OPTIMIZED
+    // Beautiful code blocks + Chart rendering support
     code({ node, inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || "");
-      const codeContent = String(children).replace(/\n$/, "");
+      const codeContentRaw = Array.isArray(children) ? children.join("") : String(children);
+      const codeContent = codeContentRaw.replace(/\n$/, "");
+
+      const sanitizeJson = (input: string) => {
+        // Remove block comments and line comments
+        let s = input.replace(/\/\*[\s\S]*?\*\//g, "");
+        s = s.replace(/(^|\s)\/\/.*$/gm, "");
+        // Remove trailing commas before } or ]
+        s = s.replace(/,\s*([}\]])/g, "$1");
+        return s.trim();
+      };
+
+      const safeParse = (text: string): any | null => {
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          return null;
+        }
+      };
+
+      const tryRenderChart = () => {
+        if (!match) return null;
+        const lang = (match[1] || "").toLowerCase();
+        if (!lang.startsWith("chart")) return null;
+        try {
+          const trimmed = codeContent.trim();
+          if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) {
+            return null;
+          }
+          const sanitized = sanitizeJson(trimmed);
+          const parsed = safeParse(sanitized);
+          if (!parsed) return null;
+          const spec = parsed;
+          const type = (spec.type || lang.replace("chart-", "")).toLowerCase();
+          const data = spec.data || [];
+          const xKey = spec.xKey || "name";
+          const yKeys: string[] = spec.yKeys || (spec.yKey ? [spec.yKey] : ["value"]);
+          const colors: string[] = spec.colors || ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6"]; // tailwind blue/green/amber/red/violet
+          const height = spec.height || (isSmallScreen ? 240 : 320);
+          const stacked = Boolean(spec.stacked);
+
+          const Container = ({ children: c }: any) => (
+            <figure className="my-3 sm:my-4 md:my-6 w-full overflow-hidden">
+              <div className="w-full h-full">
+                <div className="w-full" style={{ height }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    {c}
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              {spec.title && (
+                <figcaption className="mt-2 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 text-center">
+                  {spec.title}
+                </figcaption>
+              )}
+            </figure>
+          );
+
+          if (type === "line") {
+            return (
+              <Container>
+                <LineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey={xKey} />
+                  <YAxis />
+                  <Tooltip />
+                  {isSmallScreen ? null : <Legend />}
+                  {yKeys.map((k, i) => (
+                    <Line key={k} type="monotone" dataKey={k} stroke={colors[i % colors.length]} strokeWidth={2} dot={false} />
+                  ))}
+                </LineChart>
+              </Container>
+            );
+          }
+          if (type === "bar") {
+            return (
+              <Container>
+                <BarChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey={xKey} />
+                  <YAxis />
+                  <Tooltip />
+                  {isSmallScreen ? null : <Legend />}
+                  {yKeys.map((k, i) => (
+                    <Bar key={k} dataKey={k} stackId={stacked ? "stack" : undefined} fill={colors[i % colors.length]} radius={[4, 4, 0, 0]} />
+                  ))}
+                </BarChart>
+              </Container>
+            );
+          }
+          if (type === "area") {
+            return (
+              <Container>
+                <AreaChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey={xKey} />
+                  <YAxis />
+                  <Tooltip />
+                  {isSmallScreen ? null : <Legend />}
+                  {yKeys.map((k, i) => (
+                    <Area key={k} type="monotone" dataKey={k} stroke={colors[i % colors.length]} fill={colors[i % colors.length]} fillOpacity={0.25} />
+                  ))}
+                </AreaChart>
+              </Container>
+            );
+          }
+          if (type === "pie") {
+            const innerRadius = spec.innerRadius ?? 60;
+            const outerRadius = spec.outerRadius ?? 100;
+            const nameKey = spec.nameKey || xKey;
+            const valueKey = yKeys[0] || "value";
+            return (
+              <Container>
+                <PieChart>
+                  <Tooltip />
+                  {isSmallScreen ? null : <Legend />}
+                  <Pie data={data} dataKey={valueKey} nameKey={nameKey} innerRadius={innerRadius} outerRadius={outerRadius} paddingAngle={4}>
+                    {data.map((_: any, i: number) => (
+                      <Cell key={`cell-${i}`} fill={colors[i % colors.length]} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </Container>
+            );
+          }
+          if (type === "radar") {
+            const angleKey = spec.angleKey || xKey;
+            const radiusKey = yKeys[0] || "value";
+            return (
+              <Container>
+                <RadarChart data={data} outerRadius="80%">
+                  <PolarGrid />
+                  <PolarAngleAxis dataKey={angleKey} />
+                  <PolarRadiusAxis />
+                  {isSmallScreen ? null : <Legend />}
+                  <Tooltip />
+                  <Radar name={radiusKey} dataKey={radiusKey} stroke={colors[0]} fill={colors[0]} fillOpacity={0.35} />
+                </RadarChart>
+              </Container>
+            );
+          }
+          if (type === "scatter") {
+            const yKey = yKeys[0] || "y";
+            const zKey = spec.zKey;
+            return (
+              <Container>
+                <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                  <CartesianGrid />
+                  <XAxis dataKey={xKey} />
+                  <YAxis dataKey={yKey} />
+                  {zKey ? <ZAxis dataKey={zKey} /> : null}
+                  <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+                  {isSmallScreen ? null : <Legend />}
+                  <Scatter name={yKey} data={data} fill={colors[0]} />
+                </ScatterChart>
+              </Container>
+            );
+          }
+          if (type === "composed") {
+            // spec.series: [{ type: 'bar'|'line'|'area', key: 'uv' }]
+            const series = spec.series || yKeys.map((k: string) => ({ type: "bar", key: k }));
+            return (
+              <Container>
+                <ComposedChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey={xKey} />
+                  <YAxis />
+                  <Tooltip />
+                  {isSmallScreen ? null : <Legend />}
+                  {series.map((s: any, i: number) => {
+                    const color = colors[i % colors.length];
+                    if (s.type === "line") return <Line key={`${s.type}-${s.key}`} type="monotone" dataKey={s.key} stroke={color} strokeWidth={2} dot={false} />;
+                    if (s.type === "area") return <Area key={`${s.type}-${s.key}`} type="monotone" dataKey={s.key} stroke={color} fill={color} fillOpacity={0.25} />;
+                    return <Bar key={`${s.type}-${s.key}`} dataKey={s.key} fill={color} radius={[4, 4, 0, 0]} />;
+                  })}
+                </ComposedChart>
+              </Container>
+            );
+          }
+        } catch (err) {
+          // Fallthrough to code rendering on error
+          console.error("Chart render error:", err);
+          return null;
+        }
+        return null;
+      };
       
+      const chart = tryRenderChart();
+      if (!inline && match && chart) {
+        return chart;
+      }
+
       return !inline && match ? (
         <div className="my-2 sm:my-4 rounded-lg sm:rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden shadow-sm w-full">
           <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 bg-zinc-100/80 dark:bg-zinc-800/80 border-b border-zinc-200 dark:border-zinc-700">
@@ -234,7 +505,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
         </div>
       ) : (
         <code
-          className="relative rounded-md bg-zinc-100 dark:bg-zinc-800 px-1.5 sm:px-2 py-0.5 sm:py-1 font-mono text-xs sm:text-sm font-medium text-rose-600 dark:text-rose-400 border border-zinc-200 dark:border-zinc-700/50"
+          className="relative rounded-md bg-zinc-100 dark:bg-zinc-800 px-1.5 sm:px-2 py-0.5 sm:py-1 font-mono text-xs sm:text-sm font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/50"
           {...props}
         >
           {children}
@@ -488,7 +759,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
         rehypePlugins={[rehypeKatex, rehypeRaw]}
         components={components}
       >
-        {children}
+        {showTypewriter ? displayed : children}
       </ReactMarkdown>
     </div>
   );

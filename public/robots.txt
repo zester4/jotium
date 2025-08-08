@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+Disallow: /reset-password
+Sitemap: https://jotium.vercel.app/sitemap.xml
+
