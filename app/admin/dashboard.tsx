@@ -1,5 +1,4 @@
 "use client"
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { format } from "date-fns";
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as BarChartTooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, Legend } from "recharts";
@@ -55,13 +54,7 @@ export default function AdminDashboard() {
   const [selectedMetric, setSelectedMetric] = useState<string>('totalRevenue');
   const [chartTimeRange, setChartTimeRange] = useState<string>('15days'); // New state for chart time range
 
-  const parentRef = useRef<HTMLDivElement>(null);
-  const rowVirtualizer = useVirtualizer({
-    count: users.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 48,
-    overscan: 10,
-  });
+  // Removed table virtualization to ensure correct column alignment
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -433,103 +426,87 @@ export default function AdminDashboard() {
 
             {/* User Table */}
             <div className="border rounded-lg overflow-hidden">
-              <div ref={parentRef} style={{ height: 500, overflow: 'auto' }}>
-                <Table>
+              <div style={{ maxHeight: 500, overflow: 'auto' }}>
+                <Table className="table-fixed min-w-full">
                   <TableHeader className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
                     <TableRow>
-                      <TableHead className="w-12 text-center">
+                      <TableHead className="w-12 text-center sticky left-0 bg-gray-50 dark:bg-gray-800">
                         <input
                           type="checkbox"
                           checked={allSelected}
                           onChange={e => setSelectedIds(e.target.checked ? users.map(u => u.id) : [])}
                         />
                       </TableHead>
-                      <TableHead className="font-semibold text-left min-w-[140px]">Name</TableHead>
-                      <TableHead className="font-semibold text-left min-w-[200px] hidden sm:table-cell">Email</TableHead>
-                      <TableHead className="font-semibold text-center min-w-[120px]">Plan</TableHead>
-                      <TableHead className="font-semibold text-center min-w-[140px] hidden md:table-cell">Status</TableHead>
-                      <TableHead className="font-semibold text-center min-w-[120px] hidden lg:table-cell">Signup Date</TableHead>
-                      <TableHead className="w-16 text-center"></TableHead>
+                      <TableHead className="font-semibold text-left min-w-[220px]">Name</TableHead>
+                      <TableHead className="font-semibold text-left min-w-[260px] hidden sm:table-cell">Email</TableHead>
+                      <TableHead className="font-semibold text-center min-w-[140px]">Plan</TableHead>
+                      <TableHead className="font-semibold text-center min-w-[160px] hidden md:table-cell">Status</TableHead>
+                      <TableHead className="font-semibold text-center min-w-[160px] hidden lg:table-cell">Signup Date</TableHead>
+                      <TableHead className="w-16 text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px` }}>
-                    {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                      const user = users[virtualRow.index];
-                      if (!user) return null;
-                      return (
-                        <TableRow
-                          key={user.id}
-                          data-index={virtualRow.index}
-                          style={{ 
-                            position: 'absolute', 
-                            top: 0, 
-                            left: 0, 
-                            width: '100%', 
-                            transform: `translateY(${virtualRow.start}px)`,
-                            height: `${virtualRow.size}px`
-                          }}
-                          className="hover:bg-gray-50 dark:hover:bg-gray-800"
-                        >
-                          <TableCell className="w-12 text-center">
-                            <input
-                              type="checkbox"
-                              checked={selectedIds.includes(user.id)}
-                              onChange={e => setSelectedIds(
-                                e.target.checked 
-                                  ? [...selectedIds, user.id] 
-                                  : selectedIds.filter(id => id !== user.id)
-                              )}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium text-left min-w-[140px]">{user.name}</TableCell>
-                          <TableCell className="hidden sm:table-cell text-left min-w-[200px] text-gray-600">{user.email}</TableCell>
-                          <TableCell className="text-center min-w-[120px]">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              user.plan === 'Pro' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
-                              user.plan === 'Advanced' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
-                              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                            }`}>
-                              {user.plan}
-                            </span>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-center min-w-[140px]">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              user.subscriptionStatus === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
-                              user.subscriptionStatus === 'canceled' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
-                              'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                            }`}>
-                              {user.subscriptionStatus}
-                            </span>
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell text-center min-w-[120px] text-gray-600">
-                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "-"}
-                          </TableCell>
-                          <TableCell className="w-16 text-center">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button size="sm" variant="ghost">
-                                  <MoreHorizontalIcon size={16} />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onSelect={() => { setSelectedUser(user); setModalOpen(true); }}>
-                                  View
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => openEditModal(user)}>
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onSelect={() => openDeleteModal(user)}
-                                  className="text-red-600"
-                                >
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <TableCell className="w-12 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(user.id)}
+                            onChange={e => setSelectedIds(
+                              e.target.checked 
+                                ? [...selectedIds, user.id] 
+                                : selectedIds.filter(id => id !== user.id)
+                            )}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium text-left min-w-[220px]">{user.name}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-left min-w-[260px] text-gray-600">{user.email}</TableCell>
+                        <TableCell className="text-center min-w-[140px]">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            user.plan === 'Pro' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
+                            user.plan === 'Advanced' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                          }`}>
+                            {user.plan}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-center min-w-[160px]">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            user.subscriptionStatus === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                            user.subscriptionStatus === 'canceled' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
+                            'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+                          }`}>
+                            {user.subscriptionStatus}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell text-center min-w-[160px] text-gray-600">
+                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "-"}
+                        </TableCell>
+                        <TableCell className="w-16 text-center">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="ghost">
+                                <MoreHorizontalIcon size={16} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onSelect={() => { setSelectedUser(user); setModalOpen(true); }}>
+                                View
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => openEditModal(user)}>
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onSelect={() => openDeleteModal(user)}
+                                className="text-red-600"
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>

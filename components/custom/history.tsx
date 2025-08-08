@@ -2,6 +2,7 @@
 
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import cx from "classnames";
+import { MessageSquareText } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { User } from "next-auth";
@@ -12,12 +13,14 @@ import useSWR from "swr";
 import { Chat } from "@/db/schema";
 import { fetcher, generateUUID } from "@/lib/utils";
 
+import { FeedbackForm } from "./feedback-form"; // Import the new component
 import {
   InfoIcon,
   MenuIcon,
   MoreHorizontalIcon,
   PencilEditIcon,
   TrashIcon,
+  // MessageSquareTextIcon, // replaced by lucide-react MessageSquareText
 } from "./icons";
 import { NavUser } from "./nav-user";
 import {
@@ -50,6 +53,7 @@ export const History = ({ user }: { user: User | undefined }) => {
   const pathname = usePathname();
 
   const [isHistoryVisible, setIsHistoryVisible] = useState(false);
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false); // New state for feedback form
   const {
     data: history,
     isLoading,
@@ -59,7 +63,7 @@ export const History = ({ user }: { user: User | undefined }) => {
   });
 
   // Add state for profile info
-  const [profile, setProfile] = useState<{ firstName?: string; lastName?: string }>({});
+  const [profile, setProfile] = useState<{ firstName?: string; lastName?: string; plan?: string }>({});
 
   useEffect(() => {
     mutate();
@@ -71,7 +75,7 @@ export const History = ({ user }: { user: User | undefined }) => {
       fetch("/account/api/profile")
         .then((res) => res.ok ? res.json() : null)
         .then((data) => {
-          if (data) setProfile({ firstName: data.firstName, lastName: data.lastName });
+          if (data) setProfile({ firstName: data.firstName, lastName: data.lastName, plan: data.plan });
         });
     }
   }, [user]);
@@ -175,7 +179,7 @@ export const History = ({ user }: { user: User | undefined }) => {
               </Button>
             )}
 
-            <div className="flex flex-col overflow-y-scroll p-1 h-[calc(100dvh-220px)] tiny-scrollbar">
+            <div className="flex flex-col overflow-y-scroll p-1 h-[calc(100dvh-280px)] tiny-scrollbar">
               {!user ? (
                 <div className="text-zinc-500 h-dvh w-full flex flex-row justify-center items-center text-sm gap-2">
                   <InfoIcon />
@@ -258,13 +262,39 @@ export const History = ({ user }: { user: User | undefined }) => {
             </div>
           </div>
 
+          {/* Feedback button */}
+          {user && (
+            <div className="mt-3 pt-2">
+              <Button
+                className="font-normal text-sm flex flex-row justify-between text-white w-full mb-1"
+                variant="ghost"
+                onClick={() => {
+                  setShowFeedbackForm(true);
+                  setIsHistoryVisible(false); // Close sidebar when opening feedback form
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <MessageSquareText size={14} />
+                  <span>Submit Feedback</span>
+                </div>
+              </Button>
+            </div>
+          )}
+
           {/* NavUser at the bottom of the sidebar */}
-          <div className="mt-auto pt-4 border-t border-zinc-200 dark:border-zinc-700">
+          <div className="pt-1">
+             {/* Feedback Form Dialog */}
+            <AlertDialog open={showFeedbackForm} onOpenChange={setShowFeedbackForm}>
+              <AlertDialogContent>
+                <FeedbackForm onClose={() => setShowFeedbackForm(false)} />
+              </AlertDialogContent>
+            </AlertDialog>
             {user && (
               <NavUser
                 user={{
                   firstName: profile.firstName,
                   lastName: profile.lastName,
+                  plan: profile.plan,
                   email: user.email || "",
                   avatar: user.image || "", // always string
                   name: user.name || "", // always string
@@ -272,9 +302,17 @@ export const History = ({ user }: { user: User | undefined }) => {
                 onCloseSidebar={() => setIsHistoryVisible(false)} // Pass close handler to NavUser
               />
             )}
+            <div className="mt-1 mb-1 text-center text-[10px] text-muted-foreground">jotium v0.1.9</div>
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Feedback Form Dialog */}
+      <AlertDialog open={showFeedbackForm} onOpenChange={setShowFeedbackForm}>
+        <AlertDialogContent>
+          <FeedbackForm onClose={() => setShowFeedbackForm(false)} />
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>

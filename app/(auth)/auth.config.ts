@@ -17,6 +17,7 @@ export const authConfig = {
       const isLoggedIn = !!auth?.user;
       const isOnLogin = nextUrl.pathname.startsWith("/login");
       const isOnRegister = nextUrl.pathname.startsWith("/register");
+      const isOnResetPassword = nextUrl.pathname.startsWith("/reset-password");
       const isOnAuth = nextUrl.pathname.startsWith("/api/auth");
 
       // Always allow access to auth API routes
@@ -24,8 +25,8 @@ export const authConfig = {
         return true;
       }
 
-      // Allow unauthenticated users to access login and register pages
-      if (!isLoggedIn && (isOnLogin || isOnRegister)) {
+      // Allow unauthenticated users to access login, register and reset-password pages
+      if (!isLoggedIn && (isOnLogin || isOnRegister || isOnResetPassword)) {
         return true;
       }
       

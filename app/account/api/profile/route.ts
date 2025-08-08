@@ -18,6 +18,7 @@ export async function GET() {
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,
+    plan: user.plan,
   });
 }
 
