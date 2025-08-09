@@ -24,13 +24,13 @@ const TermsOfServicePage = () => {
       <section className="mb-6">
       <h2 className="text-xl font-semibold mb-2">Acceptance of Terms</h2>
       <p>
-        By accessing or using Jotium (&quot;the Service&quot;), you agree to be bound by these Terms of Service (&quot;Terms&quot;) and our Privacy Policy. If you do not agree to these Terms, please do not use Jotium.
+        By accessing or using Jotium, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these Terms, do not use Jotium.
       </p>
     </section>
     <section className="mb-6">
       <h2 className="text-xl font-semibold mb-2">Description of Service</h2>
       <p>
-        Jotium is an AI agent platform that provides productivity, automation, and research tools through a conversational interface and integrations with third-party services. The Service is intended for users who are at least 13 years old (or 16 where applicable) and have the legal capacity to enter into binding agreements.
+        Jotium is an AI assistant platform that provides productivity, automation, and research capabilities through a conversational interface and user authorized integrations. The Service is intended for users who are at least 13 years old or 16 where applicable and have the legal capacity to enter into binding agreements.
       </p>
     </section>
     <section className="mb-6">
@@ -64,7 +64,7 @@ const TermsOfServicePage = () => {
     <section className="mb-6">
       <h2 className="text-xl font-semibold mb-2">Third-Party Services</h2>
       <ul className="list-disc pl-6">
-        <li>Jotium may integrate with third-party services (e.g., Slack, GitHub, ClickUp) at your request. Your use of these integrations is subject to the terms and privacy policies of those third parties.</li>
+        <li>Jotium may integrate with third party services at your request. Your use of these integrations is subject to the terms and privacy policies of those third parties.</li>
         <li>We are not responsible for the content, functionality, or security of third-party services.</li>
         <li>Any data shared with third-party services is at your discretion and risk.</li>
       </ul>
@@ -103,7 +103,7 @@ const TermsOfServicePage = () => {
     <section className="mb-6">
       <h2 className="text-xl font-semibold mb-2">Modifications to Service or Terms</h2>
       <p>
-        We reserve the right to modify or discontinue Jotium or these Terms at any time. We will notify you of significant changes by email, in-app notice, or other appropriate means. Continued use of the Service after changes constitutes acceptance of the updated Terms.
+        We reserve the right to modify or discontinue Jotium or these Terms at any time. We will notify you of significant changes by email, in app notice, or other appropriate means. Continued use of the Service after changes constitutes acceptance of the updated Terms.
       </p>
     </section>
     <section className="mb-6">

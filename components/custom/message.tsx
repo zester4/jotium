@@ -91,9 +91,9 @@ export const Message = ({
 
   return (
     <motion.div
-      className={`group flex flex-col w-full py-1.5 sm:py-2.5 md:py-3.5 ${
+      className={`group flex flex-col w-full py-1 sm:py-2 md:py-3 ${
         role === "assistant" ? "" : ""
-      } first-of-type:pt-12 sm:first-of-type:pt-16 md:first-of-type:pt-20`}
+      } first-of-type:pt-10 sm:first-of-type:pt-14 md:first-of-type:pt-16`}
       initial={{ y: 10, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ 
@@ -185,6 +185,7 @@ export const Message = ({
                 prose-pre:overflow-x-auto
                 prose-pre:max-w-full
                 prose-pre:w-full
+                prose-pre:-ml-1.5 sm:prose-pre:ml-0
                 prose-table:max-w-full
                 prose-table:overflow-x-auto
                 prose-table:w-full
