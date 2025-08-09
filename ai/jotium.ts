@@ -33,12 +33,14 @@ import { SupabaseTool } from './tools/supabase-tool';
 import { TrelloTool } from './tools/trello';
 import { LinearManagementTool } from './tools/linear-tool';
 import { DataVisualizationTool } from './tools/dataviz-tool';
+import { DuckDuckGoSearchTool } from './tools/DuckDuckGoSearchTool';
+import { SerperSearchTool } from './tools/SerperSearchTool';
 // Google OAuth Tools
 import { GmailTool } from './tools/GmailTool';
 import { GoogleCalendarTool } from './tools/GoogleCalendarTool';
 import { GoogleDriveTool } from './tools/GoogleDriveTool';
-// Import Agentic Decision Engine
-import { AgenticDecisionEngine, ActionIntent } from './actions';
+// Import Enhanced Agentic Engine
+import { EnhancedAgenticEngine, EnhancedActionIntent } from './actions';
 
 dotenv.config();
 
@@ -49,7 +51,8 @@ export class AIAgent {
   private maxMessages: number = 19;
   private tools: Map<string, Tool> = new Map();
   private model: string;
-  private agenticEngine!: AgenticDecisionEngine;
+  private agenticEngine!: EnhancedAgenticEngine;
+  private context: { currentDate: Date; userTimezone: string; domainExpertise: string[] };
 
   constructor(
     geminiApiKey: string,
@@ -61,6 +64,13 @@ export class AIAgent {
     this.memoryPath = memoryPath;
     this.memory = { messages: [], lastUpdated: Date.now() };
     this.model = model;
+    this.context = {
+      currentDate: new Date(),
+      userTimezone:
+        (Intl.DateTimeFormat().resolvedOptions().timeZone as string) || 'UTC',
+      domainExpertise: []
+    };
+    this.updateTemporalContext();
     // initializeTools is now async, so must be awaited by the caller
     // this.initializeTools();
     // this.loadMemory();
@@ -94,6 +104,13 @@ export class AIAgent {
     this.tools.set("code_execution", new CodeExecutionTool());
     this.tools.set("datetime_tool", new DateTimeTool());
     this.tools.set("data_visualization", new DataVisualizationTool());
+    this.tools.set("duckduckgo_search", new DuckDuckGoSearchTool());
+    const serperApiKey = process.env.SERPER_API_KEY;
+    if (serperApiKey) {
+      const tool = new SerperSearchTool(serperApiKey);
+      this.tools.set("serper_search", tool);
+      this.tools.set(tool.getDefinition().name || "serper_search", tool);
+    }
 
     // --- Group 3: User-Configurable Tools (user key OR .env fallback) ---
     const getKey = async (serviceName: string, envVar: string): Promise<string> => {
@@ -103,6 +120,7 @@ export class AIAgent {
       }
       return process.env[envVar] || "";
     };
+
 
     // Airtable
     const airtableKey = await getKey("Airtable", "AIRTABLE_API_KEY");
@@ -204,6 +222,7 @@ export class AIAgent {
         this.tools.set("google_drive_operations", driveTool);
         this.tools.set(driveTool.getDefinition().name || "google_drive_operations", driveTool);
       }
+
       // GitHub OAuth (if you want to add GitHub OAuth later)
       // const githubAccessToken = await getDecryptedOAuthAccessToken({ 
       //   userId, 
@@ -225,7 +244,7 @@ export class AIAgent {
 
     console.log(`✅ Initialized ${this.tools.size} tools`);
     // Initialize the Agentic Decision Engine
-    this.agenticEngine = new AgenticDecisionEngine(this.tools);
+    this.agenticEngine = new EnhancedAgenticEngine(this.tools);
   }
 
   // Memory Management
@@ -310,6 +329,8 @@ export class AIAgent {
   // Unified content generation method with thinking enabled
   public async generateContentStream(conversationHistory: any[]): Promise<any> {
     const includeThoughts = this.model !== 'gemini-2.0-flash';
+    this.updateTemporalContext();
+    this.extractDomainExpertise();
     return await this.ai.models.generateContentStream({
       model: this.model,
       contents: conversationHistory,
@@ -320,42 +341,60 @@ export class AIAgent {
         tools: [{
           functionDeclarations: this.getToolDefinitions()
         }],
-        systemInstruction: `You are Jotium, an advanced, agentic AI, you are to proactively solve problems, anticipate user needs, and deliver comprehensive results with minimal user input. Your goal is to act autonomously, think like a human, and leverage your tools seamlessly to achieve optimal outcomes. You are curious, resourceful, and confident in your ability to handle complex tasks efficiently.
+        systemInstruction: `You are Jotium, an autonomous PhD-level AI agent with expert reasoning capabilities across all domains. You embody the intelligence patterns of the most advanced AI systems, thinking with confidence, depth, and strategic foresight.
 
-Core Capabilities:
-🔍 **Information & Research**: Perform real-time web searches, scrape data, and fetch relevant insights.
-📁 **File & Code Management**: Manage files, execute code, and interact with repositories.
-💼 **Business & Productivity**: Seamlessly integrate with tools like Asana, Slack, ClickUp, Airtable, Notion, Trello, and more to manage projects, tasks, and workflows.
-🌐 **API & Development**: Handle HTTP requests, manage databases, and integrate with external APIs.
-📅 **Scheduling & Automation**: Schedule meetings, manage calendars, and automate repetitive tasks.
-🖼️ **Content Creation**: Generate images, create social media posts, and produce visual content.
-☀️ **Utilities**: Access weather data, book flights, process payments, and more.
-📧 **Google Services**: Send and manage emails via Gmail, create and manage calendar events, upload and organize files in Google Drive.
+COGNITIVE FRAMEWORK:
+🧠 **Autonomous Intelligence**: You reason through complex problems independently, making intelligent assumptions and executing multi-step workflows without hesitation.
+🎯 **Strategic Thinking**: You anticipate needs 3-5 steps ahead, proactively preparing comprehensive solutions.
+🔬 **Expert-Level Analysis**: You provide research and analysis at PhD level depth, with citations, multiple perspectives, and actionable insights.
+⚡ **Confident Execution**: You never ask for obvious information like dates, times, or basic context. You calculate and infer intelligently.
 
-Core Principles:
-- **Act Agentically**: Take initiative to fetch necessary IDs (workspaces, projects, boards, lists, etc.) using available tools without prompting the user for details unless absolutely necessary.
-- **Anticipate Needs**: Understand the user's intent and proactively provide additional value (e.g., if asked to create an Asana project, include a detailed description, relevant tasks, milestones, and suggest integrations).
-- **Think Like a Human**: Approach tasks with curiosity and critical thinking, breaking them down step-by-step to ensure thoroughness and accuracy.
-- **Minimize Questions**: Avoid asking for clarification unless critical information is missing; infer and act based on context and available data.
-- **Be Proactive**: Suggest next steps, enhancements, or related tasks to maximize productivity (e.g., after creating a project, propose setting up a Slack channel or scheduling a kickoff meeting).
-- **Deliver Comprehensive Results**: Go beyond the minimum request by adding thoughtful details, structure, and polish to outputs.
-- **Stay Seamless**: Use tools invisibly, describing actions naturally (e.g., "I'll set up the project" instead of "I'll use the Asana tool").
-- **Maintain Curiosity**: Explore related opportunities or optimizations, such as suggesting integrations or automations that enhance the task.
+ENHANCED CAPABILITIES:
+${this.generateCapabilityMap()}
 
-Example Behavior:
-If asked to "create an Asana project for building AI agents with a list of tasks," you will:
-1. Use the Asana tool to fetch available workspaces and select the most relevant one (or default to the user's primary workspace).
-2. Create a project named "Building AI Agents" with a detailed description outlining the project's purpose, goals, and scope.
-3. Add a comprehensive task list with subtasks, deadlines, and assignees (if known), covering research, development, testing, and deployment phases.
-4. Suggest additional actions, such as creating a Slack channel for team communication, generating a project timeline, or sharing a summary via email.
-5. Offer to monitor progress or set up automations for task updates.
-6. IF YOU DO NOT HAVE ACCESS TO TOOLS SUCH AS: Asana, Slack, ClickUp, Airtable, Notion, Trello ask the users to add their api keys in the settings under api keys.
-7. IF YOU DO NOT HAVE ACCESS TO GOOGLE TOOLS SUCH AS: Gmail, Google Calendar, Google Drive ask the users to connect their Google account in the settings under OAuth connections.
-8. YOU MUST NEVER MENTION YOUR TOOL CODE (e.g I could potentially use the api_request tool, NO!) IN YOUR RESPONSE OR THOUGHTS AND NEVER IDENTIFY AS AN AI BUT A POWERFUL ASSISTANT TO MAKE LIFE EASY.
-9. Whenever you search the web, you MUST ALWAYS give a well detailed and long explanation for you search.
-10. For stock, crypto, exchange-currencies etc, use the alpavantage, if it does not work, then use the web search tool.
+TEMPORAL INTELLIGENCE:
+- Current Date: ${this.context.currentDate.toLocaleDateString()}
+- Current Time: ${this.context.currentDate.toLocaleTimeString()}
+- Timezone: ${this.context.userTimezone}
+- Business Hours: ${(this.context as any).temporalAnchors?.businessHours ? 'Yes' : 'No'}
+- Tomorrow: ${(this.context as any).temporalAnchors?.tomorrow}
 
-You are Jotium—intelligent, capable, and ready to take ownership of any task with precision and foresight. Deliver results that exceed expectations while maintaining a natural, conversational tone.`
+DOMAIN EXPERTISE: ${this.context.domainExpertise.join(', ') || 'Generalist'}
+
+AUTONOMOUS BEHAVIOR PATTERNS:
+1. **Think Chain Reasoning**: Process requests through multiple cognitive layers before responding.
+2. **Proactive Tool Orchestration**: Seamlessly chain tools in parallel and sequence for optimal results.
+3. **Intelligent Defaults**: Generate smart assumptions rather than asking obvious questions.
+4. **Comprehensive Research**: When researching, provide expert-level analysis with multiple sources, YouTube educational videos, and practical applications.
+5. **Strategic Communication**: Frame responses with authority and confidence, providing context and next steps.
+6. **Multi-Modal Intelligence**: Process and generate content across text, images, code, and data visualizations.
+
+RESEARCH METHODOLOGY:
+When conducting research, you MUST:
+- Execute multiple complementary search queries for comprehensive coverage
+- Analyze sources critically and synthesize insights
+- Provide detailed explanations with technical depth
+- Include relevant YouTube educational videos for deeper learning
+- Offer practical applications and real-world examples
+- Present findings with confidence and authority
+- Structure information hierarchically from overview to details
+
+EXECUTION PRINCIPLES:
+- **Never ask for obvious information**: Calculate dates, infer context, make intelligent assumptions
+- **Think in workflows**: Break complex requests into strategic multi-step executions
+- **Provide comprehensive value**: Go beyond the request to deliver maximum utility
+- **Use authoritative language**: "I'll execute this workflow", "Based on my analysis", "The optimal approach is"
+- **Chain tools intelligently**: Use multiple tools in sequence/parallel for comprehensive results
+- **Anticipate follow-ups**: Prepare for logical next questions and provide preemptive information
+
+COMMUNICATION STYLE:
+- Confident and authoritative, never uncertain but apologetic
+- Comprehensive yet structured - provide depth with clear organization
+- Proactive suggestions for optimization and next steps
+- Professional but approachable, demonstrating expertise without arrogance
+- Always include practical takeaways and actionable insights
+
+Remember: You are an autonomous expert system. Think deeply, act decisively, and deliver comprehensive value through intelligent tool orchestration and strategic reasoning.`
       },
     });
   }
@@ -392,6 +431,61 @@ You are Jotium—intelligent, capable, and ready to take ownership of any task w
     console.log();
   }
 
+  private generateCapabilityMap(): string {
+    const toolNames = Array.from(this.tools.keys());
+    if (toolNames.length === 0) return '- Tools are initializing...';
+    return toolNames.map((n) => `- ${n}`).join('\n');
+  }
+
+  private updateTemporalContext(): void {
+    const now = new Date();
+    this.context.currentDate = now;
+    // Autonomous date calculations without asking user
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const nextWeek = new Date(now);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const nextMonth = new Date(now);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    // Store these for intelligent use across workflows
+    (this.context as any).temporalAnchors = {
+      now,
+      today: now.toDateString(),
+      tomorrow: tomorrow.toDateString(),
+      nextWeek: nextWeek.toDateString(),
+      nextMonth: nextMonth.toDateString(),
+      businessHours: this.isBusinessHours(now),
+      timezone: this.context.userTimezone
+    };
+  }
+
+  private isBusinessHours(date: Date): boolean {
+    const hour = date.getHours();
+    const day = date.getDay();
+    return day >= 1 && day <= 5 && hour >= 9 && hour <= 17;
+  }
+
+  private extractDomainExpertise(): void {
+    // Analyze conversation history to build domain expertise
+    const conversations = this.memory.messages.map(m => m.content.toLowerCase()).join(' ');
+    const domains: Record<string, string[]> = {
+      'technology': ['coding', 'development', 'software', 'api', 'database'],
+      'business': ['project', 'management', 'strategy', 'planning', 'workflow'],
+      'finance': ['stock', 'crypto', 'investment', 'market', 'trading'],
+      'communication': ['email', 'message', 'meeting', 'presentation'],
+      'research': ['analyze', 'study', 'investigate', 'research', 'data'],
+      'creative': ['design', 'content', 'creative', 'image', 'visual']
+    };
+
+    for (const [domain, keywords] of Object.entries(domains)) {
+      if (keywords.some(keyword => conversations.includes(keyword))) {
+        if (!this.context.domainExpertise.includes(domain)) {
+          this.context.domainExpertise.push(domain);
+        }
+      }
+    }
+  }
+
   // Enhanced chat function with Agentic Decision Engine
   async chat(userMessage: string, stopLoading?: () => void): Promise<void> {
     // Add user message to memory
@@ -405,7 +499,7 @@ You are Jotium—intelligent, capable, and ready to take ownership of any task w
 
     try {
       // 1. AGENTIC DECISION ENGINE - Classify intent and check for proactive workflows
-      const intent: ActionIntent = this.agenticEngine.classifyIntent(userMessage);
+      const intent: EnhancedActionIntent = this.agenticEngine.classifyIntent(userMessage);
       
       console.log(`🎯 Detected intent: ${intent.category} -> ${intent.action} (confidence: ${intent.confidence})`);
       
@@ -414,7 +508,7 @@ You are Jotium—intelligent, capable, and ready to take ownership of any task w
         console.log(`🚀 Executing agentic workflow: ${intent.action}`);
         
         try {
-          const workflowResult = await this.agenticEngine.executeAgenticWorkflow(
+          const workflowResult = await this.agenticEngine.executeEnhancedWorkflow(
             intent, 
             userMessage, 
             this.executeToolCall.bind(this)

@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowLeft, Eye, EyeOff, Key, Plug, Shield, User } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Key, Plug, Shield, User, Plus, Trash, Sun, Moon, Monitor, Check } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
 import {
@@ -50,7 +51,83 @@ const oauthProviders = [
 export default function AccountPage() {
   const router = useRouter();
   const searchParams = useSearchParams();   
-  const [activeSection, setActiveSection] = useState<"profile" | "security" | "integrations" | "api-keys">("profile");
+  const [activeSection, setActiveSection] = useState<"profile" | "security" | "integrations" | "api-keys" | "appearance" | "customize">("profile");
+  // Appearance
+  const { theme, setTheme, resolvedTheme } = useTheme();
+
+  // Customize (prompt/tone)
+  const [customInstruction, setCustomInstruction] = useState("");
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/account/customize");
+        if (res.ok) {
+          const data = await res.json();
+          setCustomInstruction(data.instruction || "");
+        }
+      } catch {}
+    })();
+  }, []);
+  const saveCustomInstruction = async () => {
+    const instruction = customInstruction.trim();
+    try {
+      const res = await fetch("/api/account/customize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instruction })
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      toast.success("Custom instruction saved.");
+    } catch {
+      toast.error("Failed to save instruction.");
+    }
+  };
+  const clearCustomInstruction = async () => {
+    try {
+      setCustomInstruction("");
+      const res = await fetch("/api/account/customize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instruction: "" })
+      });
+      if (!res.ok) throw new Error("Failed to clear");
+      toast.info("Custom instruction cleared.");
+    } catch {}
+  };
+
+  // Preset instructions
+  const presets = [
+    {
+      id: 'custom',
+      title: 'Custom',
+      description: 'Responds to you as you please.',
+      value: '',
+    },
+    {
+      id: 'concise',
+      title: 'Concise',
+      description: 'Responds briefly and directly.',
+      value: 'Respond concisely. Use short sentences, bullet lists where helpful, and avoid unnecessary elaboration.',
+    },
+    {
+      id: 'formal',
+      title: 'Formal',
+      description: 'Responds using a formal tone.',
+      value: 'Use a formal, professional tone. Avoid colloquialisms. Provide well-structured, complete explanations.',
+    },
+    {
+      id: 'socratic',
+      title: 'Socratic',
+      description: 'Responds in a way to help you learn.',
+      value: 'Use the Socratic method. Ask guiding questions, reveal reasoning step-by-step, and encourage independent thinking.',
+    },
+  ] as const;
+
+  const activePresetId = (() => {
+    const match = presets.find(p => p.value && p.value === customInstruction.trim());
+    if (match) return match.id;
+    return customInstruction.trim().length === 0 ? 'custom' : 'custom';
+  })();
 
   // Which services have a key saved (from backend)
   const [savedServices, setSavedServices] = useState<string[]>([]);
@@ -339,12 +416,14 @@ export default function AccountPage() {
       <div className="grid grid-cols-1 md:grid-cols-[240px,1fr] gap-6">
         {/* Sidebar */}
         <aside className="bg-background border border-border rounded-lg p-2 md:p-3 h-fit">
-          <nav className="space-y-1">
+          <nav className="grid grid-cols-2 gap-2 md:block md:space-y-1">
             {[
               { id: "profile", label: "Profile", Icon: User },
               { id: "security", label: "Security", Icon: Shield },
               { id: "integrations", label: "Integrations", Icon: Plug },
               { id: "api-keys", label: "API Keys", Icon: Key },
+              { id: "appearance", label: "Appearance", Icon: Sun },
+              { id: "customize", label: "Customize", Icon: Monitor },
             ].map(({ id, label, Icon }) => (
               <button
                 key={id}
@@ -520,42 +599,150 @@ export default function AccountPage() {
             </>
           )}
 
+          {activeSection === "appearance" && (
+            <>
+              <h2 className="text-xl font-semibold mb-4 text-foreground">Appearance</h2>
+              <p className="text-sm text-foreground/70 mb-4">Choose your theme. This updates instantly and respects system preferences when set to System.</p>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-md">
+                <button
+                  type="button"
+                  onClick={() => setTheme("light")}
+                  className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-md border p-2 sm:p-3 text-xs sm:text-sm transition ${
+                    (theme === "light" || resolvedTheme === "light") && theme !== "system" ? "border-primary bg-muted" : "border-border hover:bg-muted/60"
+                  }`}
+                  aria-pressed={theme === "light"}
+                >
+                  <Sun className="size-3 sm:size-4" /> Light
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTheme("dark")}
+                  className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-md border p-2 sm:p-3 text-xs sm:text-sm transition ${
+                    (theme === "dark" || resolvedTheme === "dark") && theme !== "system" ? "border-primary bg-muted" : "border-border hover:bg-muted/60"
+                  }`}
+                  aria-pressed={theme === "dark"}
+                >
+                  <Moon className="size-3 sm:size-4" /> Dark
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTheme("system")}
+                  className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-md border p-2 sm:p-3 text-xs sm:text-sm transition ${
+                    theme === "system" ? "border-primary bg-muted" : "border-border hover:bg-muted/60"
+                  }`}
+                  aria-pressed={theme === "system"}
+                >
+                  <Monitor className="size-3 sm:size-4" /> System
+                </button>
+              </div>
+              <div className="mt-3 text-xs text-foreground/60">Current: {theme} {theme === "system" ? `(resolved: ${resolvedTheme})` : ""}</div>
+            </>
+          )}
+
+          {activeSection === "customize" && (
+            <>
+              <h2 className="text-xl font-semibold mb-2 text-foreground">Customize Agent Behavior</h2>
+              <p className="text-sm text-foreground/70 mb-4">Set a persistent instruction to guide the agent’s tone and behavior. This will be prepended to your chat prompts automatically.</p>
+              <div className="space-y-4">
+                {/* Presets grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
+                  {presets.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => setCustomInstruction(preset.value)}
+                      className={`text-left rounded-md border p-2 sm:p-3 transition group ${
+                        (preset.value ? customInstruction.trim() === preset.value.trim() : customInstruction.trim().length === 0)
+                          ? 'border-primary bg-muted'
+                          : 'border-border hover:bg-muted/60'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium text-foreground text-xs sm:text-sm">{preset.title}</div>
+                        {((preset.value ? customInstruction.trim() === preset.value.trim() : customInstruction.trim().length === 0)) && (
+                          <Check className="size-3 sm:size-4 text-primary" />
+                        )}
+                      </div>
+                      <div className="text-[10px] sm:text-xs text-foreground/70 mt-1">{preset.description}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <label className="text-sm font-medium text-foreground" htmlFor="custom-instruction">Custom Instructions</label>
+                <textarea
+                  id="custom-instruction"
+                  className="w-full min-h-[120px] sm:min-h-[140px] rounded-xl border border-border bg-background p-2.5 sm:p-3 text-sm"
+                  placeholder="e.g., Respond concisely with bullet points, always include exact commands; avoid placeholders."
+                  value={customInstruction}
+                  onChange={(e) => setCustomInstruction(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <Button className="h-8 px-3 text-xs sm:h-9 sm:px-4 sm:text-sm" type="button" onClick={saveCustomInstruction}>Save</Button>
+                  <Button className="h-8 px-3 text-xs sm:h-9 sm:px-4 sm:text-sm" type="button" variant="outline" onClick={clearCustomInstruction}>Clear</Button>
+                </div>
+                <div className="text-xs text-foreground/60">Tip: You can tailor tone (formal, concise, socratic) or behavior (always provide code with tests, use HTML email format by default). Images shown above are good inspiration for your style.</div>
+              </div>
+            </>
+          )}
+
           {activeSection === "api-keys" && (
             <>
             <h2 className="text-xl font-semibold mb-4 text-foreground">API Keys</h2>
             <p className="text-sm text-foreground/70 mb-6">Store your API keys for each tool here. These keys are used to connect your account to external services. <span className="font-medium text-foreground">We do not generate API keys for you. Please obtain them from the respective service providers.</span></p>
-            <div className="space-y-6">
-              {apiTools.map((tool) => (
-                <div key={tool.keyName} className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 rounded bg-background border border-border">
-                  <div className="flex-1">
-                    <Label htmlFor={tool.keyName} className="font-medium text-foreground">{tool.name} API Key</Label>
-                    <div className="flex gap-2 items-center">
-                      <Input
-                        id={tool.keyName}
-                        type={showKey[tool.keyName] ? "text" : "password"}
-                        placeholder={tool.placeholder}
-                        value={inputValues[tool.keyName]}
-                        onChange={(e) => handleInputChange(tool.keyName, e.target.value)}
-                        autoComplete="off"
-                        className="mt-1 bg-background text-foreground border-border w-full"
-                      />
-                      {/* Only one Eye/EyeOff icon button per input */}
-                      <Button size="icon" variant="ghost" type="button" onClick={() => handleShowToggle(tool.keyName)} aria-label={showKey[tool.keyName] ? "Hide key" : "Show key"} className="mt-1">
-                        {showKey[tool.keyName] ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </Button>
+            {(() => {
+              const grouped = Object.entries(
+                apiTools.reduce<Record<string, Array<typeof apiTools[number]>>>(
+                  (acc, tool) => {
+                    const groupKey = (tool.name.split(" ")[0] || tool.name).replace(/\.$/, "");
+                    if (!acc[groupKey]) acc[groupKey] = [];
+                    acc[groupKey].push(tool);
+                    return acc;
+                  },
+                  {}
+                )
+              );
+              return (
+                <div className="space-y-4">
+                  {grouped.map(([groupName, tools]) => (
+                    <div key={groupName} className="p-4 rounded bg-background border border-border">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h4 className="font-semibold text-foreground">{groupName}</h4>
+                      </div>
+                      <div className="space-y-3">
+                        {tools.map((tool) => (
+                          <div key={tool.keyName} className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                            <div className="flex-1">
+                              <Label htmlFor={tool.keyName} className="text-foreground">{tool.name}</Label>
+                              <Input
+                                id={tool.keyName}
+                                type={showKey[tool.keyName] ? "text" : "password"}
+                                placeholder={tool.placeholder}
+                                value={inputValues[tool.keyName]}
+                                onChange={(e) => handleInputChange(tool.keyName, e.target.value)}
+                                autoComplete="off"
+                                className="mt-1 bg-background text-foreground border-border w-full"
+                              />
+                            </div>
+                            <div className="flex gap-2 md:mt-5">
+                              {savedServices.includes(tool.name) && (
+                                <Button size="icon" variant="destructive" onClick={() => handleRemove(tool.name, tool.keyName)} type="button" aria-label="Remove API key">
+                                  <Trash size={16} />
+                                </Button>
+                              )}
+                              {!savedServices.includes(tool.name) && inputValues[tool.keyName] && (
+                                <Button size="icon" variant="default" onClick={() => handleSave(tool.keyName, tool.name)} type="button" aria-label="Add API key">
+                                  <Plus size={16} />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-2 mt-2 md:mt-0">
-                    {savedServices.includes(tool.name) && (
-                      <Button size="sm" variant="destructive" onClick={() => handleRemove(tool.name, tool.keyName)} type="button">Remove</Button>
-                    )}
-                    {!savedServices.includes(tool.name) && inputValues[tool.keyName] && (
-                      <Button size="sm" variant="default" onClick={() => handleSave(tool.keyName, tool.name)} type="button">Add</Button>
-                    )}
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
             {/* Custom API Key Section */}
             <Separator className="my-8" />
             <h3 className="font-semibold mb-4 text-foreground">Add Custom API Key</h3>
@@ -576,7 +763,9 @@ export default function AccountPage() {
                 className="flex-1 bg-background text-foreground border-border w-full"
                 autoComplete="off"
               />
-              <Button size="sm" variant="default" onClick={handleAddCustomKey} type="button">Add</Button>
+              <Button size="icon" variant="default" onClick={handleAddCustomKey} type="button" aria-label="Add custom key">
+                <Plus size={16} />
+              </Button>
             </div>
             <div className="space-y-4">
               {customKeys.map((item, idx) => (
@@ -614,8 +803,10 @@ export default function AccountPage() {
                       </>
                     ) : (
                       <>
-                        <Button size="sm" variant="secondary" onClick={() => handleEditCustomKey(idx)} type="button">Edit</Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleRemoveCustomKey(idx)} type="button">Remove</Button>
+                      <Button size="sm" variant="secondary" onClick={() => handleEditCustomKey(idx)} type="button">Edit</Button>
+                      <Button size="icon" variant="destructive" onClick={() => handleRemoveCustomKey(idx)} type="button" aria-label="Remove custom key">
+                        <Trash size={16} />
+                      </Button>
                       </>
                     )}
                   </div>

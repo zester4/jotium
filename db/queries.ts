@@ -408,6 +408,28 @@ export async function updateUserProfile({
   }
 }
 
+// Custom Instruction (Agent behavior prompt)
+export async function getUserCustomInstruction(userId: string): Promise<string | null> {
+  try {
+    const [u] = await db.select({ customInstruction: user.customInstruction }).from(user).where(eq(user.id, userId));
+    return u?.customInstruction || null;
+  } catch (error) {
+    console.error("Failed to get custom instruction:", error);
+    throw error;
+  }
+}
+
+export async function setUserCustomInstruction({ userId, instruction }: { userId: string; instruction: string }): Promise<void> {
+  try {
+    await db.update(user)
+      .set({ customInstruction: instruction })
+      .where(eq(user.id, userId));
+  } catch (error) {
+    console.error("Failed to set custom instruction:", error);
+    throw error;
+  }
+}
+
 // Get a user by their ID
 export async function getUserById(userId: string): Promise<User | undefined> {
   try {

@@ -30,6 +30,8 @@ export const user = pgTable("User", {
   // ADD THESE PASSWORD RESET FIELDS:
   passwordResetToken: varchar("passwordResetToken", { length: 255 }),
   passwordResetExpires: timestamp("passwordResetExpires"),
+  // Per-user agent customization
+  customInstruction: varchar("customInstruction", { length: 4000 }),
 });
 
 export type User = InferSelectModel<typeof user>;

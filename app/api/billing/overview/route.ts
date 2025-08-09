@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     try {
       // Fetch latest subscription data from Stripe
       const subscription: any = await stripe.subscriptions.retrieve(user.stripeSubscriptionId, {
-        expand: ['default_payment_method', 'items.data.price']
+        expand: ['default_payment_method', 'items.data.price', 'latest_invoice.payment_intent']
       });
 
       // Extract plan from subscription
@@ -50,11 +50,37 @@ export async function GET(req: NextRequest) {
         // await setStripeSubscription({ userId: user.id, plan: planFromStripe });
       }
 
+      // Fallbacks for payment method and next period end
+      let defaultPaymentMethod: any = subscription.default_payment_method;
+      if (!defaultPaymentMethod && subscription.latest_invoice?.payment_intent?.payment_method) {
+        try {
+          // Retrieve full payment method if only id available
+          const pmId = subscription.latest_invoice.payment_intent.payment_method as string;
+          defaultPaymentMethod = await stripe.paymentMethods.retrieve(pmId);
+        } catch {}
+      }
+
+      let periodEnd: number | null = subscription.current_period_end || null;
+      // If period end is missing, attempt to infer from a recent invoice
+      if (!periodEnd && user.stripeCustomerId) {
+        try {
+          const invoices = await stripe.invoices.list({ customer: user.stripeCustomerId, limit: 1 });
+          const inv = invoices.data[0];
+          if (inv) {
+            const line = inv.lines?.data?.[0];
+            periodEnd = (line?.period?.end as number) || (inv.next_payment_attempt as number) || null;
+            if (!defaultPaymentMethod && inv.default_payment_method) {
+              defaultPaymentMethod = inv.default_payment_method;
+            }
+          }
+        } catch {}
+      }
+
       const response = {
         plan: planFromStripe || user.plan || 'Free',
         status: subscription.status,
-        paymentMethod: subscription.default_payment_method,
-        current_period_end: subscription.current_period_end || null, // Casted to 'any'
+        paymentMethod: defaultPaymentMethod,
+        current_period_end: periodEnd, // unix seconds
         cancel_at_period_end: subscription.cancel_at_period_end || false,
       };
 
