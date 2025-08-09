@@ -11,6 +11,23 @@ export async function GET(req: NextRequest) {
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { stripeCustomerId } = await getStripeSubscription(session.user.id);
   if (!stripeCustomerId) return NextResponse.json({ invoices: [] }, { status: 200 });
-  const invoices = await stripe.invoices.list({ customer: stripeCustomerId, limit: 20 });
-  return NextResponse.json({ invoices: invoices.data });
+  try {
+    const invoices = await stripe.invoices.list({ customer: stripeCustomerId, limit: 20 });
+    return NextResponse.json({ invoices: invoices.data });
+  } catch (err) {
+    // Fallback: list from payment intents if invoices API fails
+    try {
+      const paymentIntents = await stripe.paymentIntents.list({ customer: stripeCustomerId, limit: 20 });
+      const fallbackInvoices = paymentIntents.data.map((pi: any) => ({
+        id: pi.id,
+        created: Math.floor(pi.created),
+        amount_paid: pi.amount_received,
+        status: pi.status,
+        invoice_pdf: null,
+      }));
+      return NextResponse.json({ invoices: fallbackInvoices });
+    } catch {
+      return NextResponse.json({ invoices: [] }, { status: 200 });
+    }
+  }
 } 

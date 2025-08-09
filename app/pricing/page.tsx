@@ -25,11 +25,11 @@ const plans = [
     description: 'For individuals and small teams just getting started.',
     features: [
       '5 messages per day',
-      'Basic AI chat and answers',
+      'Access to all integrations',
+      'Basic reasoning and clear step‑by‑step answers',
       'Limited chat history',
+      'Custom agent instructions (tone & style)',
       'Community support',
-      'Basic integrations',
-      'No agent thoughts or advanced reasoning',
     ],
     cta: 'Start for Free',
   },
@@ -43,17 +43,18 @@ const plans = [
         monthly: 19.99,
         yearly: 239.88,
       },
-    description: 'For growing teams that need more power and support.',
+    description: 'For power users who want faster responses and deeper research.',
     features: [
       '50 messages per day',
-      'Smarter, more helpful Agentic responses',
-      'Everything in Free',
+      'Access to all integrations',
+      'Advanced reasoning and multi‑step planning',
+      'Faster responses with priority processing',
       'Unlimited chat history',
+      'Deep web research with source synthesis',
+      'Automated summaries and email‑ready outputs',
+      'Calendar/task automation assistance',
       'Priority support',
       'Early access to new features',
-      'Advanced integrations',
-      'Basic code generation',
-      'Agent thoughts and reasoning enabled',
     ],
     cta: 'Upgrade to Pro',
     popular: true,
@@ -68,47 +69,45 @@ const plans = [
         monthly: 41.32,
         yearly: 495.84,
       },
-    description: 'For professionals who need advanced AI capabilities.',
+    description: 'For professionals who want autonomous workflows and team features.',
     features: [
-      '100 messages per day',
-      'Everything in Pro',
-      'Most advanced Agentic reasoning and agentic features',
-      'Advanced code generation',
-      'Custom AI workflows',
-      'Team collaboration tools',
+      '500 messages per day',
+      'Access to all integrations',
+      'Expert reasoning with strategic planning',
+      'Top‑priority, low‑latency responses',
+      'Autonomous workflows with parallel actions',
+      'Team collaboration and shareable outputs',
+      'Advanced code generation and reviews',
+      'Persistent memory and usage analytics',
       'Dedicated support',
     ],
     cta: 'Get Advanced',
   },
 ]
 
-const allFeatures = [
-    { label: "Messages per day", free: "5", pro: "50", advanced: "100", team: "Unlimited" },
-    { label: "Basic AI chat and answers", free: true, pro: true, advanced: true, team: true },
-    { label: "Smarter, more helpful AI responses", free: false, pro: true, advanced: true, team: true },
-    { label: "Agent thoughts and reasoning", free: false, pro: true, advanced: true, team: true },
-    { label: "Limited chat history", free: true, pro: false, advanced: false, team: false },
-    { label: "Unlimited chat history", free: false, pro: true, advanced: true, team: true },
-    { label: "Community support", free: true, pro: false, advanced: false, team: false },
-    { label: "Priority support", free: false, pro: true, advanced: false, team: false },
-    { label: "Dedicated support", free: false, pro: false, advanced: true, team: false },
-    { label: "24/7 priority support", free: false, pro: false, advanced: false, team: true },
-    { label: "Basic integrations", free: true, pro: false, advanced: false, team: false },
-    { label: "Advanced integrations", free: false, pro: true, advanced: true, team: true },
+  const allFeatures = [
+    { label: "Messages per day", free: "5", pro: "50", advanced: "500", team: "Unlimited" },
+    { label: "Access to all integrations", free: true, pro: true, advanced: true, team: true },
+    { label: "Reasoning depth", free: "Basic", pro: "Advanced", advanced: "Expert", team: "Expert" },
+    { label: "Response priority", free: "Standard", pro: "Priority", advanced: "Top priority", team: "Top priority" },
+    { label: "Chat history retention", free: "Limited", pro: "Unlimited", advanced: "Unlimited", team: "Unlimited" },
+    { label: "Research depth & synthesis", free: "Basic", pro: "Deep", advanced: "Comprehensive", team: "Comprehensive" },
+    { label: "Autonomous workflows", free: "Semi‑autonomous", pro: "Autonomous", advanced: "Fully autonomous", team: "Fully autonomous" },
+    { label: "Parallel actions (concurrent tasks)", free: "1", pro: "3", advanced: "5", team: "10" },
+    { label: "Custom agent instructions", free: true, pro: true, advanced: true, team: true },
+    { label: "Automated summaries & polished outputs", free: false, pro: true, advanced: true, team: true },
+    { label: "Calendar & task assistance", free: true, pro: true, advanced: true, team: true },
+    { label: "Analytics & memory persistence", free: "Basic", pro: "Extended", advanced: "Advanced", team: "Advanced" },
+    { label: "Collaboration & sharing", free: false, pro: false, advanced: true, team: true },
+    { label: "Support level", free: "Community", pro: "Priority", advanced: "Dedicated", team: "Dedicated" },
     { label: "Early access to new features", free: false, pro: true, advanced: true, team: true },
-    { label: "Basic code generation", free: false, pro: true, advanced: false, team: false },
-    { label: "Advanced code generation", free: false, pro: false, advanced: true, team: true },
-    { label: "Custom AI workflows", free: false, pro: false, advanced: true, team: true },
-    { label: "Team collaboration tools", free: false, pro: false, advanced: true, team: true },
-    { label: "Admin dashboard", free: false, pro: false, advanced: false, team: true },
-    { label: "SAML SSO", free: false, pro: false, advanced: false, team: true },
-    { label: "On-premise deployment", free: false, pro: false, advanced: false, team: true },
+    { label: "On‑premise deployment", free: false, pro: false, advanced: false, team: true },
   ];
 
   const faqs = [
     {
       q: "Can I try Pro for free?",
-      a: "We offer a 7-day free trial for the Pro plan. No credit card required to start.",
+      a: "No, once you signup you have access to the free plan. No credit card required to start.",
     },
     {
       q: "Can I cancel or change plans anytime?",
@@ -120,23 +119,36 @@ const allFeatures = [
     },
     {
       q: "How does the team plan work?",
-      a: "The team plan is designed for organizations and includes features for collaboration, administration, and security.",
+      a: "Coming soon — team seats, shared workspaces, role-based access, and admin controls.",
     },
     {
-        q: "What kind of agents can I build?",
-        a: "You can build agents that integrate with a variety of services, including GitHub, Slack, and ClickUp, allowing you to automate tasks and workflows across different platforms.",
+        q: "What can Jotium do for me?",
+        a: "Jotium functions as a proactive AI assistant that researches, summarizes, drafts emails, manages calendars/tasks, and orchestrates multi-step workflows across your connected services.",
       },
       {
         q: "Can the agent book meetings?",
         a: "Yes, the agent can connect to your calendar and book meetings for you, helping you manage your schedule more efficiently.",
       },
       {
-        q: "Is it possible to generate code with the agent?",
-        a: "Our platform supports code generation, enabling you to create scripts, automate repetitive coding tasks, and accelerate your development process.",
+        q: "Is it possible to generate code?",
+        a: "Yes. Jotium can draft code snippets and scripts, and provide step-by-step implementation guidance.",
       },
       {
         q: "How are integrations managed?",
         a: "Integrations are managed through a simple interface where you can connect to different services, configure settings, and monitor activity without needing to write any code.",
+      },
+      // Added FAQs
+      {
+        q: "Can I bring my own API keys?",
+        a: "Yes. Add your keys in Settings → API Keys. Keys are stored securely and used only for your account.",
+      },
+      {
+        q: "How do Custom Instructions affect replies?",
+        a: "Your instruction is saved to your profile and prepended to chats, steering tone and behavior (e.g., concise, formal, Socratic). You can edit it anytime in Settings → Customize.",
+      },
+      {
+        q: "Do you train on my data?",
+        a: "No. Your private data and chats are not sold or used to train public models. You can delete chats anytime from your account.",
       },
   ];
 
@@ -349,7 +361,7 @@ export default function PricingPage() {
                     <th className="p-4 font-bold text-center border-b">Free</th>
                     <th className="p-4 font-bold text-center border-b">Pro</th>
                     <th className="p-4 font-bold text-center border-b">Advanced</th>
-                    <th className="p-4 font-bold text-center border-b">Team</th>
+                    <th className="p-4 font-bold text-center border-b">Team <span className="text-xs text-muted-foreground align-middle">(coming soon)</span></th>
                   </tr>
                 </thead>
                 <tbody>

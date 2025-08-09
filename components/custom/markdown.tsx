@@ -38,6 +38,25 @@ import remarkEmoji from "remark-emoji";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 
+// Custom tooltip component for smaller, mobile-optimized tooltips
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded shadow-sm p-1">
+        <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-0.5">
+          {label}
+        </p>
+        {payload.map((entry: any, index: number) => (
+          <p key={index} className="text-xs" style={{ color: entry.color }}>
+            {entry.name}: {typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 const CopyButton = ({ text }: { text: string }) => {
   const [copied, setCopied] = useState(false);
 
@@ -311,12 +330,29 @@ const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: st
           const data = spec.data || [];
           const xKey = spec.xKey || "name";
           const yKeys: string[] = spec.yKeys || (spec.yKey ? [spec.yKey] : ["value"]);
-          const colors: string[] = spec.colors || ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6"]; // tailwind blue/green/amber/red/violet
+          const colors: string[] = spec.colors || [
+            "#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", // blue, green, amber, red, violet
+            "#06b6d4", "#84cc16", "#f97316", "#ec4899", "#6366f1", // cyan, lime, orange, pink, indigo
+            "#10b981", "#fbbf24", "#f43f5e", "#a855f7", "#14b8a6", // emerald, yellow, rose, purple, teal
+            "#64748b", "#f59e0b", "#8b5cf6", "#06b6d4", "#84cc16"  // slate, amber, violet, cyan, lime
+          ];
           const height = spec.height || (isSmallScreen ? 240 : 320);
           const stacked = Boolean(spec.stacked);
+          // Determine if x-axis labels need rotation on small screens or when labels are long/many
+          const categories: string[] = Array.isArray(data) ? data.map((d: any) => String(d?.[xKey] ?? "")) : [];
+          const maxLabelLength: number = categories.reduce((m: number, s: string) => Math.max(m, s?.length || 0), 0);
+          const rotateLabels: boolean = Boolean(
+            spec.rotateLabels ?? (isSmallScreen && (maxLabelLength > 8 || categories.length > 5))
+          );
+          const xTickProps: any = rotateLabels ? { angle: -35, textAnchor: "end" } : undefined;
+          const xAxisExtraProps: any = rotateLabels
+            ? { tick: xTickProps, interval: 0, height: 50, tickMargin: 8 }
+            : {};
+          const bottomMargin = rotateLabels ? 28 : 8;
+          const chartMargin = { top: 8, right: 16, bottom: bottomMargin, left: isSmallScreen ? -8 : 0 } as const;
 
           const Container = ({ children: c }: any) => (
-            <figure className="my-3 sm:my-4 md:my-6 w-full overflow-hidden">
+            <figure className="my-3 sm:my-4 md:my-6 w-full overflow-hidden -ml-2 sm:ml-0">
               <div className="w-full h-full">
                 <div className="w-full" style={{ height }}>
                   <ResponsiveContainer width="100%" height="100%">
@@ -335,11 +371,11 @@ const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: st
           if (type === "line") {
             return (
               <Container>
-                <LineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                <LineChart data={data} margin={chartMargin}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey={xKey} />
+                  <XAxis dataKey={xKey} {...xAxisExtraProps} />
                   <YAxis />
-                  <Tooltip />
+                  <Tooltip content={<CustomTooltip />} />
                   {isSmallScreen ? null : <Legend />}
                   {yKeys.map((k, i) => (
                     <Line key={k} type="monotone" dataKey={k} stroke={colors[i % colors.length]} strokeWidth={2} dot={false} />
@@ -351,11 +387,11 @@ const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: st
           if (type === "bar") {
             return (
               <Container>
-                <BarChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                <BarChart data={data} margin={chartMargin}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey={xKey} />
+                  <XAxis dataKey={xKey} {...xAxisExtraProps} />
                   <YAxis />
-                  <Tooltip />
+                  <Tooltip content={<CustomTooltip />} />
                   {isSmallScreen ? null : <Legend />}
                   {yKeys.map((k, i) => (
                     <Bar key={k} dataKey={k} stackId={stacked ? "stack" : undefined} fill={colors[i % colors.length]} radius={[4, 4, 0, 0]} />
@@ -367,11 +403,11 @@ const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: st
           if (type === "area") {
             return (
               <Container>
-                <AreaChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                <AreaChart data={data} margin={chartMargin}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey={xKey} />
+                  <XAxis dataKey={xKey} {...xAxisExtraProps} />
                   <YAxis />
-                  <Tooltip />
+                  <Tooltip content={<CustomTooltip />} />
                   {isSmallScreen ? null : <Legend />}
                   {yKeys.map((k, i) => (
                     <Area key={k} type="monotone" dataKey={k} stroke={colors[i % colors.length]} fill={colors[i % colors.length]} fillOpacity={0.25} />
@@ -388,7 +424,7 @@ const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: st
             return (
               <Container>
                 <PieChart>
-                  <Tooltip />
+                  <Tooltip content={<CustomTooltip />} />
                   {isSmallScreen ? null : <Legend />}
                   <Pie data={data} dataKey={valueKey} nameKey={nameKey} innerRadius={innerRadius} outerRadius={outerRadius} paddingAngle={4}>
                     {data.map((_: any, i: number) => (
@@ -409,7 +445,7 @@ const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: st
                   <PolarAngleAxis dataKey={angleKey} />
                   <PolarRadiusAxis />
                   {isSmallScreen ? null : <Legend />}
-                  <Tooltip />
+                  <Tooltip content={<CustomTooltip />} />
                   <Radar name={radiusKey} dataKey={radiusKey} stroke={colors[0]} fill={colors[0]} fillOpacity={0.35} />
                 </RadarChart>
               </Container>
@@ -420,12 +456,12 @@ const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: st
             const zKey = spec.zKey;
             return (
               <Container>
-                <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                <ScatterChart margin={chartMargin}>
                   <CartesianGrid />
-                  <XAxis dataKey={xKey} />
+                  <XAxis dataKey={xKey} {...xAxisExtraProps} />
                   <YAxis dataKey={yKey} />
                   {zKey ? <ZAxis dataKey={zKey} /> : null}
-                  <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: "3 3" }} />
                   {isSmallScreen ? null : <Legend />}
                   <Scatter name={yKey} data={data} fill={colors[0]} />
                 </ScatterChart>
@@ -437,11 +473,11 @@ const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: st
             const series = spec.series || yKeys.map((k: string) => ({ type: "bar", key: k }));
             return (
               <Container>
-                <ComposedChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                <ComposedChart data={data} margin={chartMargin}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey={xKey} />
+                  <XAxis dataKey={xKey} {...xAxisExtraProps} />
                   <YAxis />
-                  <Tooltip />
+                  <Tooltip content={<CustomTooltip />} />
                   {isSmallScreen ? null : <Legend />}
                   {series.map((s: any, i: number) => {
                     const color = colors[i % colors.length];

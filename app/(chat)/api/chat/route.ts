@@ -1,16 +1,16 @@
 //app/(chat)/api/chat/route.ts
-import { revalidatePath } from "next/cache"; // Import revalidatePath
+import { revalidatePath } from "next/cache"; 
 import { NextRequest, NextResponse } from "next/server";
 
 import { AIAgent } from "@/ai/jotium";
 import { Message } from "@/ai/types";
 import { auth } from "@/app/(auth)/auth";
-import { saveChat, deleteChatById, getMessageCount, updateUserMessageCount, getUserById } from "@/db/queries";
-import { getUserAIModel } from "@/lib/user-model"; // Import the new function
+import { saveChat, deleteChatById, getMessageCount, updateUserMessageCount, getUserById, getUserCustomInstruction } from "@/db/queries";
+import { getUserAIModel } from "@/lib/user-model"; 
 import { generateUUID } from "@/lib/utils";
 
 const planLimits: { [key: string]: number } = {
-  "Free": 25,
+  "Free": 5,
   "Pro": 50,
   "Advanced": Infinity,
 };
@@ -105,6 +105,14 @@ export async function POST(request: NextRequest) {
           parts: [{ text: msg.content }],
         }));
       }
+
+      // Inject per-user custom instruction as a system-style priming message
+      try {
+        const customInstruction = await getUserCustomInstruction(userId);
+        if (customInstruction && customInstruction.trim().length > 0) {
+          conversationHistory.unshift({ role: "user", parts: [{ text: `(User Preference) ${customInstruction.trim()}` }] });
+        }
+      } catch {}
 
       let fullResponse = "";
       let thoughts = "";

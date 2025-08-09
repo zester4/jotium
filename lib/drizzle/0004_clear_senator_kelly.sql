@@ -1,0 +1,1 @@
+ALTER TABLE "User" ADD COLUMN "customInstruction" varchar(4000);
