@@ -5,7 +5,7 @@ export function getGeminiModelForPlan(plan: string): string {
     case "advanced":
       return "gemini-2.5-pro";
     case "pro":
-      return "gemini-2.5-flash";
+      return "gemini-2.0-flash";
     case "free":
     default:
       return "gemini-2.0-flash";
