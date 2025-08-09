@@ -503,8 +503,8 @@ const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: st
       }
 
       return !inline && match ? (
-        <div className="my-2 sm:my-4 rounded-lg sm:rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden shadow-sm w-full">
-          <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 bg-zinc-100/80 dark:bg-zinc-800/80 border-b border-zinc-200 dark:border-zinc-700">
+        <div className="my-2 sm:my-4 rounded-lg sm:rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden shadow-sm w-full -ml-1.5 sm:ml-0">
+          <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-2.5 bg-zinc-100/80 dark:bg-zinc-800/80 border-b border-zinc-200 dark:border-zinc-700">
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
                 {match[1]}
@@ -512,14 +512,14 @@ const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: st
             </div>
             <CopyButton text={codeContent} />
           </div>
-          <div className="overflow-x-auto w-full">
+          <div className="overflow-x-auto w-full pl-1 pr-0">
             <SyntaxHighlighter
               style={oneDark}
               language={match[1]}
               PreTag="div"
               className="!m-0 !bg-transparent !text-xs sm:!text-sm md:!text-base w-full"
               customStyle={{
-                padding: '1rem 1rem',
+                padding: '0.75rem 1rem',
                 margin: 0,
                 background: 'transparent',
                 fontSize: 'inherit',
@@ -551,7 +551,7 @@ const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: st
 
     // Enhanced pre for fallback code blocks - MOBILE OPTIMIZED
     pre: (props: any) => (
-      <pre className="p-3 sm:p-6 overflow-x-auto font-mono text-xs sm:text-sm md:text-base text-zinc-800 dark:text-zinc-200 bg-transparent w-full" {...props} />
+      <pre className="p-3 sm:p-6 overflow-x-auto font-mono text-xs sm:text-sm md:text-base text-zinc-800 dark:text-zinc-200 bg-transparent w-full -ml-1.5 sm:ml-0" {...props} />
     ),
 
     // Comprehensive table styling with mobile responsiveness - FULL WIDTH

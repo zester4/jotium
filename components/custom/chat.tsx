@@ -236,12 +236,21 @@ className="flex-1 overflow-y-auto custom-scrollbar pb-24 sm:pb-32"
           div::-webkit-scrollbar-thumb:hover {
             background-color: hsl(var(--border) / 0.8);
           }
+          /* Shift code blocks slightly left on mobile for visual centering */
+          :global(pre) {
+            margin-left: -0.375rem;
+          }
+          @media (min-width: 640px) {
+            :global(pre) {
+              margin-left: 0;
+            }
+          }
         `}</style>
         
         {/* Fixed width container that never changes */}
         <div className="w-full max-w-none mx-auto">
           {/* Responsive padding with stable inner container */}
-          <div className="px-4 sm:px-6 md:px-8 lg:mx-[144px] lg:px-12 xl:px-16 2xl:px-20">
+          <div className="px-3 sm:px-5 md:px-7 lg:mx-[132px] lg:px-10 xl:px-14 2xl:px-18">
             {/* Fixed max-width content area - This ensures stable layout */}
             <div className="max-w-4xl mx-auto layout-stable">
               <AnimatePresence mode="popLayout">
