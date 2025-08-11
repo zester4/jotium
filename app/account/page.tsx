@@ -142,6 +142,20 @@ export default function AccountPage() {
   // OAuth connections
   const [oauthConnections, setOauthConnections] = useState<{ service: string; externalUserName?: string }[]>([]);
   const [oauthLoading, setOauthLoading] = useState(true);
+  const refreshOauthConnections = async () => {
+    try {
+      setOauthLoading(true);
+      const res = await fetch("/api/oauth/connections");
+      if (res.ok) {
+        const data = await res.json();
+        setOauthConnections(data.connections || []);
+      }
+    } catch (err) {
+      console.error("Error refreshing OAuth connections:", err);
+    } finally {
+      setOauthLoading(false);
+    }
+  };
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -191,30 +205,19 @@ export default function AccountPage() {
   // Fetch OAuth connections on mount
   useEffect(() => {
     setOauthLoading(true);
-    fetch("/api/oauth/connections") // New API endpoint to list connections
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch OAuth connections");
-        return res.json();
-      })
-      .then((data) => {
-        setOauthConnections(data.connections || []);
-      })
-      .catch((err) => {
-        console.error("Error fetching OAuth connections:", err);
-      })
-      .finally(() => {
-        setOauthLoading(false);
-      });
+    refreshOauthConnections();
   }, []);
 
   // Handle OAuth success/error messages from URL params
   useEffect(() => {
     if (searchParams.get("oauth_success")) {
       toast.success("OAuth connection successful!");
+      refreshOauthConnections();
       router.replace("/account", undefined); //
     }
     if (searchParams.get("oauth_disconnected")) {
       toast.info("OAuth connection disconnected.");
+      refreshOauthConnections();
       router.replace("/account", undefined); //
     }
     if (searchParams.get("oauth_error")) {
@@ -222,6 +225,24 @@ export default function AccountPage() {
       router.replace("/account", undefined); //
     }
   }, [searchParams, router]);
+
+  // Disconnect handler to update UI immediately without full refresh
+  const handleDisconnectOAuth = async (service: string) => {
+    try {
+      setOauthLoading(true);
+      const res = await fetch(`/api/oauth/${service}/disconnect`, { method: "GET", redirect: "manual" as RequestRedirect });
+      if (!res.ok && !(res.status >= 300 && res.status < 400)) {
+        throw new Error("Failed to disconnect");
+      }
+      toast.info("OAuth connection disconnected.");
+      setOauthConnections((prev) => prev.filter((c) => c.service !== service));
+    } catch (err) {
+      console.error("Failed to disconnect OAuth:", err);
+      toast.error("Failed to disconnect. Please try again.");
+    } finally {
+      await refreshOauthConnections();
+    }
+  };
 
   // Built-in API key logic
   const handleInputChange = (keyName: string, value: string) => {
@@ -561,9 +582,7 @@ export default function AccountPage() {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() =>
-                            router.push(`/api/oauth/${provider.service}/disconnect`)
-                          }
+                          onClick={() => handleDisconnectOAuth(provider.service)}
                         >
                           Disconnect
                         </Button>

@@ -10,7 +10,7 @@ import { MessageActions } from "./message-actions";
 import { MessageImageDisplay } from "./message-image-display"; // New component for displaying images in messages
 import { MessageReasoning } from "./thoughts";
 import { ToolExecution } from "./tool-execution"; // Import the new component
-import { Weather } from "./weather";
+import WeatherWidget from "./weather";
 import { AuthorizePayment } from "../flights/authorize-payment";
 import { DisplayBoardingPass } from "../flights/boarding-pass";
 import { CreateReservation } from "../flights/create-reservation";
@@ -274,7 +274,7 @@ export const Message = ({
                       className="bg-background/50 backdrop-blur-sm border rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 shadow-sm w-full overflow-hidden"
                     >
                       {toolName === "getWeather" ? (
-                        <Weather weatherAtLocation={result} />
+                        <WeatherWidget data={result} />
                       ) : toolName === "displayFlightStatus" ? (
                         <FlightStatus flightStatus={result} />
                       ) : toolName === "searchFlights" ? (

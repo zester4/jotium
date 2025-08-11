@@ -20,12 +20,12 @@ export class LinearManagementTool {
             description: "The operation to perform",
             enum: [
               // Issue Operations
-              "create_issue", "update_issue", "delete_issue", "get_issue", "list_issues", "search_issues",
+              "create_issue", "update_issue", "rename_issue", "delete_issue", "get_issue", "list_issues", "search_issues",
               "assign_issue", "unassign_issue", "archive_issue", "unarchive_issue", "move_issue",
               "duplicate_issue", "link_issues", "unlink_issues", "bulk_update_issues",
               
               // Project Operations
-              "create_project", "update_project", "delete_project", "get_project", "list_projects",
+              "create_project", "update_project", "rename_project", "delete_project", "get_project", "list_projects",
               "archive_project", "unarchive_project", "add_project_member", "remove_project_member",
               "get_project_issues", "create_project_milestone", "update_project_milestone",
               
@@ -73,7 +73,10 @@ export class LinearManagementTool {
               
               // Advanced Operations
               "batch_operations", "import_data", "sync_external_data",
-              "custom_graphql_query", "custom_graphql_mutation"
+              "custom_graphql_query", "custom_graphql_mutation",
+              
+              // Aggregation/list-all helpers
+              "list_all_issues", "list_all_projects", "list_all_teams", "list_all_cycles", "list_issue_subtasks"
             ]
           },
           // Common parameters
@@ -342,6 +345,8 @@ export class LinearManagementTool {
           return await this.createIssue(args);
         case "update_issue":
           return await this.updateIssue(args);
+        case "rename_issue":
+          return await this.updateIssue({ id: args.id, title: args.title || args.name });
         case "delete_issue":
           return await this.deleteIssue(args);
         case "get_issue":
@@ -374,6 +379,8 @@ export class LinearManagementTool {
           return await this.createProject(args);
         case "update_project":
           return await this.updateProject(args);
+        case "rename_project":
+          return await this.updateProject({ id: args.id, name: args.name });
         case "delete_project":
           return await this.deleteProject(args);
         case "get_project":
@@ -564,6 +571,18 @@ export class LinearManagementTool {
           return await this.customGraphQLQuery(args);
         case "custom_graphql_mutation":
           return await this.customGraphQLMutation(args);
+
+        // Aggregation/list-all helpers
+        case "list_all_issues":
+          return await this.listAllIssues(args);
+        case "list_all_projects":
+          return await this.listAllProjects(args);
+        case "list_all_teams":
+          return await this.listAllTeams(args);
+        case "list_all_cycles":
+          return await this.listAllCycles(args);
+        case "list_issue_subtasks":
+          return await this.listIssueSubtasks(args);
 
         default:
           throw new Error(`Unsupported operation: ${args.operation}`);
@@ -758,6 +777,73 @@ export class LinearManagementTool {
       operation: "list_issues",
       data: data.issues
     };
+  }
+
+  // Aggregation helpers
+  private async listAllIssues(args: any): Promise<any> {
+    const all: any[] = [];
+    let after: string | undefined = undefined;
+    do {
+      const res = await this.listIssues({ ...args, first: 200, after });
+      const edges = res.data?.nodes || [];
+      all.push(...edges);
+      // We need a fresh query to get pageInfo; reuse the query here is fine because listIssues returns pageInfo
+      const pageInfo = res.data?.pageInfo;
+      after = pageInfo?.hasNextPage ? pageInfo.endCursor : undefined;
+    } while (after);
+    return { success: true, operation: "list_all_issues", data: all, ids: all.map((i: any) => i.id) };
+  }
+
+  private async listAllProjects(args: any): Promise<any> {
+    const all: any[] = [];
+    let after: string | undefined = undefined;
+    do {
+      const res = await this.listProjects({ ...args, first: 200, after });
+      const nodes = res.data?.nodes || [];
+      all.push(...nodes);
+      const pageInfo = res.data?.pageInfo;
+      after = pageInfo?.hasNextPage ? pageInfo.endCursor : undefined;
+    } while (after);
+    return { success: true, operation: "list_all_projects", data: all, ids: all.map((p: any) => p.id) };
+  }
+
+  private async listAllTeams(args: any): Promise<any> {
+    const all: any[] = [];
+    let after: string | undefined = undefined;
+    do {
+      const res = await this.listTeams({ ...args, first: 200, after });
+      const nodes = res.data?.nodes || [];
+      all.push(...nodes);
+      const pageInfo = res.data?.pageInfo;
+      after = pageInfo?.hasNextPage ? pageInfo.endCursor : undefined;
+    } while (after);
+    return { success: true, operation: "list_all_teams", data: all, ids: all.map((t: any) => t.id) };
+  }
+
+  private async listAllCycles(args: any): Promise<any> {
+    const all: any[] = [];
+    let after: string | undefined = undefined;
+    do {
+      const res = await this.listCycles({ ...args, first: 200, after });
+      const nodes = res.data?.nodes || [];
+      all.push(...nodes);
+      const pageInfo = res.data?.pageInfo;
+      after = pageInfo?.hasNextPage ? pageInfo.endCursor : undefined;
+    } while (after);
+    return { success: true, operation: "list_all_cycles", data: all, ids: all.map((c: any) => c.id) };
+  }
+
+  private async listIssueSubtasks(args: any): Promise<any> {
+    const query = `
+      query IssueWithChildren($id: String!) {
+        issue(id: $id) {
+          children { nodes { id identifier title state { name } } }
+        }
+      }
+    `;
+    const data = await this.makeGraphQLRequest(query, { id: args.id });
+    const nodes = data.issue?.children?.nodes || [];
+    return { success: true, operation: "list_issue_subtasks", data: nodes, ids: nodes.map((n: any) => n.id) };
   }
 
   private async searchIssues(args: any): Promise<any> {

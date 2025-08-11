@@ -88,7 +88,22 @@ export class AsanaTool {
               "create_portfolio",
               "get_portfolios",
               "add_project_to_portfolio",
-              "remove_project_from_portfolio"
+              "remove_project_from_portfolio",
+              
+              // Aggregation/list-all helpers
+              "list_all_workspaces",
+              "list_all_teams",
+              "list_all_projects_in_workspace",
+              "list_all_sections_in_project",
+              "list_all_tasks_in_project",
+              "list_all_tasks_in_workspace",
+              "get_subtasks",
+
+              // Rename/utility operations (added)
+              // Rename/utility operations (added)
+              "rename_task",
+              "rename_project",
+              "rename_project_section"
             ]
           },
           
@@ -315,6 +330,30 @@ export class AsanaTool {
           return this.deleteWebhook(args.gid);
         case "get_webhooks":
           return this.getWebhooks(args.workspace, args.limit, args.offset);
+        
+        // Rename helpers
+        case "rename_task":
+          return this.renameTask(args.gid, args.name);
+        case "rename_project":
+          return this.renameProject(args.gid, args.name);
+        case "rename_project_section":
+          return this.renameProjectSection(args.gid, args.name);
+
+        // List-all helpers
+        case "list_all_workspaces":
+          return this.listAllWorkspaces();
+        case "list_all_teams":
+          return this.listAllTeams(args.workspace);
+        case "list_all_projects_in_workspace":
+          return this.listAllProjectsInWorkspace(args.workspace);
+        case "list_all_sections_in_project":
+          return this.listAllSectionsInProject(args.project);
+        case "list_all_tasks_in_project":
+          return this.listAllTasksInProject(args.project);
+        case "list_all_tasks_in_workspace":
+          return this.listAllTasksInWorkspace(args.workspace);
+        case "get_subtasks":
+          return this.getSubtasks(args.gid, args.limit, args.offset);
           
         default:
           throw new Error(`Unknown action: ${args.action}`);
@@ -326,6 +365,29 @@ export class AsanaTool {
         action: args.action
       };
     }
+  }
+
+  // Convenience: rename task using updateTask
+  private async renameTask(gid: string, name: string): Promise<any> {
+    if (!gid || !name) throw new Error("gid and name are required to rename a task");
+    return this.updateTask(gid, { name });
+  }
+
+  // Convenience: rename project using updateProject
+  private async renameProject(gid: string, name: string): Promise<any> {
+    if (!gid || !name) throw new Error("gid and name are required to rename a project");
+    return this.updateProject(gid, { name });
+  }
+
+  // Rename a project section
+  private async renameProjectSection(sectionGid: string, name: string): Promise<any> {
+    if (!sectionGid || !name) throw new Error("gid and name are required to rename a project section");
+    const result = await this.makeRequest(`/sections/${sectionGid}`, 'PUT', { name });
+    return {
+      success: true,
+      action: "rename_project_section",
+      data: result.data ?? result
+    };
   }
 
   private async makeRequest(endpoint: string, method: string = 'GET', data?: any): Promise<any> {
@@ -416,6 +478,79 @@ export class AsanaTool {
       data: result.data,
       next_page: result.next_page
     };
+  }
+
+  // List-all helpers
+  private async listAllWorkspaces(): Promise<any> {
+    const result = await this.getWorkspaces();
+    return {
+      success: true,
+      action: "list_all_workspaces",
+      data: result.data,
+      ids: result.data.map((w: any) => w.gid)
+    };
+  }
+
+  private async listAllTeams(workspaceGid: string): Promise<any> {
+    const result = await this.getTeams(workspaceGid);
+    return {
+      success: true,
+      action: "list_all_teams",
+      data: result.data,
+      ids: result.data.map((t: any) => t.gid)
+    };
+  }
+
+  private async listAllProjectsInWorkspace(workspaceGid: string): Promise<any> {
+    const pageSize = 100;
+    let offset: string | undefined = undefined;
+    const all: any[] = [];
+    do {
+      const res = await this.getProjects(workspaceGid, undefined, undefined, undefined, pageSize, offset);
+      all.push(...res.data);
+      offset = res.next_page?.offset;
+    } while (offset);
+    return { success: true, action: "list_all_projects_in_workspace", data: all, ids: all.map(p => p.gid) };
+  }
+
+  private async listAllSectionsInProject(projectGid: string): Promise<any> {
+    const res = await this.getProjectSections(projectGid);
+    return { success: true, action: "list_all_sections_in_project", data: res.data, ids: res.data.map((s: any) => s.gid) };
+  }
+
+  private async listAllTasksInProject(projectGid: string): Promise<any> {
+    const pageSize = 100;
+    let offset: string | undefined = undefined;
+    const all: any[] = [];
+    do {
+      const res = await this.getTasksForProject(projectGid, undefined, pageSize, offset);
+      all.push(...res.data);
+      offset = res.next_page?.offset;
+    } while (offset);
+    return { success: true, action: "list_all_tasks_in_project", data: all, ids: all.map(t => t.gid) };
+  }
+
+  private async listAllTasksInWorkspace(workspaceGid: string): Promise<any> {
+    const projects = await this.listAllProjectsInWorkspace(workspaceGid);
+    const all: any[] = [];
+    for (const p of projects.data) {
+      const tasks = await this.listAllTasksInProject(p.gid);
+      all.push(...tasks.data);
+    }
+    return { success: true, action: "list_all_tasks_in_workspace", data: all, ids: all.map(t => t.gid) };
+  }
+
+  private async getSubtasks(taskGid: string, limit?: number, offset?: string): Promise<any> {
+    const pageSize = limit || 100;
+    let off: string | undefined = offset;
+    const all: any[] = [];
+    do {
+      const endpoint = `/tasks/${taskGid}/subtasks${off ? `?offset=${off}&limit=${pageSize}` : `?limit=${pageSize}`}`;
+      const res = await this.makeRequest(endpoint);
+      all.push(...res.data);
+      off = res.next_page?.offset;
+    } while (off);
+    return { success: true, action: "get_subtasks", data: all, ids: all.map(s => s.gid) };
   }
 
   private async searchTasks(workspaceGid: string, searchParams: any): Promise<any> {
