@@ -45,6 +45,7 @@ export async function GET(
         "https://www.googleapis.com/auth/calendar",
         "https://www.googleapis.com/auth/drive",
         "https://www.googleapis.com/auth/drive.file",
+        "https://www.googleapis.com/auth/spreadsheets"
       ].join(" ");
       if (!clientId) {
         console.error("GOOGLE_CLIENT_ID environment variable is not set.");

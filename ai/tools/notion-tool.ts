@@ -80,6 +80,10 @@ export class NotionTool {
               "duplicate_database",
               "bulk_update_pages",
               "bulk_create_pages"
+              ,
+              // Aggregation/list-all helpers
+              "list_all_pages_in_database",
+              "list_all_blocks_in_page"
             ]
           },
           
@@ -455,6 +459,12 @@ export class NotionTool {
           return this.bulkUpdatePages(args.bulkData);
         case "bulk_create_pages":
           return this.bulkCreatePages(args.bulkData, args.parentId, args.parentType);
+        
+        // Aggregations
+        case "list_all_pages_in_database":
+          return this.listAllPagesInDatabase(args.id);
+        case "list_all_blocks_in_page":
+          return this.listAllBlocksInPage(args.id);
           
         default:
           throw new Error(`Unknown action: ${args.action}`);
@@ -685,33 +695,36 @@ export class NotionTool {
     };
   }
 
-  private async createPage(pageData: any, parentId?: string, parentType?: string): Promise<any> {
-    // Auto-resolve parent if needed
-    if (parentId && parentType) {
-      if (parentType === 'page') {
-        pageData.parent = { type: 'page_id', page_id: parentId };
-      } else if (parentType === 'database') {
-        pageData.parent = { type: 'database_id', database_id: parentId };
-      } else if (parentType === 'workspace') {
-        pageData.parent = { type: 'workspace', workspace: true };
-      }
+  private normalizeParentForCreate(pageData: any, parentId?: string, parentType?: string): any {
+    const copy = { ...(pageData || {}) };
+    // If explicit parent provided, honor it
+    if (parentId) {
+      if (parentType === 'database') copy.parent = { database_id: parentId };
+      else if (parentType === 'page') copy.parent = { page_id: parentId };
+      else if (parentType === 'workspace') copy.parent = { workspace: true };
+      else copy.parent = copy.parent || { page_id: parentId };
     }
+    // If still missing parent, default to workspace if allowed
+    if (!copy.parent) copy.parent = { workspace: true };
+    return copy;
+  }
 
-    const result = await this.makeRequest('/pages', 'POST', pageData);
-    return {
-      success: true,
-      action: "create_page",
-      data: result
-    };
+  private async createPage(pageData: any, parentId?: string, parentType?: string): Promise<any> {
+    const payload = this.normalizeParentForCreate(pageData, parentId, parentType);
+    // Ensure properties object exists
+    if (!payload.properties) payload.properties = {};
+    const result = await this.makeRequest('/pages', 'POST', payload);
+    return { success: true, action: "create_page", data: result };
   }
 
   private async updatePage(id: string, pageData: any): Promise<any> {
-    const result = await this.makeRequest(`/pages/${id}`, 'PATCH', pageData);
-    return {
-      success: true,
-      action: "update_page",
-      data: result
-    };
+    const payload = { ...(pageData || {}) };
+    // Notion requires partial property updates under { properties }
+    if (payload.properties === undefined && Object.keys(payload).some(k => k !== 'archived' && k !== 'icon' && k !== 'cover' && k !== 'parent')) {
+      payload.properties = payload.properties || {};
+    }
+    const result = await this.makeRequest(`/pages/${id}`, 'PATCH', payload);
+    return { success: true, action: "update_page", data: result };
   }
 
   private async deletePage(id: string, archiveInsteadOfDelete: boolean = true): Promise<any> {
@@ -796,21 +809,16 @@ export class NotionTool {
   }
 
   private async createDatabase(databaseData: any, parentId?: string, parentType?: string): Promise<any> {
-    // Auto-resolve parent if needed
-    if (parentId && parentType) {
-      if (parentType === 'page') {
-        databaseData.parent = { type: 'page_id', page_id: parentId };
-      } else if (parentType === 'workspace') {
-        databaseData.parent = { type: 'workspace', workspace: true };
-      }
+    const payload = { ...(databaseData || {}) };
+    if (parentId) {
+      if (parentType === 'page') payload.parent = { page_id: parentId };
+      else if (parentType === 'workspace') payload.parent = { workspace: true };
+      else payload.parent = { page_id: parentId };
     }
-
-    const result = await this.makeRequest('/databases', 'POST', databaseData);
-    return {
-      success: true,
-      action: "create_database",
-      data: result
-    };
+    if (!payload.parent) payload.parent = { workspace: true };
+    if (!payload.title) payload.title = [{ type: 'text', text: { content: payload?.properties?.title || 'Untitled' } }];
+    const result = await this.makeRequest('/databases', 'POST', payload);
+    return { success: true, action: "create_database", data: result };
   }
 
   private async updateDatabase(id: string, databaseData: any): Promise<any> {
@@ -831,6 +839,28 @@ export class NotionTool {
       has_more: result.has_more,
       next_cursor: result.next_cursor
     };
+  }
+
+  private async listAllPagesInDatabase(databaseId: string): Promise<any> {
+    const all: any[] = [];
+    let start_cursor: string | undefined = undefined;
+    do {
+      const res = await this.queryDatabase(databaseId, { start_cursor, page_size: 100 });
+      all.push(...res.data);
+      start_cursor = res.next_cursor;
+    } while (start_cursor);
+    return { success: true, action: "list_all_pages_in_database", data: all, ids: all.map((p: any) => p.id) };
+  }
+
+  private async listAllBlocksInPage(pageId: string): Promise<any> {
+    const all: any[] = [];
+    let start_cursor: string | undefined = undefined;
+    do {
+      const res = await this.getBlockChildren(pageId, start_cursor, 100);
+      all.push(...res.data);
+      start_cursor = res.next_cursor;
+    } while (start_cursor);
+    return { success: true, action: "list_all_blocks_in_page", data: all, ids: all.map((b: any) => b.id) };
   }
 
   private async getDatabaseSchema(id: string): Promise<any> {

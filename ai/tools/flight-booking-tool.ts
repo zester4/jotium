@@ -24,23 +24,27 @@ interface FlightSearchParams {
   excludeAirlines?: string[];
 }
 
+interface PassengerInfo {
+  type: 'adult' | 'child' | 'infant';
+  title: string;
+  given_name: string;
+  family_name: string;
+  email?: string;
+  phone_number?: string;
+  born_on?: string;
+  gender?: 'f' | 'm';
+  id?: string;
+  identity_documents?: Array<{
+    type: 'passport' | 'drivers_license' | 'identity_card';
+    unique_identifier: string;
+    issuing_country_code: string;
+    expires_on?: string;
+  }>;
+}
+
 interface BookingParams {
   offerId: string;
-  passengers: Array<{
-    type: 'adult' | 'child' | 'infant';
-    title: string;
-    given_name: string;
-    family_name: string;
-    email?: string;
-    phone_number?: string;
-    born_on?: string;
-    gender?: 'M' | 'F';
-    passport?: {
-      number: string;
-      issuing_country_code: string;
-      expires_on: string;
-    };
-  }>;
+  passengers: PassengerInfo[];
   contactDetails: {
     email: string;
     phone_number: string;
@@ -95,21 +99,21 @@ export class DuffelFlightTool implements Tool {
       'Authorization': `Bearer ${config.apiKey}`,
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'Duffel-Version': config.version || 'v2' // Updated to v2 as default
+      'Duffel-Version': config.version || 'v2'
     };
   }
 
   getDefinition(): FunctionDeclaration {
     return {
       name: "flight_booking",
-      description: "A tool for searching and booking flights using Duffel API v2",
+      description: "A comprehensive tool for searching, booking, and managing flights using Duffel API v2. Supports multi-passenger bookings, seat selection, baggage, and payment processing.",
       parameters: {
         type: Type.OBJECT,
         properties: {
           action: {
             type: Type.STRING,
-            description: "The action to perform: search_flights, book_flight, pay_for_flight, get_order_status, cancel_flight",
-            enum: ["search_flights", "book_flight", "pay_for_flight", "get_order_status", "cancel_flight"]
+            description: "The action to perform: search_flights, book_flight, pay_for_flight, get_order_status, cancel_flight, get_seat_map, add_baggage, get_airport_info",
+            enum: ["search_flights", "book_flight", "pay_for_flight", "get_order_status", "cancel_flight", "get_seat_map", "add_baggage", "get_airport_info"]
           },
           origin: {
             type: Type.STRING,
@@ -126,44 +130,6 @@ export class DuffelFlightTool implements Tool {
           returnDate: {
             type: Type.STRING,
             description: "Return date in YYYY-MM-DD format (optional)"
-          },
-          passengers: {
-            type: Type.OBJECT,
-            description: "Passenger information",
-            properties: {
-              adults: { type: Type.NUMBER },
-              children: { type: Type.NUMBER },
-              infants: { type: Type.NUMBER }
-            }
-          }
-        },
-        required: ["action"]
-      }
-    };
-  }
-
-  private getSearchDefinition(): FunctionDeclaration {
-    return {
-      name: "search_flights",
-      description: "Search for flights using Duffel API v2. Returns available flight offers with pricing, schedules, and airline information.",
-      parameters: {
-        type: Type.OBJECT,
-        properties: {
-          origin: {
-            type: Type.STRING,
-            description: "Origin airport IATA code (e.g., 'JFK', 'LHR')"
-          },
-          destination: {
-            type: Type.STRING,
-            description: "Destination airport IATA code (e.g., 'LAX', 'CDG')"
-          },
-          departureDate: {
-            type: Type.STRING,
-            description: "Departure date in YYYY-MM-DD format"
-          },
-          returnDate: {
-            type: Type.STRING,
-            description: "Return date in YYYY-MM-DD format (optional for one-way trips)"
           },
           adults: {
             type: Type.NUMBER,
@@ -202,73 +168,41 @@ export class DuffelFlightTool implements Tool {
             type: Type.ARRAY,
             items: { type: Type.STRING },
             description: "Airline codes to exclude from results"
-          }
-        },
-        required: ["origin", "destination", "departureDate", "adults"]
-      }
-    };
-  }
-
-  getBookingDefinition(): FunctionDeclaration {
-    return {
-      name: "book_flight",
-      description: "Book a flight using a Duffel offer ID. Creates an order that can be paid for.",
-      parameters: {
-        type: Type.OBJECT,
-        properties: {
+          },
           offerId: {
             type: Type.STRING,
-            description: "The offer ID from flight search results"
+            description: "The offer ID from flight search results (required for booking)"
           },
           passengers: {
             type: Type.ARRAY,
             items: {
               type: Type.OBJECT,
               properties: {
-                type: {
-                  type: Type.STRING,
-                  description: "Passenger type: adult, child, or infant"
-                },
-                title: {
-                  type: Type.STRING,
-                  description: "Passenger title (Mr, Ms, Mrs, Dr, etc.)"
-                },
-                given_name: {
-                  type: Type.STRING,
-                  description: "First name"
-                },
-                family_name: {
-                  type: Type.STRING,
-                  description: "Last name"
-                },
-                email: {
-                  type: Type.STRING,
-                  description: "Email address"
-                },
-                phone_number: {
-                  type: Type.STRING,
-                  description: "Phone number with country code (e.g., +1234567890)"
-                },
-                born_on: {
-                  type: Type.STRING,
-                  description: "Date of birth in YYYY-MM-DD format"
-                },
-                gender: {
-                  type: Type.STRING,
-                  description: "Gender: M or F"
-                },
-                passport: {
-                  type: Type.OBJECT,
-                  properties: {
-                    number: { type: Type.STRING },
-                    issuing_country_code: { type: Type.STRING },
-                    expires_on: { type: Type.STRING }
+                type: { type: Type.STRING, description: "Passenger type: adult, child, or infant" },
+                title: { type: Type.STRING, description: "Passenger title (mr, ms, mrs, dr, etc.)" },
+                given_name: { type: Type.STRING, description: "First name" },
+                family_name: { type: Type.STRING, description: "Last name" },
+                email: { type: Type.STRING, description: "Email address" },
+                phone_number: { type: Type.STRING, description: "Phone number with country code" },
+                born_on: { type: Type.STRING, description: "Date of birth in YYYY-MM-DD format" },
+                gender: { type: Type.STRING, description: "Gender: f or m (lowercase)" },
+                id: { type: Type.STRING, description: "Unique passenger ID (auto-generated if not provided)" },
+                identity_documents: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      type: { type: Type.STRING, description: "Document type: passport, drivers_license, identity_card" },
+                      unique_identifier: { type: Type.STRING, description: "Document number" },
+                      issuing_country_code: { type: Type.STRING, description: "Two-letter country code" },
+                      expires_on: { type: Type.STRING, description: "Expiration date YYYY-MM-DD" }
+                    }
                   }
                 }
               },
               required: ["type", "given_name", "family_name"]
             },
-            description: "Array of passenger information"
+            description: "Array of passenger information (required for booking)"
           },
           contactEmail: {
             type: Type.STRING,
@@ -293,20 +227,7 @@ export class DuffelFlightTool implements Tool {
             type: Type.ARRAY,
             items: { type: Type.STRING },
             description: "Additional services to add (baggage, meals, etc.)"
-          }
-        },
-        required: ["offerId", "passengers", "contactEmail", "contactPhone"]
-      }
-    };
-  }
-
-  getPaymentDefinition(): FunctionDeclaration {
-    return {
-      name: "pay_for_flight",
-      description: "Process payment for a booked flight order using Duffel Payments API.",
-      parameters: {
-        type: Type.OBJECT,
-        properties: {
+          },
           orderNumber: {
             type: Type.STRING,
             description: "The order number from booking confirmation"
@@ -345,71 +266,118 @@ export class DuffelFlightTool implements Tool {
               postal_code: { type: Type.STRING },
               country_code: { type: Type.STRING }
             },
-            required: ["line_1", "city", "region", "postal_code", "country_code"],
             description: "Billing address information"
           },
           amount: {
             type: Type.STRING,
             description: "Payment amount as string (e.g., '299.99')"
           },
-          currency: {
-            type: Type.STRING,
-            description: "Currency code (e.g., 'USD', 'EUR')"
-          }
-        },
-        required: ["orderNumber", "paymentMethod", "amount", "currency"]
-      }
-    };
-  }
-
-  getOrderStatusDefinition(): FunctionDeclaration {
-    return {
-      name: "get_order_status",
-      description: "Get the current status and details of a flight order.",
-      parameters: {
-        type: Type.OBJECT,
-        properties: {
-          orderNumber: {
-            type: Type.STRING,
-            description: "The order number to check status for"
-          }
-        },
-        required: ["orderNumber"]
-      }
-    };
-  }
-
-  getCancellationDefinition(): FunctionDeclaration {
-    return {
-      name: "cancel_flight",
-      description: "Cancel a flight booking and get refund information.",
-      parameters: {
-        type: Type.OBJECT,
-        properties: {
-          orderNumber: {
-            type: Type.STRING,
-            description: "The order number to cancel"
-          },
           reason: {
             type: Type.STRING,
             description: "Reason for cancellation (optional)"
+          },
+          airportCode: {
+            type: Type.STRING,
+            description: "Airport IATA code for information lookup"
           }
         },
-        required: ["orderNumber"]
+        required: ["action"]
       }
     };
+  }
+
+  private validateSearchParams(params: any): void {
+    if (!params.origin || !params.destination || !params.departureDate) {
+      throw new Error("Missing required search parameters: origin, destination, and departureDate are required");
+    }
+    
+    if (!params.adults || params.adults < 1) {
+      throw new Error("At least one adult passenger is required");
+    }
+    
+    if (params.children && params.children < 0) {
+      throw new Error("Number of children cannot be negative");
+    }
+    
+    if (params.infants && params.infants < 0) {
+      throw new Error("Number of infants cannot be negative");
+    }
+    
+    // Validate date format
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(params.departureDate)) {
+      throw new Error("Invalid departure date format. Use YYYY-MM-DD");
+    }
+    
+    if (params.returnDate && !dateRegex.test(params.returnDate)) {
+      throw new Error("Invalid return date format. Use YYYY-MM-DD");
+    }
+    
+    // Check if return date is after departure date
+    if (params.returnDate && new Date(params.returnDate) <= new Date(params.departureDate)) {
+      throw new Error("Return date must be after departure date");
+    }
+  }
+
+  private validateBookingParams(params: any): void {
+    if (!params.offerId) {
+      throw new Error("Offer ID is required for booking");
+    }
+    
+    if (!params.passengers || !Array.isArray(params.passengers) || params.passengers.length === 0) {
+      throw new Error("Passengers array is required and must contain at least one passenger");
+    }
+    
+    // Validate each passenger
+    params.passengers.forEach((passenger: any, index: number) => {
+      if (!passenger.type || !['adult', 'child', 'infant'].includes(passenger.type)) {
+        throw new Error(`Invalid passenger type for passenger ${index + 1}. Must be 'adult', 'child', or 'infant'`);
+      }
+      
+      if (!passenger.given_name || !passenger.family_name) {
+        throw new Error(`Missing name for passenger ${index + 1}. Both given_name and family_name are required`);
+      }
+      
+      // Ensure gender is lowercase if provided
+      if (passenger.gender && !['f', 'm'].includes(passenger.gender.toLowerCase())) {
+        throw new Error(`Invalid gender for passenger ${index + 1}. Must be 'f' or 'm' (lowercase)`);
+      }
+      
+      // Ensure title is lowercase if provided
+      if (passenger.title) {
+        passenger.title = passenger.title.toLowerCase();
+      }
+      
+      // Generate ID if not provided
+      if (!passenger.id) {
+        passenger.id = `pas_${Date.now()}_${index}`;
+      }
+      
+      if (passenger.born_on) {
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(passenger.born_on)) {
+          throw new Error(`Invalid birth date format for passenger ${index + 1}. Use YYYY-MM-DD`);
+        }
+      }
+    });
+    
+    if (!params.contactEmail || !params.contactPhone) {
+      throw new Error("Contact email and phone are required for booking");
+    }
   }
 
   async searchFlights(params: any): Promise<any> {
     try {
+      this.validateSearchParams(params);
+      
       console.log(`✈️  Searching flights: ${params.origin} → ${params.destination}`);
       
-      const searchPayload = {
+      const searchPayload: any = {
         data: {
           slices: [
             {
-              origin: params.origin,
-              destination: params.destination,
+              origin: params.origin.toUpperCase(),
+              destination: params.destination.toUpperCase(),
               departure_date: params.departureDate
             }
           ],
@@ -425,10 +393,27 @@ export class DuffelFlightTool implements Tool {
       // Add return slice if return date provided
       if (params.returnDate) {
         searchPayload.data.slices.push({
-          origin: params.destination,
-          destination: params.origin,
+          origin: params.destination.toUpperCase(),
+          destination: params.origin.toUpperCase(),
           departure_date: params.returnDate
         });
+      }
+
+      // Add additional search parameters
+      if (params.maxConnections !== undefined) {
+        searchPayload.data.max_connections = params.maxConnections;
+      }
+      
+      if (params.maxDuration) {
+        searchPayload.data.max_duration = params.maxDuration;
+      }
+      
+      if (params.airlines && params.airlines.length > 0) {
+        searchPayload.data.preferred_airlines = params.airlines.map((code: string) => code.toUpperCase());
+      }
+      
+      if (params.excludeAirlines && params.excludeAirlines.length > 0) {
+        searchPayload.data.excluded_airlines = params.excludeAirlines.map((code: string) => code.toUpperCase());
       }
 
       const response = await fetch(`${this.baseUrl}/air/offer_requests`, {
@@ -522,18 +507,79 @@ export class DuffelFlightTool implements Tool {
 
   async bookFlight(params: any): Promise<any> {
     try {
+      this.validateBookingParams(params);
+      
       console.log(`📝 Booking flight with offer ID: ${params.offerId}`);
 
-      const bookingPayload = {
+      // Ensure passengers is properly structured with all required fields
+      const passengers = Array.isArray(params.passengers) ? params.passengers.map((passenger: any, index: number) => {
+        // Clean and format passenger data according to Duffel API requirements
+        const cleanPassenger: any = {
+          type: passenger.type,
+          title: (passenger.title || '').toLowerCase(), // Duffel expects lowercase titles
+          given_name: passenger.given_name,
+          family_name: passenger.family_name,
+          id: passenger.id || `pas_${Date.now()}_${index}` // Generate ID if not provided
+        };
+
+        // Add optional fields only if they exist and are valid
+        if (passenger.born_on) {
+          cleanPassenger.born_on = passenger.born_on;
+        }
+        
+        if (passenger.gender) {
+          cleanPassenger.gender = passenger.gender.toLowerCase(); // Duffel expects lowercase 'f' or 'm'
+        }
+        
+        if (passenger.email) {
+          cleanPassenger.email = passenger.email;
+        }
+        
+        if (passenger.phone_number) {
+          cleanPassenger.phone_number = passenger.phone_number;
+        }
+
+        // Add identity documents if provided
+        if (passenger.identity_documents && Array.isArray(passenger.identity_documents)) {
+          cleanPassenger.identity_documents = passenger.identity_documents;
+        }
+
+        return cleanPassenger;
+      }) : [];
+      
+      if (passengers.length === 0) {
+        throw new Error("At least one passenger is required for booking");
+      }
+
+      const bookingPayload: any = {
         data: {
           selected_offers: [params.offerId],
-          passengers: params.passengers,
-          type: 'instant',
-          metadata: {
-            booking_reference: `BK-${Date.now()}`
-          }
+          passengers: passengers,
+          type: 'instant'
         }
       };
+
+      // Add metadata if contact details provided
+      if (params.contactEmail || params.contactPhone) {
+        bookingPayload.data.metadata = {
+          booking_reference: `BK-${Date.now()}`,
+          ...(params.contactEmail && { contact_email: params.contactEmail }),
+          ...(params.contactPhone && { contact_phone: params.contactPhone })
+        };
+      }
+
+      // Add seat selections if provided
+      if (params.seatSelections && Array.isArray(params.seatSelections)) {
+        bookingPayload.data.seat_selections = params.seatSelections;
+      }
+
+      // Add services if provided
+      if (params.services && Array.isArray(params.services)) {
+        bookingPayload.data.services = params.services.map((serviceId: string) => ({
+          id: serviceId,
+          quantity: 1
+        }));
+      }
 
       const response = await fetch(`${this.baseUrl}/air/orders`, {
         method: 'POST',
@@ -542,36 +588,38 @@ export class DuffelFlightTool implements Tool {
       });
 
       const data = await response.json() as { 
-        data: { 
+        data?: { 
           id: string;
           booking_reference: string;
-          status: string;
+          type: string;
           total_amount: string;
           total_currency: string;
           passengers: any[];
           slices: any[];
           created_at: string;
-          expires_at: string;
+          payment_status?: any;
         };
-        errors?: Array<{ message: string, code?: string }>;
+        errors?: Array<{ message: string, code?: string, details?: any }>;
       };
 
       if (!response.ok) {
-        throw new Error(`Booking API Error: ${data.errors?.[0]?.message || response.statusText}`);
+        const errorMessage = data.errors?.[0]?.message || response.statusText;
+        const errorDetails = data.errors?.[0]?.details || {};
+        throw new Error(`Booking API Error: ${errorMessage}${errorDetails ? ` - Details: ${JSON.stringify(errorDetails)}` : ''}`);
       }
 
       return {
         success: true,
         order: {
-          id: data.data.id,
-          reference: data.data.booking_reference,
-          status: data.data.status,
-          total_amount: data.data.total_amount,
-          total_currency: data.data.total_currency,
-          passengers: data.data.passengers,
-          slices: data.data.slices,
-          created_at: data.data.created_at,
-          expires_at: data.data.expires_at
+          id: data.data?.id,
+          reference: data.data?.booking_reference,
+          type: data.data?.type,
+          total_amount: data.data?.total_amount,
+          total_currency: data.data?.total_currency,
+          passengers: data.data?.passengers,
+          slices: data.data?.slices,
+          created_at: data.data?.created_at,
+          payment_status: data.data?.payment_status
         },
         booking_time: new Date().toISOString(),
         api_version: 'v2'
@@ -590,6 +638,18 @@ export class DuffelFlightTool implements Tool {
 
   async processPayment(params: any): Promise<any> {
     try {
+      if (!params.orderNumber) {
+        throw new Error("Order number is required for payment");
+      }
+      
+      if (!params.paymentMethod) {
+        throw new Error("Payment method is required");
+      }
+      
+      if (!params.amount || !params.currency) {
+        throw new Error("Payment amount and currency are required");
+      }
+
       console.log(`💳 Processing payment for order: ${params.orderNumber}`);
 
       const paymentPayload = {
@@ -621,7 +681,7 @@ export class DuffelFlightTool implements Tool {
       });
 
       const data = await response.json() as {
-        data: {
+        data?: {
           id: string;
           status: string;
           amount: string;
@@ -639,12 +699,12 @@ export class DuffelFlightTool implements Tool {
       return {
         success: true,
         payment: {
-          id: data.data.id,
-          status: data.data.status,
-          amount: data.data.amount,
-          currency: data.data.currency,
-          confirmation_number: data.data.confirmation_number,
-          client_secret: data.data.client_secret
+          id: data.data?.id,
+          status: data.data?.status,
+          amount: data.data?.amount,
+          currency: data.data?.currency,
+          confirmation_number: data.data?.confirmation_number,
+          client_secret: data.data?.client_secret
         },
         payment_time: new Date().toISOString(),
         api_version: 'v2'
@@ -663,6 +723,10 @@ export class DuffelFlightTool implements Tool {
 
   async getOrderStatus(params: any): Promise<any> {
     try {
+      if (!params.orderNumber) {
+        throw new Error("Order number is required");
+      }
+
       console.log(`🔍 Checking order status: ${params.orderNumber}`);
 
       const response = await fetch(`${this.baseUrl}/air/orders/${params.orderNumber}`, {
@@ -671,16 +735,17 @@ export class DuffelFlightTool implements Tool {
       });
 
       const data = await response.json() as {
-        data: {
+        data?: {
           id: string;
           booking_reference: string;
-          status: string;
+          type: string;
           total_amount: string;
           total_currency: string;
           passengers: any[];
           documents: any[];
           created_at: string;
-          updated_at: string;
+          synced_at: string;
+          payment_status?: any;
         };
         errors?: Array<{ message: string, code?: string }>;
       };
@@ -692,15 +757,16 @@ export class DuffelFlightTool implements Tool {
       return {
         success: true,
         order: {
-          id: data.data.id,
-          reference: data.data.booking_reference,
-          status: data.data.status,
-          total_amount: data.data.total_amount,
-          total_currency: data.data.total_currency,
-          passengers: data.data.passengers,
-          documents: data.data.documents,
-          created_at: data.data.created_at,
-          updated_at: data.data.updated_at
+          id: data.data?.id,
+          reference: data.data?.booking_reference,
+          type: data.data?.type,
+          total_amount: data.data?.total_amount,
+          total_currency: data.data?.total_currency,
+          passengers: data.data?.passengers,
+          documents: data.data?.documents,
+          created_at: data.data?.created_at,
+          synced_at: data.data?.synced_at,
+          payment_status: data.data?.payment_status
         },
         check_time: new Date().toISOString(),
         api_version: 'v2'
@@ -719,6 +785,10 @@ export class DuffelFlightTool implements Tool {
 
   async cancelFlight(params: any): Promise<any> {
     try {
+      if (!params.orderNumber) {
+        throw new Error("Order number is required for cancellation");
+      }
+
       console.log(`❌ Cancelling flight order: ${params.orderNumber}`);
 
       const cancelPayload = {
@@ -734,13 +804,13 @@ export class DuffelFlightTool implements Tool {
       });
 
       const data = await response.json() as {
-        data: {
+        data?: {
           id: string;
-          status: string;
+          order_id: string;
           refund_amount: string;
           refund_currency: string;
-          penalty_amount: string;
           expires_at: string;
+          created_at: string;
         };
         errors?: Array<{ message: string, code?: string }>;
       };
@@ -752,12 +822,12 @@ export class DuffelFlightTool implements Tool {
       return {
         success: true,
         cancellation: {
-          id: data.data.id,
-          status: data.data.status,
-          refund_amount: data.data.refund_amount,
-          refund_currency: data.data.refund_currency,
-          penalty_amount: data.data.penalty_amount,
-          expires_at: data.data.expires_at
+          id: data.data?.id,
+          order_id: data.data?.order_id,
+          refund_amount: data.data?.refund_amount,
+          refund_currency: data.data?.refund_currency,
+          expires_at: data.data?.expires_at,
+          created_at: data.data?.created_at
         },
         cancellation_time: new Date().toISOString(),
         api_version: 'v2'
@@ -774,90 +844,199 @@ export class DuffelFlightTool implements Tool {
     }
   }
 
-  // Utility method to get all function definitions
-  getAllDefinitions(): FunctionDeclaration[] {
-    return [
-      this.getSearchDefinition(),
-      this.getBookingDefinition(),
-      this.getPaymentDefinition(),
-      this.getOrderStatusDefinition(),
-      this.getCancellationDefinition()
-    ];
+  async getSeatMap(params: any): Promise<any> {
+    try {
+      if (!params.offerId) {
+        throw new Error("Offer ID is required for seat map");
+      }
+
+      console.log(`🪑 Getting seat map for offer: ${params.offerId}`);
+
+      // Correct endpoint for getting seat maps from offers
+      const response = await fetch(`${this.baseUrl}/air/seat_maps?offer_id=${params.offerId}`, {
+        method: 'GET',
+        headers: this.headers
+      });
+
+      const data = await response.json() as {
+        data?: any[];
+        errors?: Array<{ message: string, code?: string }>;
+      };
+
+      if (!response.ok) {
+        throw new Error(`Seat Map API Error: ${data.errors?.[0]?.message || response.statusText}`);
+      }
+
+      return {
+        success: true,
+        seat_maps: data.data || [],
+        offer_id: params.offerId,
+        api_version: 'v2'
+      };
+
+    } catch (error: unknown) {
+      console.error("❌ Seat map retrieval failed:", error);
+      return {
+        success: false,
+        error: `Seat map retrieval failed: ${error instanceof Error ? error.message : String(error)}`,
+        offer_id: params.offerId,
+        api_version: 'v2'
+      };
+    }
+  }
+
+  async addBaggage(params: any): Promise<any> {
+    try {
+      if (!params.orderNumber) {
+        throw new Error("Order number is required for baggage addition");
+      }
+
+      console.log(`🧳 Adding baggage to order: ${params.orderNumber}`);
+
+      // First get available services for the order
+      const servicesResponse = await fetch(`${this.baseUrl}/air/orders/${params.orderNumber}/available_services`, {
+        method: 'GET',
+        headers: this.headers
+      });
+
+      const servicesData = await servicesResponse.json() as {
+        data?: any[];
+        errors?: Array<{ message: string, code?: string }>;
+      };
+
+      if (!servicesResponse.ok) {
+        throw new Error(`Available Services API Error: ${servicesData.errors?.[0]?.message || servicesResponse.statusText}`);
+      }
+
+      // Find baggage services
+      const baggageServices = servicesData.data?.filter((service: any) => service.type === 'baggage') || [];
+
+      if (baggageServices.length === 0) {
+        return {
+          success: false,
+          error: 'No baggage services available for this order',
+          order_number: params.orderNumber,
+          api_version: 'v2'
+        };
+      }
+
+      // Add the first available baggage service (you might want to make this configurable)
+      const selectedService = baggageServices[0];
+      const servicePayload = {
+        data: {
+          services: [{
+            id: selectedService.id,
+            quantity: params.quantity || 1
+          }]
+        }
+      };
+
+      const response = await fetch(`${this.baseUrl}/air/orders/${params.orderNumber}/services`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify(servicePayload)
+      });
+
+      const data = await response.json() as {
+        data?: any;
+        errors?: Array<{ message: string, code?: string }>;
+      };
+
+      if (!response.ok) {
+        throw new Error(`Baggage API Error: ${data.errors?.[0]?.message || response.statusText}`);
+      }
+
+      return {
+        success: true,
+        service: data.data,
+        available_services: baggageServices,
+        order_number: params.orderNumber,
+        api_version: 'v2'
+      };
+
+    } catch (error: unknown) {
+      console.error("❌ Baggage addition failed:", error);
+      return {
+        success: false,
+        error: `Baggage addition failed: ${error instanceof Error ? error.message : String(error)}`,
+        order_number: params.orderNumber,
+        api_version: 'v2'
+      };
+    }
+  }
+
+  async getAirportInfo(params: any): Promise<any> {
+    try {
+      if (!params.airportCode) {
+        throw new Error("Airport code is required");
+      }
+
+      console.log(`🏢 Getting airport info for: ${params.airportCode}`);
+
+      const response = await fetch(`${this.baseUrl}/air/airports?iata_code=${params.airportCode.toUpperCase()}`, {
+        method: 'GET',
+        headers: this.headers
+      });
+
+      const data = await response.json() as {
+        data?: any[];
+        errors?: Array<{ message: string, code?: string }>;
+      };
+
+      if (!response.ok) {
+        throw new Error(`Airport API Error: ${data.errors?.[0]?.message || response.statusText}`);
+      }
+
+      const airport = data.data?.find((apt: any) => apt.iata_code === params.airportCode.toUpperCase());
+
+      return {
+        success: true,
+        airport: airport || null,
+        airport_code: params.airportCode.toUpperCase(),
+        api_version: 'v2'
+      };
+
+    } catch (error: unknown) {
+      console.error("❌ Airport info retrieval failed:", error);
+      return {
+        success: false,
+        error: `Airport info retrieval failed: ${error instanceof Error ? error.message : String(error)}`,
+        airport_code: params.airportCode,
+        api_version: 'v2'
+      };
+    }
   }
 
   async execute(args: any): Promise<any> {
-    switch (args.action) {
-      case 'search_flights':
-        return await this.searchFlights(args);
-      case 'book_flight':
-        return await this.bookFlight(args);
-      case 'pay_for_flight':
-        return await this.processPayment(args);
-      case 'get_order_status':
-        return await this.getOrderStatus(args);
-      case 'cancel_flight':
-        return await this.cancelFlight(args);
-      default:
-        throw new Error(`Unknown action: ${args.action}`);
+    try {
+      switch (args.action) {
+        case 'search_flights':
+          return await this.searchFlights(args);
+        case 'book_flight':
+          return await this.bookFlight(args);
+        case 'pay_for_flight':
+          return await this.processPayment(args);
+        case 'get_order_status':
+          return await this.getOrderStatus(args);
+        case 'cancel_flight':
+          return await this.cancelFlight(args);
+        case 'get_seat_map':
+          return await this.getSeatMap(args);
+        case 'add_baggage':
+          return await this.addBaggage(args);
+        case 'get_airport_info':
+          return await this.getAirportInfo(args);
+        default:
+          throw new Error(`Unknown action: ${args.action}`);
+      }
+    } catch (error: unknown) {
+      console.error(`❌ Action ${args.action} failed:`, error);
+      return {
+        success: false,
+        error: `Action ${args.action} failed: ${error instanceof Error ? error.message : String(error)}`,
+        action: args.action,
+        api_version: 'v2'
+      };
     }
   }
 }
-
-// Usage example:
-/*
-const duffelTool = new DuffelFlightTool({
-  apiKey: 'your_duffel_api_key_here',
-  version: 'v2' // Now using v2 by default
-});
-
-// Search for flights
-const searchResult = await duffelTool.execute({
-  action: 'search_flights',
-  origin: 'JFK',
-  destination: 'LAX',
-  departureDate: '2025-07-15',
-  returnDate: '2025-07-22',
-  adults: 1,
-  cabinClass: 'economy',
-  currency: 'USD'
-});
-
-// Book a flight
-const bookingResult = await duffelTool.execute({
-  action: 'book_flight',
-  offerId: 'offer_12345',
-  passengers: [{
-    type: 'adult',
-    title: 'Mr',
-    given_name: 'John',
-    family_name: 'Doe',
-    email: 'john.doe@example.com',
-    phone_number: '+1234567890',
-    born_on: '1990-01-01',
-    gender: 'M'
-  }],
-  contactEmail: 'john.doe@example.com',
-  contactPhone: '+1234567890'
-});
-
-// Process payment
-const paymentResult = await duffelTool.execute({
-  action: 'pay_for_flight',
-  orderNumber: 'order_67890',
-  paymentMethod: 'card',
-  cardNumber: '4111 1111 1111 1111',
-  expiryMonth: 12,
-  expiryYear: 2025,
-  cvc: '123',
-  cardholderName: 'John Doe',
-  billingAddress: {
-    line_1: '123 Main St',
-    city: 'New York',
-    region: 'NY',
-    postal_code: '10001',
-    country_code: 'US'
-  },
-  amount: '299.99',
-  currency: 'USD'
-});
-*/

@@ -10,7 +10,7 @@ import { getUserAIModel } from "@/lib/user-model";
 import { generateUUID } from "@/lib/utils";
 
 const planLimits: { [key: string]: number } = {
-  "Free": 5,
+  "Free": 25,
   "Pro": 50,
   "Advanced": Infinity,
 };
@@ -262,6 +262,28 @@ export async function POST(request: NextRequest) {
               }
             }
             
+            // Handle data-display tools directly by returning specialized code fences
+            else if (toolName === 'get_weather' || toolName === 'get_stock_data' || toolName === 'get_map_data') {
+              // 1) Stream visualization as markdown block
+              const result = await agent.executeToolCall(toolCall);
+              const payload = result.result || {};
+              const fenceLang = toolName === 'get_weather' ? 'weather' : (toolName === 'get_stock_data' ? 'stock' : 'map');
+              if (payload && payload.success) {
+                const markdownBlock = `\n\n\`\`\`${fenceLang}\n${JSON.stringify(payload)}\n\`\`\`\n\n`;
+                controller.enqueue(
+                  `data: ${JSON.stringify({ type: "response", content: markdownBlock })}\n\n`
+                );
+                fullResponse += markdownBlock;
+              }
+
+              // 2) Also pass the function response back to the agent for summarization
+              toolResults.push({
+                toolCallId: toolCall.id,
+                result: payload,
+                error: undefined
+              });
+            }
+
             // For other tools, execute normally
             else {
               const result = await agent.executeToolCall(toolCall);

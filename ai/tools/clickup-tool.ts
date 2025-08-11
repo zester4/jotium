@@ -97,6 +97,21 @@ export class ClickUpTool {
               "get_space_id_by_name",
               "get_folder_id_by_name",
               "get_list_id_by_name"
+              ,
+              // Rename helpers
+              "rename_task",
+              "rename_list",
+              "rename_space",
+              "rename_folder",
+              
+              // Aggregation/list-all helpers
+              "list_all_teams",
+              "list_all_spaces",
+              "list_all_folders_in_space",
+              "list_all_lists_in_space",
+              "list_all_lists_in_folder",
+              "list_all_tasks_in_list",
+              "list_all_tasks_in_space"
             ]
           },
           // Task Management Parameters
@@ -386,6 +401,32 @@ export class ClickUpTool {
           return await this.getFolderIdByName(args);
         case "get_list_id_by_name":
           return await this.getListIdByName(args);
+        
+        // Rename helpers
+        case "rename_task":
+          return await this.updateTask({ task_id: args.task_id, task_name: args.task_name });
+        case "rename_list":
+          return await this.updateListName(args);
+        case "rename_space":
+          return await this.updateSpaceName(args);
+        case "rename_folder":
+          return await this.updateFolderName(args);
+        
+        // List-all helpers
+        case "list_all_teams":
+          return await this.listAllTeams();
+        case "list_all_spaces":
+          return await this.listAllSpaces(args.team_id);
+        case "list_all_folders_in_space":
+          return await this.listAllFoldersInSpace(args.space_id);
+        case "list_all_lists_in_space":
+          return await this.listAllListsInSpace(args.space_id);
+        case "list_all_lists_in_folder":
+          return await this.listAllListsInFolder(args.folder_id);
+        case "list_all_tasks_in_list":
+          return await this.listAllTasksInList(args.list_id);
+        case "list_all_tasks_in_space":
+          return await this.listAllTasksInSpace(args.space_id);
         default:
           throw new Error(`Unknown action: ${args.action}`);
       }
@@ -398,6 +439,81 @@ export class ClickUpTool {
         timestamp: new Date().toISOString()
       };
     }
+  }
+
+  // Helper to rename list (ClickUp API lacks direct list rename in some routes; use PUT /list/:id)
+  private async updateListName(args: any): Promise<any> {
+    if (!args.list_id || !args.list_name) throw new Error("list_id and list_name are required");
+    const response = await this.client.put(`/list/${args.list_id}`, { name: args.list_name });
+    return { success: true, action: "rename_list", data: response.data };
+  }
+
+  private async updateSpaceName(args: any): Promise<any> {
+    if (!args.space_id || !args.space_name) throw new Error("space_id and space_name are required");
+    const response = await this.client.put(`/space/${args.space_id}`, { name: args.space_name });
+    return { success: true, action: "rename_space", data: response.data };
+  }
+
+  private async updateFolderName(args: any): Promise<any> {
+    if (!args.folder_id || !args.folder_name) throw new Error("folder_id and folder_name are required");
+    const response = await this.client.put(`/folder/${args.folder_id}`, { name: args.folder_name });
+    return { success: true, action: "rename_folder", data: response.data };
+  }
+
+  // Aggregation helpers
+  private async listAllTeams(): Promise<any> {
+    const res = await this.client.get(`/team`);
+    const teams = res.data?.teams || [];
+    return { success: true, action: "list_all_teams", data: teams, ids: teams.map((t: any) => t.id) };
+  }
+
+  private async listAllSpaces(teamId: string): Promise<any> {
+    const res = await this.client.get(`/team/${teamId}/space`);
+    const spaces = res.data?.spaces || [];
+    return { success: true, action: "list_all_spaces", data: spaces, ids: spaces.map((s: any) => s.id) };
+  }
+
+  private async listAllFoldersInSpace(spaceId: string): Promise<any> {
+    const res = await this.client.get(`/space/${spaceId}/folder`);
+    const folders = res.data?.folders || [];
+    return { success: true, action: "list_all_folders_in_space", data: folders, ids: folders.map((f: any) => f.id) };
+  }
+
+  private async listAllListsInSpace(spaceId: string): Promise<any> {
+    const res = await this.client.get(`/space/${spaceId}/list`);
+    const lists = res.data?.lists || [];
+    return { success: true, action: "list_all_lists_in_space", data: lists, ids: lists.map((l: any) => l.id) };
+  }
+
+  private async listAllListsInFolder(folderId: string): Promise<any> {
+    const res = await this.client.get(`/folder/${folderId}/list`);
+    const lists = res.data?.lists || [];
+    return { success: true, action: "list_all_lists_in_folder", data: lists, ids: lists.map((l: any) => l.id) };
+  }
+
+  private async listAllTasksInList(listId: string): Promise<any> {
+    const results: any[] = [];
+    let page = 0;
+    const limit = 100;
+    while (true) {
+      const res = await this.client.get(`/list/${listId}/task`, { params: { page, limit } });
+      const tasks = res.data?.tasks || [];
+      results.push(...tasks);
+      if (tasks.length < limit) break;
+      page += 1;
+    }
+    return { success: true, action: "list_all_tasks_in_list", data: results, ids: results.map((t: any) => t.id) };
+  }
+
+  private async listAllTasksInSpace(spaceId: string): Promise<any> {
+    const listsRes = await this.client.get(`/space/${spaceId}/list`);
+    const lists = listsRes.data?.lists || [];
+    const all: any[] = [];
+    for (const l of lists) {
+      const tasks = await this.listAllTasksInList(l.id);
+      all.push(...tasks.data);
+    }
+    return { success: true, action: "list_all_tasks_in_space", data: all, ids: all.map((t: any) => t.id) };
   }
 
   private async createTask(args: any): Promise<any> {

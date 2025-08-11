@@ -24,7 +24,7 @@ import { CodeExecutionTool } from './tools/code-tool';
 import { AgentMemory, Message, Tool, ToolCall, ToolResult } from "./types";
 import { generateUUID } from "@/lib/utils";
 import { ImageGenerationTool } from './tools/image-gen';
-import { GetWeatherTool } from './tools/get-weather';
+import { WeatherTool } from "./tools/WeatherTool";
 import { NotionTool } from './tools/notion-tool';
 import { StripeManagementTool } from './tools/stripe-tool';
 import { AlphaVantageTool } from './tools/alphavantage-tool';
@@ -39,6 +39,10 @@ import { SerperSearchTool } from './tools/SerperSearchTool';
 import { GmailTool } from './tools/GmailTool';
 import { GoogleCalendarTool } from './tools/GoogleCalendarTool';
 import { GoogleDriveTool } from './tools/GoogleDriveTool';
+import { GoogleSheetsTool } from './tools/GoogleSheetsTool';
+import { StockTool } from './tools/StockTool';
+// import { MapsTool } from './tools/MapsTool';
+
 // Import Enhanced Agentic Engine
 import { EnhancedAgenticEngine, EnhancedActionIntent } from './actions';
 
@@ -100,11 +104,14 @@ export class AIAgent {
     // --- Group 2: Tools without API Keys ---
     this.tools.set("file_manager", new FileManagerTool());
     this.tools.set("api_tool", new ApiTool());
-    this.tools.set("get_weather", new GetWeatherTool());
+    this.tools.set("get_weather", new WeatherTool());
     this.tools.set("code_execution", new CodeExecutionTool());
     this.tools.set("datetime_tool", new DateTimeTool());
     this.tools.set("data_visualization", new DataVisualizationTool());
     this.tools.set("duckduckgo_search", new DuckDuckGoSearchTool());
+    // Stocks & Maps (no API keys required for basic data)
+    this.tools.set("get_stock_data", new StockTool());
+    // this.tools.set("get_map_data", new MapsTool());
     const serperApiKey = process.env.SERPER_API_KEY;
     if (serperApiKey) {
       const tool = new SerperSearchTool(serperApiKey);
@@ -221,6 +228,11 @@ export class AIAgent {
         const driveTool = new GoogleDriveTool(userId);
         this.tools.set("google_drive_operations", driveTool);
         this.tools.set(driveTool.getDefinition().name || "google_drive_operations", driveTool);
+        
+        // Google Sheets Tool (uses same Gmail OAuth connection)
+        const sheetsTool = new GoogleSheetsTool(userId);
+        this.tools.set("google_sheets_operations", sheetsTool);
+        this.tools.set(sheetsTool.getDefinition().name || "google_sheets_operations", sheetsTool);
       }
 
       // GitHub OAuth (if you want to add GitHub OAuth later)
@@ -344,6 +356,10 @@ export class AIAgent {
         systemInstruction: `You are Jotium, an autonomous PhD-level AI agent with expert reasoning capabilities across all domains. You embody the intelligence patterns of the most advanced AI systems, thinking with confidence, depth, and strategic foresight.
 
 COGNITIVE FRAMEWORK:
+   **ALWAYS SEARCH THE WEB**: You autonomously search the web for information, never asking users for basic context or obvious details.
+   **MULTI-TOOL ORCHESTRATION**: You seamlessly chain multiple tools in parallel and sequence, executing complex workflows without hesitation.
+   **INTELLIGENT ASSUMPTIONS**: You make smart assumptions about user intent and context, never asking for obvious information like dates or times.
+   **COMPREHENSIVE RESEARCH**: You provide expert-level analysis with citations, multiple perspectives, and actionable insights, including relevant YouTube educational videos.
 🧠 **Autonomous Intelligence**: You reason through complex problems independently, making intelligent assumptions and executing multi-step workflows without hesitation.
 🎯 **Strategic Thinking**: You anticipate needs 3-5 steps ahead, proactively preparing comprehensive solutions.
 🔬 **Expert-Level Analysis**: You provide research and analysis at PhD level depth, with citations, multiple perspectives, and actionable insights.

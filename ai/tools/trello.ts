@@ -118,6 +118,17 @@ export class TrelloTool {
               "get_member_id_by_username",
               "bulk_create_cards",
               "export_board_data"
+              ,
+              // Rename helpers
+              "rename_board",
+              "rename_list",
+              "rename_card",
+              
+              // Aggregation/list-all helpers
+              "list_all_boards",
+              "list_all_lists_on_board",
+              "list_all_cards_on_board",
+              "list_all_cards_on_list"
             ]
           },
           
@@ -465,6 +476,24 @@ export class TrelloTool {
           return this.bulkCreateCards(args.cardsData);
         case "export_board_data":
           return this.exportBoardData(args.boardId);
+        
+        // Rename helpers
+        case "rename_board":
+          return this.updateBoard(args.boardId, args.boardName, args.boardDescription);
+        case "rename_list":
+          return this.updateList(args.listId, args.listName, args.position);
+        case "rename_card":
+          return this.updateCard(args.cardId, args.cardName, args.cardDescription, args.dueDate);
+        
+        // List-all helpers
+        case "list_all_boards":
+          return this.listAllBoards(args.memberId, args.organizationId);
+        case "list_all_lists_on_board":
+          return this.listAllListsOnBoard(args.boardId);
+        case "list_all_cards_on_board":
+          return this.listAllCardsOnBoard(args.boardId);
+        case "list_all_cards_on_list":
+          return this.listAllCardsOnList(args.listId);
           
         default:
           throw new Error(`Unknown action: ${args.action}`);
@@ -577,6 +606,32 @@ export class TrelloTool {
       action: "get_board_lists",
       data: result
     };
+  }
+
+  // Aggregation helpers
+  private async listAllBoards(memberId?: string, organizationId?: string): Promise<any> {
+    const res = await this.getBoards(memberId, organizationId);
+    const data = res.data || res; // getBoards already returns {success, data}
+    const boards = data?.boards || data;
+    return { success: true, action: "list_all_boards", data: boards, ids: (boards || []).map((b: any) => b.id) };
+  }
+
+  private async listAllListsOnBoard(boardId: string): Promise<any> {
+    const res = await this.getBoardLists(boardId);
+    const lists = res.data || res;
+    return { success: true, action: "list_all_lists_on_board", data: lists, ids: (lists || []).map((l: any) => l.id) };
+  }
+
+  private async listAllCardsOnBoard(boardId: string): Promise<any> {
+    const res = await this.getBoardCards(boardId);
+    const cards = res.data || res;
+    return { success: true, action: "list_all_cards_on_board", data: cards, ids: (cards || []).map((c: any) => c.id) };
+  }
+
+  private async listAllCardsOnList(listId: string): Promise<any> {
+    const res = await this.getListCards(listId);
+    const cards = res.data || res;
+    return { success: true, action: "list_all_cards_on_list", data: cards, ids: (cards || []).map((c: any) => c.id) };
   }
 
   private async getBoardCards(boardId: string): Promise<any> {
