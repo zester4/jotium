@@ -10,7 +10,7 @@ import { getUserAIModel } from "@/lib/user-model";
 import { generateUUID } from "@/lib/utils";
 
 const planLimits: { [key: string]: number } = {
-  "Free": 25,
+  "Free": 5,
   "Pro": 50,
   "Advanced": Infinity,
 };
