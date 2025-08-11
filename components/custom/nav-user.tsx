@@ -5,7 +5,10 @@ import {
   Bell,
   ChevronsUpDown,
   CreditCard,
+  FileText,
+  HelpCircle,
   LogOut,
+  Shield,
   Sparkles,
 } from "lucide-react"
 import Link from "next/link"
@@ -26,6 +29,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -160,6 +166,29 @@ export function NavUser({
                   )}
                 </Link>
               </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="flex items-center gap-2 px-2 py-1 text-xs cursor-pointer w-full">
+                  <HelpCircle className="size-4" />
+                  Help
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-48 min-w-40 rounded-lg p-1">
+                  <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs" onClick={onCloseSidebar}>
+                    <Link href="/privacy" className="flex items-center w-full">
+                      <Shield className="size-4" />
+                      Privacy Policy
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs" onClick={onCloseSidebar}>
+                    <Link href="/terms" className="flex items-center w-full">
+                      <FileText className="size-4" />
+                      Terms of Service
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
