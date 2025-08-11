@@ -211,63 +211,24 @@ export async function POST(request: NextRequest) {
               }
             }
             
-            // Handle web_scrape tool call directly
-            else if (toolName === 'web_scrape') {
-              shouldContinueToAgent = false;
-              const result = await agent.executeToolCall(toolCall);
-              
-              if (result.result.success) {
-                const scrapeData = result.result;
-                let responseMessage = `I've successfully scraped the webpage. Here's what I found:\n\n`;
-                
-                if (scrapeData.title) {
-                  responseMessage += `**Title:** ${scrapeData.title}\n\n`;
-                }
-                
-                if (scrapeData.description) {
-                  responseMessage += `**Description:** ${scrapeData.description}\n\n`;
-                }
-                
-                if (scrapeData.content) {
-                  // Limit content length for display
-                  const contentPreview = scrapeData.content.length > 1000 
-                    ? scrapeData.content.substring(0, 1000) + '...' 
-                    : scrapeData.content;
-                  responseMessage += `**Content:**\n${contentPreview}\n\n`;
-                }
-                
-                if (scrapeData.links && scrapeData.links.length > 0) {
-                  responseMessage += `**Links found:** ${scrapeData.links.length}\n\n`;
-                  // Show first few links
-                  const linkPreview = scrapeData.links.slice(0, 5).map((link: any) => 
-                    `- [${link.text || 'Link'}](${link.url})`
-                  ).join('\n');
-                  responseMessage += linkPreview;
-                  if (scrapeData.links.length > 5) {
-                    responseMessage += `\n... and ${scrapeData.links.length - 5} more links`;
-                  }
-                }
-                
-                controller.enqueue(
-                  `data: ${JSON.stringify({ type: "response", content: responseMessage })}\n\n`
-                );
-                fullResponse = responseMessage;
-              } else {
-                // Handle error
-                const errorMessage = `I encountered an error scraping the webpage: ${result.result.error || 'Unknown error'}`;
-                controller.enqueue(
-                  `data: ${JSON.stringify({ type: "response", content: errorMessage })}\n\n`
-                );
-                fullResponse = errorMessage;
-              }
-            }
-            
             // Handle data-display tools directly by returning specialized code fences
-            else if (toolName === 'get_weather' || toolName === 'get_stock_data' || toolName === 'get_map_data') {
+            else if (toolName === 'get_weather' || toolName === 'get_stock_data' || toolName === 'get_map_data' || toolName === 'pdf_generator' || toolName === 'fire_web_scrape') {
               // 1) Stream visualization as markdown block
               const result = await agent.executeToolCall(toolCall);
               const payload = result.result || {};
-              const fenceLang = toolName === 'get_weather' ? 'weather' : (toolName === 'get_stock_data' ? 'stock' : 'map');
+              let fenceLang;
+              if (toolName === 'get_weather') {
+                fenceLang = 'weather';
+              } else if (toolName === 'get_stock_data') {
+                fenceLang = 'stock';
+              } else if (toolName === 'get_map_data') {
+                fenceLang = 'map';
+              } else if (toolName === 'pdf_generator') {
+                fenceLang = 'pdf';
+              } else if (toolName === 'fire_web_scrape') {
+                fenceLang = 'scrape';
+              }
+              
               if (payload && payload.success) {
                 const markdownBlock = `\n\n\`\`\`${fenceLang}\n${JSON.stringify(payload)}\n\`\`\`\n\n`;
                 controller.enqueue(

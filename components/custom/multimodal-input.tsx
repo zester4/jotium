@@ -315,9 +315,9 @@ export function MultimodalInput({
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
               if (isMobile) {
-                // On mobile, prevent default to allow new line
-                // Message will only be sent via the submit button
-                event.preventDefault();
+                // On mobile, allow the default behavior so Enter inserts a newline.
+                // Do not send; messages are sent via the submit button on mobile.
+                return;
               } else {
                 // On desktop, send message
                 event.preventDefault();

@@ -437,7 +437,7 @@ export default function AccountPage() {
       <div className="grid grid-cols-1 md:grid-cols-[240px,1fr] gap-6">
         {/* Sidebar */}
         <aside className="bg-background border border-border rounded-lg p-2 md:p-3 h-fit">
-          <nav className="grid grid-cols-2 gap-2 md:block md:space-y-1">
+          <nav className="grid grid-cols-3 gap-2 md:block md:space-y-1">
             {[
               { id: "profile", label: "Profile", Icon: User },
               { id: "security", label: "Security", Icon: Shield },

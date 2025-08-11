@@ -398,7 +398,7 @@ className="flex-1 overflow-y-auto custom-scrollbar pb-24 sm:pb-32"
           </div>
         </div>
         
-        <div ref={messagesEndRef} className="h-24 sm:h-32" />
+        <div ref={messagesEndRef} className="h-16 sm:h-20" />
       </div>
 
       {/* Error Display - Same stable width */}

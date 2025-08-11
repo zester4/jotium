@@ -1,5 +1,7 @@
-/* globals.css — amber primary */
+/* globals.css — amber primary with Quicksand font */
 /* Maintains your existing structure; only swaps teal for amber in both light & dark themes. */
+/* Updated to use Quicksand font from Google Fonts for better performance and modern typography */
+/* Added PDF and Scrape viewer support in markdown rendering */
 
 @tailwind base;
 @tailwind components;
