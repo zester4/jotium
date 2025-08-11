@@ -1,6 +1,7 @@
 //app/layout.tsx
 import { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
+// import { Inter } from "next/font/google";
+import { Quicksand } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "sonner";
 
@@ -11,14 +12,16 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 
 import "./globals.css";
 
-const geist = localFont({
-  src: "../public/fonts/geist.woff2",
-  variable: "--font-geist",
-});
+// const inter = Inter({
+//   subsets: ["latin"],
+//   variable: "--font-inter",
+//   display: "swap",
+// });
 
-const geistMono = localFont({
-  src: "../public/fonts/geist-mono.woff2",
-  variable: "--font-geist-mono",
+const quicksand = Quicksand({
+  subsets: ["latin"],
+  variable: "--font-quicksand",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -49,7 +52,7 @@ export default async function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geist.variable} ${geistMono.variable}`}
+      className={`${quicksand.variable}`}
     >
       <head>
         <meta name="format-detection" content="telephone=no" />

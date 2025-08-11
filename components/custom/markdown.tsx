@@ -38,19 +38,42 @@ import remarkEmoji from "remark-emoji";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 
-// Custom tooltip component for smaller, mobile-optimized tooltips
+import PDFViewer from './PDFViewer';
+import ScrapeViewer from './ScrapeViewer';
+import { StockDisplay } from "./stock";
+import { WeatherDisplay } from "./weather";
+
+// Custom tooltip component: compact, legend-like layout
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded shadow-sm p-1">
-        <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-0.5">
-          {label}
-        </p>
-        {payload.map((entry: any, index: number) => (
-          <p key={index} className="text-xs" style={{ color: entry.color }}>
-            {entry.name}: {typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
-          </p>
-        ))}
+      <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md shadow-sm px-2 py-1.5 min-w-[120px] max-w-[180px]">
+        {label ? (
+          <div className="text-[11px] text-zinc-600 dark:text-zinc-400 mb-1 leading-tight truncate">
+            {label}
+          </div>
+        ) : null}
+        <ul className="space-y-0.5">
+          {payload.map((entry: any, index: number) => (
+            <li
+              key={index}
+              className="flex items-center justify-between gap-2 text-[11px] leading-tight"
+            >
+              <span className="inline-flex items-center gap-1.5 min-w-0">
+                <span
+                  className="w-2.5 h-2.5 rounded-sm shrink-0"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="truncate text-zinc-700 dark:text-zinc-300">
+                  {entry.name}
+                </span>
+              </span>
+              <span className="tabular-nums text-zinc-900 dark:text-zinc-100">
+                {typeof entry.value === 'number' ? entry.value : entry.value}
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
     );
   }
@@ -92,6 +115,78 @@ const CopyButton = ({ text }: { text: string }) => {
         </>
       )}
     </button>
+  );
+};
+
+// Collapsible Code Block Component
+const CollapsibleCodeBlock = ({ language, children, codeContent }: { language: string, children: any, codeContent: string }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [lineCount, setLineCount] = useState(0);
+
+  useEffect(() => {
+    const lines = codeContent.split('\n').length;
+    setLineCount(lines);
+    // Auto-collapse if more than 20 lines
+    setIsCollapsed(lines > 20);
+  }, [codeContent]);
+
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
+  return (
+    <div className="my-2 sm:my-4 rounded-lg sm:rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden shadow-sm w-full -ml-1.5 sm:ml-0">
+      <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-2.5 bg-zinc-100/80 dark:bg-zinc-800/80 border-b border-zinc-200 dark:border-zinc-700">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
+            {language}
+          </span>
+          {lineCount > 10 && (
+            <button
+              onClick={toggleCollapse}
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-all duration-200"
+              aria-label={isCollapsed ? "Expand code" : "Collapse code"}
+            >
+              <svg 
+                className={`w-3 h-3 transition-transform duration-200 ${isCollapsed ? 'rotate-0' : 'rotate-90'}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              {isCollapsed ? `${lineCount} hidden lines` : 'Collapse'}
+            </button>
+          )}
+        </div>
+        <CopyButton text={codeContent} />
+      </div>
+      <div className={`overflow-x-auto w-full pl-1 pr-0 transition-all duration-300 ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-none opacity-100'}`}>
+        <SyntaxHighlighter
+          style={oneDark}
+          language={language}
+          PreTag="div"
+          className="!m-0 !bg-transparent !text-xs sm:!text-sm md:!text-base w-full"
+          customStyle={{
+            padding: '0.75rem 1rem',
+            margin: 0,
+            background: 'transparent',
+            fontSize: 'inherit',
+            width: '100%',
+            minWidth: '100%'
+          }}
+          codeTagProps={{
+            style: {
+              background: 'transparent',
+              width: '100%',
+              display: 'block'
+            }
+          }}
+        >
+          {codeContent}
+        </SyntaxHighlighter>
+      </div>
+    </div>
   );
 };
 
@@ -290,7 +385,7 @@ const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: st
       <p className="leading-6 sm:leading-7 text-sm sm:text-base md:text-lg text-zinc-700 dark:text-zinc-300 mb-2 sm:mb-4 [&:not(:first-child)]:mt-2 sm:[&:not(:first-child)]:mt-4 [&:has(+div>div>div>pre)]:mb-1 sm:[&:has(+div>div>div>pre)]:mb-2" {...props} />
     ),
 
-    // Beautiful code blocks + Chart rendering support
+    // Beautiful code blocks + Chart/Weather/Stock/Map/PDF/Scrape rendering support WITH COLLAPSIBLE FEATURE
     code({ node, inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || "");
       const codeContentRaw = Array.isArray(children) ? children.join("") : String(children);
@@ -309,6 +404,119 @@ const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: st
         try {
           return JSON.parse(text);
         } catch (e) {
+          return null;
+        }
+      };
+
+      // PDF rendering support in code blocks
+      const tryRenderPDF = () => {
+        if (!match) return null;
+        const lang = (match[1] || "").toLowerCase();
+        if (!lang.startsWith("pdf")) return null;
+        
+        try {
+          const trimmed = codeContent.trim();
+          if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) {
+            return null;
+          }
+          
+          const sanitized = sanitizeJson(trimmed);
+          const parsed = safeParse(sanitized);
+          if (!parsed) return null;
+          
+          // Check if it's a PDF tool result
+          if (parsed.success && parsed.action && parsed.config && parsed.stats) {
+            return (
+              <PDFViewer
+                config={parsed.config}
+                stats={parsed.stats}
+                previewId={parsed.previewId || `pdf_${Date.now()}`}
+                showTypewriter={showTypewriter}
+              />
+            );
+          }
+          
+          return null;
+        } catch (err) {
+          console.error("PDF render error:", err);
+          return null;
+        }
+      };
+
+      // Scrape rendering support in code blocks
+      const tryRenderScrape = () => {
+        if (!match) return null;
+        const lang = (match[1] || "").toLowerCase();
+        if (!lang.startsWith("scrape") && !lang.startsWith("firecrawl")) return null;
+        
+        try {
+          const trimmed = codeContent.trim();
+          if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) {
+            return null;
+          }
+          
+          const sanitized = sanitizeJson(trimmed);
+          const parsed = safeParse(sanitized);
+          if (!parsed) return null;
+          
+          // Check if it's a FireWebScrapeTool result
+          if (parsed.success !== undefined && parsed.action && parsed.timestamp) {
+            return (
+              <ScrapeViewer
+                success={parsed.success}
+                action={parsed.action}
+                url={parsed.url}
+                query={parsed.query}
+                jobId={parsed.jobId}
+                data={parsed.data || parsed.results}
+                extractedData={parsed.extractedData}
+                schema={parsed.schema}
+                formats={parsed.formats}
+                limit={parsed.limit}
+                timestamp={parsed.timestamp}
+                error={parsed.error}
+                showTypewriter={showTypewriter}
+              />
+            );
+          }
+          
+          return null;
+        } catch (err) {
+          console.error("Scrape render error:", err);
+          return null;
+        }
+      };
+
+      const tryRenderWeather = () => {
+        if (!match) return null;
+        const lang = (match[1] || "").toLowerCase();
+        if (lang !== "weather") return null;
+        try {
+          const trimmed = codeContent.trim();
+          if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) return null;
+          const sanitized = sanitizeJson(trimmed);
+          const weatherData = safeParse(sanitized);
+          if (!weatherData) return null;
+          return <WeatherDisplay weatherData={JSON.stringify(weatherData)} />;
+        } catch (error) {
+          console.error("Weather render error:", error);
+          return null;
+        }
+      };
+
+      const tryRenderStock = () => {
+        if (!match) return null;
+        const lang = (match[1] || "").toLowerCase();
+        if (lang !== "stock") return null;
+        try {
+          const trimmed = codeContent.trim();
+          if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) return null;
+          const sanitized = sanitizeJson(trimmed);
+          const stockData = safeParse(sanitized);
+          if (!stockData) return null;
+          return <StockDisplay stockData={JSON.stringify(stockData)} />;
+        } catch (error) {
+          console.error("Stock render error:", error);
           return null;
         }
       };
@@ -497,48 +705,40 @@ const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: st
         return null;
       };
       
+      // Try scrape rendering first
+      const scrape = tryRenderScrape();
+      if (!inline && match && scrape) {
+        return scrape;
+      }
+
+      // Try PDF rendering
+      const pdf = tryRenderPDF();
+      if (!inline && match && pdf) {
+        return pdf;
+      }
+
+      const weather = tryRenderWeather();
+      if (!inline && match && weather) {
+        return weather;
+      }
+
+      const stock = tryRenderStock();
+      if (!inline && match && stock) {
+        return stock;
+      }
+
       const chart = tryRenderChart();
       if (!inline && match && chart) {
         return chart;
       }
 
       return !inline && match ? (
-        <div className="my-2 sm:my-4 rounded-lg sm:rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden shadow-sm w-full -ml-1.5 sm:ml-0">
-          <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-2.5 bg-zinc-100/80 dark:bg-zinc-800/80 border-b border-zinc-200 dark:border-zinc-700">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
-                {match[1]}
-              </span>
-            </div>
-            <CopyButton text={codeContent} />
-          </div>
-          <div className="overflow-x-auto w-full pl-1 pr-0">
-            <SyntaxHighlighter
-              style={oneDark}
-              language={match[1]}
-              PreTag="div"
-              className="!m-0 !bg-transparent !text-xs sm:!text-sm md:!text-base w-full"
-              customStyle={{
-                padding: '0.75rem 1rem',
-                margin: 0,
-                background: 'transparent',
-                fontSize: 'inherit',
-                width: '100%',
-                minWidth: '100%'
-              }}
-              codeTagProps={{
-                style: {
-                  background: 'transparent',
-                  width: '100%',
-                  display: 'block'
-                }
-              }}
-              {...props}
-            >
-              {codeContent}
-            </SyntaxHighlighter>
-          </div>
-        </div>
+        <CollapsibleCodeBlock 
+          language={match[1]} 
+          codeContent={codeContent}
+        >
+          {children}
+        </CollapsibleCodeBlock>
       ) : (
         <code
           className="relative rounded-md bg-zinc-100 dark:bg-zinc-800 px-1.5 sm:px-2 py-0.5 sm:py-1 font-mono text-xs sm:text-sm font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/50"
@@ -591,7 +791,7 @@ const NonMemoizedMarkdown = ({ children, showTypewriter = true }: { children: st
       <strong className="font-bold text-zinc-900 dark:text-zinc-100" {...props} />
     ),
     em: (props: any) => (
-      <em className="italic text-zinc-800 dark:text-zinc-200" {...props} />
+      <em className="italic text-zinc-700 dark:text-zinc-300" {...props} />
     ),
     del: (props: any) => (
       <del className="line-through text-zinc-500 dark:text-zinc-500 decoration-red-500/70" {...props} />

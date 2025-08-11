@@ -23,9 +23,17 @@ export async function GET(
     // For example, for Google: https://oauth2.googleapis.com/revoke?token={access_token}
 
     revalidatePath("/account");
-    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/account?oauth_disconnected=true`);
+    
+    // Return success response and let client handle redirect
+    return NextResponse.json({ 
+      success: true, 
+      message: "OAuth connection disconnected successfully" 
+    });
   } catch (error) {
     console.error(`Failed to disconnect OAuth for ${service}:`, error);
-    return new Response("Failed to disconnect OAuth", { status: 500 });
+    return NextResponse.json(
+      { success: false, message: "Failed to disconnect OAuth" },
+      { status: 500 }
+    );
   }
 }

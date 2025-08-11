@@ -18,7 +18,7 @@ import { DateTimeTool } from './tools/datetime-tool';
 import { AsanaTool } from './tools/asana-tool';
 import { DuffelFlightTool } from './tools/flight-booking-tool';
 import { AyrshareSocialTool } from './tools/ayrshare-tool';
-import { WebScrapeTool } from './tools/webscrape-tool';
+// import { WebScrapeTool } from './tools/webscrape-tool';
 import { CalComTool } from './tools/calcom-tool';
 import { CodeExecutionTool } from './tools/code-tool';
 import { AgentMemory, Message, Tool, ToolCall, ToolResult } from "./types";
@@ -41,7 +41,8 @@ import { GoogleCalendarTool } from './tools/GoogleCalendarTool';
 import { GoogleDriveTool } from './tools/GoogleDriveTool';
 import { GoogleSheetsTool } from './tools/GoogleSheetsTool';
 import { StockTool } from './tools/StockTool';
-// import { MapsTool } from './tools/MapsTool';
+import { PDFTool } from './tools/PDFTool';
+import { FireWebScrapeTool } from './tools/FireWebScrapeTool';
 
 // Import Enhanced Agentic Engine
 import { EnhancedAgenticEngine, EnhancedActionIntent } from './actions';
@@ -86,13 +87,12 @@ export class AIAgent {
     if (process.env.TAVILY_API_KEY) {
       this.tools.set("web_search", new WebSearchTool(process.env.TAVILY_API_KEY));
     }
-    if (process.env.FIRECRAWL_API_KEY) {
-      this.tools.set("web_scrape", new WebScrapeTool(process.env.FIRECRAWL_API_KEY));
-    }
+    // if (process.env.FIRECRAWL_API_KEY) {
+    //   this.tools.set("fire_web_scrape", new FireWebScrapeTool(process.env.FIRECRAWL_API_KEY));
+    // }
     if (process.env.ALPHAVANTAGE_API_KEY) {
       const tool = new AlphaVantageTool(process.env.ALPHAVANTAGE_API_KEY);
       this.tools.set("alphavantage_tool", tool);
-      this.tools.set(tool.getDefinition().name || "alphavantage_data", tool);
     }
     if (process.env.GEMINI_API_KEY) {
       this.tools.set("generate_image", new ImageGenerationTool(process.env.GEMINI_API_KEY));
@@ -102,21 +102,20 @@ export class AIAgent {
     }
     
     // --- Group 2: Tools without API Keys ---
-    this.tools.set("file_manager", new FileManagerTool());
+    // this.tools.set("file_manager", new FileManagerTool());
     this.tools.set("api_tool", new ApiTool());
     this.tools.set("get_weather", new WeatherTool());
-    this.tools.set("code_execution", new CodeExecutionTool());
+    // this.tools.set("code_execution", new CodeExecutionTool());
     this.tools.set("datetime_tool", new DateTimeTool());
     this.tools.set("data_visualization", new DataVisualizationTool());
     this.tools.set("duckduckgo_search", new DuckDuckGoSearchTool());
     // Stocks & Maps (no API keys required for basic data)
     this.tools.set("get_stock_data", new StockTool());
-    // this.tools.set("get_map_data", new MapsTool());
+    // this.tools.set("pdf_generator", new PDFTool());
     const serperApiKey = process.env.SERPER_API_KEY;
     if (serperApiKey) {
       const tool = new SerperSearchTool(serperApiKey);
       this.tools.set("serper_search", tool);
-      this.tools.set(tool.getDefinition().name || "serper_search", tool);
     }
 
     // --- Group 3: User-Configurable Tools (user key OR .env fallback) ---
@@ -146,7 +145,6 @@ export class AIAgent {
     if (githubKey) {
       const tool = new GithubTool(githubKey);
       this.tools.set("github_tool", tool);
-      this.tools.set(tool.getDefinition().name || "github_operations", tool);
     }
 
     // Notion
@@ -154,7 +152,6 @@ export class AIAgent {
     if (notionKey) {
       const tool = new NotionTool(notionKey);
       this.tools.set("notion_tool", tool);
-      this.tools.set(tool.getDefinition().name || "notion_workspace", tool);
     }
 
     // Stripe
@@ -163,7 +160,6 @@ export class AIAgent {
         if (stripeKey) {
             const tool = new StripeManagementTool(stripeKey);
             this.tools.set("stripe_tool", tool);
-            this.tools.set(tool.getDefinition().name || "stripe_management", tool);
         }
     }
 
@@ -175,8 +171,10 @@ export class AIAgent {
     const slackKey = await getKey("Slack", "SLACK_BOT_TOKEN");
     if (slackKey) {
       const tool = new SlackTool({ botToken: slackKey });
-      this.tools.set("slack_tool", tool);
-      this.tools.set(tool.getDefinition().name || "slack_action", tool);
+      const toolName = tool.getDefinition().name;
+      if (toolName) {
+        this.tools.set(toolName, tool);
+      }
     }
 
     // Supabase
@@ -216,23 +214,31 @@ export class AIAgent {
       if (googleAccessToken) {
         // Gmail Tool
         const gmailTool = new GmailTool(userId);
-        this.tools.set("gmail_operations", gmailTool);
-        this.tools.set(gmailTool.getDefinition().name || "gmail_operations", gmailTool);
+        const gmailToolName = gmailTool.getDefinition().name;
+        if (gmailToolName) {
+          this.tools.set(gmailToolName, gmailTool);
+        }
 
         // Google Calendar Tool
         const calendarTool = new GoogleCalendarTool(userId);
-        this.tools.set("google_calendar_operations", calendarTool);
-        this.tools.set(calendarTool.getDefinition().name || "google_calendar_operations", calendarTool);
+        const calendarToolName = calendarTool.getDefinition().name;
+        if (calendarToolName) {
+          this.tools.set(calendarToolName, calendarTool);
+        }
 
         // Google Drive Tool
         const driveTool = new GoogleDriveTool(userId);
-        this.tools.set("google_drive_operations", driveTool);
-        this.tools.set(driveTool.getDefinition().name || "google_drive_operations", driveTool);
+        const driveToolName = driveTool.getDefinition().name;
+        if (driveToolName) {
+          this.tools.set(driveToolName, driveTool);
+        }
         
         // Google Sheets Tool (uses same Gmail OAuth connection)
         const sheetsTool = new GoogleSheetsTool(userId);
-        this.tools.set("google_sheets_operations", sheetsTool);
-        this.tools.set(sheetsTool.getDefinition().name || "google_sheets_operations", sheetsTool);
+        const sheetsToolName = sheetsTool.getDefinition().name;
+        if (sheetsToolName) {
+          this.tools.set(sheetsToolName, sheetsTool);
+        }
       }
 
       // GitHub OAuth (if you want to add GitHub OAuth later)

@@ -91,9 +91,9 @@ export const Message = ({
 
   return (
     <motion.div
-      className={`group flex flex-col w-full py-1 sm:py-2 md:py-3 ${
+      className={`group flex flex-col w-full py-0.5 sm:py-1 md:py-1.5 ${
         role === "assistant" ? "" : ""
-      } first-of-type:pt-10 sm:first-of-type:pt-14 md:first-of-type:pt-16`}
+      } first-of-type:pt-8 sm:first-of-type:pt-10 md:first-of-type:pt-12`}
       initial={{ y: 10, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ 
@@ -115,7 +115,7 @@ export const Message = ({
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5 sm:gap-2 md:gap-3 w-full min-w-0 overflow-hidden">
+        <div className="flex flex-col gap-1 sm:gap-1.5 md:gap-2 w-full min-w-0 overflow-hidden">
           {/* Tool Execution Display - Chained Layout */}
           {executingTools && executingTools.length > 0 && role === "assistant" && (
             <div className="mb-1 sm:mb-2">
@@ -194,10 +194,10 @@ export const Message = ({
                 prose-img:h-auto
                 
                 /* Tighter mobile spacing */
-                prose-p:my-1.5 sm:prose-p:my-2 md:prose-p:my-3
-                prose-li:my-0.5 sm:prose-li:my-1 md:prose-li:my-1.5
-                prose-headings:my-2 sm:prose-headings:my-3 md:prose-headings:my-4
-                prose-pre:my-1.5 sm:prose-pre:my-3 md:prose-pre:my-4
+                prose-p:my-1 sm:prose-p:my-1.5 md:prose-p:my-2
+                prose-li:my-0.5 sm:prose-li:my-0.5 md:prose-li:my-1
+                prose-headings:my-1.5 sm:prose-headings:my-2 md:prose-headings:my-3
+                prose-pre:my-1 sm:prose-pre:my-2 md:prose-pre:my-3
                 
                 /* Ensure all child elements take full width */
                 [&>*]:w-full
@@ -214,7 +214,7 @@ export const Message = ({
               {/* Message Actions - Mobile optimized positioning */}
               {/* Actions visibility: hover on desktop (lg+); tap on mobile/tablet */}
               <div
-                className={`w-full mt-1 sm:mt-2 transition-opacity ${
+                className={`w-full mt-0.5 sm:mt-1 transition-opacity ${
                   canEdit && showActionsMobile ? "opacity-100" : "opacity-0"
                 } group-hover:opacity-100`}
               >
