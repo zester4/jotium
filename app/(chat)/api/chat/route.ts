@@ -68,29 +68,21 @@ export async function POST(request: NextRequest) {
           const arrayBuffer = await response.arrayBuffer();
           const base64Data = Buffer.from(arrayBuffer).toString('base64');
 
-          // For PDFs, prepend the user's text for context
-          if (fileAttachment.contentType === "application/pdf") {
-            conversationHistory = [
-              { text: lastMessage.content },
-              {
-                inlineData: {
-                  mimeType: fileAttachment.contentType,
-                  data: base64Data,
-                },
-              }
-            ];
-          } else {
-            // For images, keep the current logic
-            conversationHistory = [
-              {
-                inlineData: {
-                  mimeType: fileAttachment.contentType,
-                  data: base64Data,
-                },
+          const userParts = [
+            { text: lastMessage.content },
+            {
+              inlineData: {
+                mimeType: fileAttachment.contentType,
+                data: base64Data,
               },
-              { text: lastMessage.content }
-            ];
+            },
+          ];
+
+          if (fileAttachment.contentType.startsWith("image/")) {
+            userParts.reverse();
           }
+
+          conversationHistory = [{ role: "user", parts: userParts }];
         } catch (err) {
           controller.enqueue(
             `data: ${JSON.stringify({ type: "error", content: "Failed to process file attachment." })}\n\n`
