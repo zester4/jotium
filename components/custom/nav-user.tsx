@@ -176,6 +176,12 @@ export function NavUser({
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent className="w-48 min-w-40 rounded-lg p-1">
                   <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs" onClick={onCloseSidebar}>
+                    <Link href="/about" className="flex items-center w-full">
+                      <HelpCircle className="size-4" /> {/* Reusing HelpCircle for About Us */}
+                      About Us
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs" onClick={onCloseSidebar}>
                     <Link href="/privacy" className="flex items-center w-full">
                       <Shield className="size-4" />
                       Privacy Policy
@@ -185,6 +191,12 @@ export function NavUser({
                     <Link href="/terms" className="flex items-center w-full">
                       <FileText className="size-4" />
                       Terms of Service
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="gap-2 px-2 py-1 text-xs" onClick={onCloseSidebar}>
+                    <Link href="/contact" className="flex items-center w-full">
+                      <HelpCircle className="size-4" /> {/* Reusing HelpCircle for Contact */}
+                      Contact Us
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuSubContent>
