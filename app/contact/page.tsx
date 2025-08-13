@@ -119,14 +119,14 @@ export default function ContactPage() {
             <Phone className="size-6 mt-1 text-primary" />
             <div>
               <h3 className="font-semibold">Phone</h3>
-              <p className="text-muted-foreground">(123) 456-7890</p>
+              <p className="text-muted-foreground">(484) 401-9149</p>
             </div>
           </div>
           <div className="flex items-start gap-4">
             <MapPin className="size-6 mt-1 text-primary" />
             <div>
               <h3 className="font-semibold">Address</h3>
-              <p className="text-muted-foreground">123 Jotium Lane, Suite 100<br />San Francisco, CA 94105</p>
+              <p className="text-muted-foreground">444 Alaska Ave,<br />Torrance, CA 90503</p>
             </div>
           </div>
         </div>
