@@ -1,7 +1,8 @@
 //app/layout.tsx
 import { Metadata, Viewport } from "next";
 // import { Inter } from "next/font/google";
-import { Quicksand } from "next/font/google";
+// import { Quicksand } from "next/font/google";
+import { Poppins } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "sonner";
 
@@ -18,10 +19,17 @@ import "./globals.css";
 //   display: "swap",
 // });
 
-const quicksand = Quicksand({
+// const quicksand = Quicksand({
+//   subsets: ["latin"],
+//   variable: "--font-quicksand",
+//   display: "swap",
+// });
+
+const poppins = Poppins({
   subsets: ["latin"],
-  variable: "--font-quicksand",
+  variable: "--font-poppins",
   display: "swap",
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
@@ -52,7 +60,7 @@ export default async function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${quicksand.variable}`}
+      className={`${poppins.variable}`}
     >
       <head>
         <meta name="format-detection" content="telephone=no" />
