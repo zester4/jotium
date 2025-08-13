@@ -61,12 +61,12 @@ export function Chat({
     const nextPage = currentPage + 1;
     try {
       const response = await fetch(
-        `/api/messages?chatId=${id}&page=${nextPage}&limit=${MESSAGES_PER_PAGE}`
+        `/api/message?chatId=${id}&page=${nextPage}&limit=${MESSAGES_PER_PAGE}`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch more messages");
       }
-      const newMessages: Message[] = await response.json();
+      const { messages: newMessages } = await response.json();
 
       if (newMessages.length > 0) {
         setMessages((prev) => [...newMessages, ...prev]);

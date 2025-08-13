@@ -1,11 +1,19 @@
-//app/(chat)/api/chat/route.ts
 import { revalidatePath } from "next/cache"; 
 import { NextRequest, NextResponse } from "next/server";
 
 import { AIAgent } from "@/ai/jotium";
 import { Message } from "@/ai/types";
 import { auth } from "@/app/(auth)/auth";
-import { saveChat, deleteChatById, getMessageCount, updateUserMessageCount, getUserById, getUserCustomInstruction } from "@/db/queries";
+import { getUserById, getUserCustomInstruction } from "@/db/queries";
+import { 
+  saveChat as saveChatToRedis, 
+  saveChatMeta, 
+  saveChatMessages,
+  deleteChat as deleteChatFromRedis,
+  getChatMessages,
+  getUserDailyMessageCount,
+  incrementUserDailyMessageCount
+} from "@/lib/redis-queries";
 import { getUserAIModel } from "@/lib/user-model"; 
 import { generateUUID } from "@/lib/utils";
 
@@ -29,21 +37,17 @@ export async function POST(request: NextRequest) {
   const userPlan = user?.plan || "Free";
   const limit = planLimits[userPlan];
 
-  const { count, messageLimitResetAt } = await getMessageCount(userId);
+  const { count, messageLimitResetAt } = await getUserDailyMessageCount(userId);
   const now = new Date();
 
   if (messageLimitResetAt && now < new Date(messageLimitResetAt) && count >= limit) {
     return new Response("Message limit reached.", { status: 429 });
   }
 
-  // Reset count if the reset time has passed
-  const newCount = (messageLimitResetAt && now > new Date(messageLimitResetAt)) ? 1 : count + 1;
-
-  const chatId = id || generateUUID(); // Declare chatId earlier
+  const chatId = id || generateUUID();
   
   // Use the new function to get the correct model based on current plan
   const model = await getUserAIModel(userId);
-  console.log(`Using model: ${model} for user: ${userId}`); // Optional: for debugging
   
   const geminiApiKey = process.env.GOOGLE_API_KEY || '';
   const agent = new AIAgent(geminiApiKey, userId, undefined, model);
@@ -56,7 +60,7 @@ export async function POST(request: NextRequest) {
     async start(controller) {
       let conversationHistory: any[];
       let responseStream;
-      // Only support one image for now
+      
       if (
         attachments.length > 0 &&
         attachments[0].contentType &&
@@ -91,7 +95,6 @@ export async function POST(request: NextRequest) {
           return;
         }
       } else {
-        // Fallback to text-only flow
         conversationHistory = messages.map((msg) => ({
           role: msg.role === "assistant" ? "model" : msg.role,
           parts: [{ text: msg.content }],
@@ -171,7 +174,6 @@ export async function POST(request: NextRequest) {
               if (result.result.success && result.result.results) {
                 const imageToolResult = result.result;
                 for (const imageResult of imageToolResult.results) {
-                  // Prefer imageDataUrl if present, fallback to imageBase64
                   let dataUrl = imageResult.imageDataUrl;
                   let outputFormat = imageToolResult.settings?.outputFormat || 'png';
                   let mimeType = `image/${outputFormat}`;
@@ -187,14 +189,12 @@ export async function POST(request: NextRequest) {
                   }
                 }
                 
-                // Send success response directly to user
                 const successMessage = `I've generated ${imageToolResult.results.length} image(s) for you.`;
                 controller.enqueue(
                   `data: ${JSON.stringify({ type: "response", content: successMessage })}\n\n`
                 );
                 fullResponse = successMessage;
               } else {
-                // Handle error
                 const errorMessage = `I encountered an error generating the image: ${result.result.error || 'Unknown error'}`;
                 controller.enqueue(
                   `data: ${JSON.stringify({ type: "response", content: errorMessage })}\n\n`
@@ -203,9 +203,7 @@ export async function POST(request: NextRequest) {
               }
             }
             
-            // Handle data-display tools directly by returning specialized code fences
             else if (toolName === 'get_weather' || toolName === 'get_stock_data' || toolName === 'get_map_data' || toolName === 'pdf_generator' || toolName === 'fire_web_scrape') {
-              // 1) Stream visualization as markdown block
               const result = await agent.executeToolCall(toolCall);
               const payload = result.result || {};
               let fenceLang;
@@ -229,7 +227,6 @@ export async function POST(request: NextRequest) {
                 fullResponse += markdownBlock;
               }
 
-              // 2) Also pass the function response back to the agent for summarization
               toolResults.push({
                 toolCallId: toolCall.id,
                 result: payload,
@@ -237,19 +234,16 @@ export async function POST(request: NextRequest) {
               });
             }
 
-            // For other tools, execute normally
             else {
               const result = await agent.executeToolCall(toolCall);
               toolResults.push(result);
             }
           }
 
-          // Attach generated images to the assistant's message
           if (assistantAttachments.length > 0) {
             lastAssistantAttachments = assistantAttachments;
           }
 
-          // Only continue to agent if we have non-direct tools
           if (shouldContinueToAgent && toolResults.length > 0) {
             const modelParts = [];
             if (currentTextResponse) {
@@ -297,18 +291,25 @@ export async function POST(request: NextRequest) {
       if (session.user && session.user.id) {
         // Increment message count only when not regenerating
         if (!regenerate) {
-          await updateUserMessageCount(userId, newCount);
+          await incrementUserDailyMessageCount(userId);
+        }
+
+        // Save to Redis instead of PostgreSQL
+        try {
+          await saveChatToRedis({
+            id: chatId,
+            createdAt: new Date().toISOString(),
+            userId: session.user.id,
+            messages: finalMessages,
+          });
+          console.log('✅ Chat saved to Redis:', chatId);
+        } catch (error) {
+          console.error('❌ Error saving chat to Redis:', error);
         }
 
         // Revalidate the chat page and the root path to update message count in Navbar
         revalidatePath(`/chat/${chatId}`);
         revalidatePath("/");
-
-        await saveChat({
-          id: chatId,
-          messages: finalMessages,
-          userId: session.user.id,
-        });
       }
 
       controller.close();
@@ -335,7 +336,7 @@ export async function DELETE(request: NextRequest) {
     return new Response("Missing chat id", { status: 400 });
   }
   try {
-    await deleteChatById({ id });
+    await deleteChatFromRedis(id, session.user.id);
     return new Response(null, { status: 204 });
   } catch (error) {
     return new Response("Failed to delete chat", { status: 500 });

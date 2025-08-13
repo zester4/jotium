@@ -4,7 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { auth } from "@/app/(auth)/auth";
-import { getMessageCount, getUserById } from "@/db/queries";
+import { getUserById } from "@/db/queries";
+import { getUserDailyMessageCount } from "@/lib/redis-queries";
 
 import { History } from "./history";
 import { SlashIcon } from "./icons";
@@ -16,11 +17,11 @@ export const Navbar = async () => {
   const pathname = heads.get("x-next-pathname");
   const session = await auth();
   let messageCount = 0;
-  let messageLimit: number | "Unlimited" = 25; // Default to Free plan limit
+  let messageLimit: number | "Unlimited" = 5; // Default to Free plan limit
 
   if (session?.user?.id) {
     const user = await getUserById(session.user.id);
-    const { count } = await getMessageCount(session.user.id);
+    const { count } = await getUserDailyMessageCount(session.user.id);
     messageCount = count;
 
     const planLimits: { [key: string]: number | "Unlimited" } = {

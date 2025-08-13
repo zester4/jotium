@@ -126,7 +126,7 @@ export default function ContactPage() {
             <MapPin className="size-6 mt-1 text-primary" />
             <div>
               <h3 className="font-semibold">Address</h3>
-              <p className="text-muted-foreground">123 Jotium Lane, Suite 100<br />San Francisco, CA 94105</p>
+              <p className="text-muted-foreground">444 Alaska Ave,<br />Torrance, CA 90503</p>
             </div>
           </div>
         </div>

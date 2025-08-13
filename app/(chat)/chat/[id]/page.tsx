@@ -1,12 +1,11 @@
-import { CoreMessage } from "ai";
 import { headers, cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
+import { Message } from "@/ai/types";
 import { auth } from "@/app/(auth)/auth";
 import { Chat as PreviewChat } from "@/components/custom/chat";
-import { getChatById, getChatMessagesById, getUserById, getMessageCount } from "@/db/queries";
-import { Chat } from "@/db/schema";
-import { convertToUIMessages } from "@/lib/utils";
+import { getUserById } from "@/db/queries";
+import { getChatWithMessages, getUserChats, getUserDailyMessageCount } from "@/lib/redis-queries";
 
 const planLimits: { [key: string]: number } = {
   "Free": 5,
@@ -26,33 +25,44 @@ export default async function Page({ params }: { params: any }) {
   const user = await getUserById(userId);
   const userPlan = user?.plan || "Free";
   const messageLimit = planLimits[userPlan];
-  const { count: messageCount, messageLimitResetAt } = await getMessageCount(
+  const { count: messageCount, messageLimitResetAt } = await getUserDailyMessageCount(
     userId
   );
 
-  const chatFromDb = await getChatById({ id });
-  const initialMessages: Array<CoreMessage> = chatFromDb
-    ? (await getChatMessagesById({ id, page: 1, limit: 10 })) as Array<CoreMessage>
-    : [];
-
-  // type casting and converting messages to UI messages
-  let chat;
-  if (chatFromDb) {
-    chat = {
-      ...chatFromDb,
-      messages: convertToUIMessages(initialMessages),
-    };
+  // Check if this chat belongs to the user
+  const userChats = await getUserChats(userId);
+  const chatExists = userChats.some(chat => chat.id === id);
+  
+  if (!chatExists) {
+    // If chat doesn't exist, render empty chat UI
+    return (
+      <PreviewChat
+        id={id}
+        initialMessages={[]}
+        messageCount={messageCount}
+        messageLimit={messageLimit}
+        messageLimitResetAt={messageLimitResetAt}
+      />
+    );
   }
 
-  if (chat && session.user.id !== chat.userId) {
-    return notFound();
-  }
+  // Get chat with messages from Redis
+  const chat = await getChatWithMessages(id);
+  
+  // Convert Redis messages to proper format
+  const initialMessages: Message[] = chat ? chat.messages.map(msg => ({
+    id: msg.id,
+    role: msg.role as "user" | "assistant" | "tool",
+    content: msg.content,
+    timestamp: msg.timestamp,
+    attachments: msg.attachments || [],
+    toolCalls: msg.toolCalls || [],
+  })) : [];
 
-  // If chat does not exist, render an empty chat UI for this id
   return (
     <PreviewChat
       id={id}
-      initialMessages={chat ? chat.messages : []}
+      initialMessages={initialMessages}
       messageCount={messageCount}
       messageLimit={messageLimit}
       messageLimitResetAt={messageLimitResetAt}

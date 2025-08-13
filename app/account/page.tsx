@@ -54,6 +54,48 @@ export default function AccountPage() {
   const [activeSection, setActiveSection] = useState<"profile" | "security" | "integrations" | "api-keys" | "appearance" | "customize">("profile");
   // Appearance
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const [language, setLanguage] = useState("");
+  const languages = [
+    { value: "en", label: "English" },
+    { value: "es", label: "Español" },
+    { value: "fr", label: "Français" },
+    { value: "de", label: "Deutsch" },
+    { value: "it", label: "Italiano" },
+    { value: "pt", label: "Português" },
+    { value: "ru", label: "Русский" },
+    { value: "zh", label: "中文" },
+    { value: "ja", label: "日本語" },
+    { value: "ko", label: "한국어" },
+    { value: "ar", label: "العربية" },
+    { value: "hi", label: "हिन्दी" },
+  ];
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/account/language");
+        if (res.ok) {
+          const data = await res.json();
+          setLanguage(data.language || "en");
+        }
+      } catch {}
+    })();
+  }, []);
+
+  const handleLanguageChange = async (newLanguage: string) => {
+    setLanguage(newLanguage);
+    try {
+      const res = await fetch("/api/account/language", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: newLanguage }),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      toast.success("Language saved.");
+    } catch {
+      toast.error("Failed to save language.");
+    }
+  };
 
   // Customize (prompt/tone)
   const [customInstruction, setCustomInstruction] = useState("");
@@ -655,6 +697,20 @@ export default function AccountPage() {
                 </button>
               </div>
               <div className="mt-3 text-xs text-foreground/60">Current: {theme} {theme === "system" ? `(resolved: ${resolvedTheme})` : ""}</div>
+              <Separator className="my-6" />
+              <h3 className="text-lg font-semibold mb-2 text-foreground">Language</h3>
+              <p className="text-sm text-foreground/70 mb-4">Choose the language for the agent to respond in.</p>
+              <select
+                value={language}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                className="w-full max-w-md rounded-md border border-border bg-background p-2 text-sm"
+              >
+                {languages.map((lang) => (
+                  <option key={lang.value} value={lang.value}>
+                    {lang.label}
+                  </option>
+                ))}
+              </select>
             </>
           )}
 
