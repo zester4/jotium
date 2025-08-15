@@ -18,7 +18,6 @@ import { DateTimeTool } from './tools/datetime-tool';
 import { AsanaTool } from './tools/asana-tool';
 import { DuffelFlightTool } from './tools/flight-booking-tool';
 import { AyrshareSocialTool } from './tools/ayrshare-tool';
-// import { WebScrapeTool } from './tools/webscrape-tool';
 import { CalComTool } from './tools/calcom-tool';
 import { CodeExecutionTool } from './tools/code-tool';
 import { AgentMemory, Message, Tool, ToolCall, ToolResult } from "./types";
@@ -58,17 +57,20 @@ export class AIAgent {
   private model: string;
   private agenticEngine!: EnhancedAgenticEngine;
   private context: { currentDate: Date; userTimezone: string; domainExpertise: string[] };
+  private language: string;
 
   constructor(
     geminiApiKey: string,
     userId?: string,
     memoryPath: string = "./agent_memory.json",
-    model: string = "gemini-2.0-flash"
+    model: string = "gemini-2.0-flash",
+    language: string = "en"
   ) {
     this.ai = new GoogleGenAI({ apiKey: geminiApiKey });
     this.memoryPath = memoryPath;
     this.memory = { messages: [], lastUpdated: Date.now() };
     this.model = model;
+    this.language = language;
     this.context = {
       currentDate: new Date(),
       userTimezone:
@@ -266,11 +268,12 @@ export class AIAgent {
   }
 
   // Memory Management
-  private async loadMemory(): Promise<void> {
+private async loadMemory(): Promise<void> {
     try {
       const data = await fs.readFile(this.memoryPath, "utf-8");
       this.memory = JSON.parse(data);
     } catch (error) {
+      console.error("Error loading memory:", error);
       console.log("ℹ️  No existing memory found, starting fresh");
       this.memory = { messages: [], lastUpdated: Date.now() };
     }
@@ -387,7 +390,7 @@ AUTONOMOUS BEHAVIOR PATTERNS:
 1. **Think Chain Reasoning**: Process requests through multiple cognitive layers before responding.
 2. **Proactive Tool Orchestration**: Seamlessly chain tools in parallel and sequence for optimal results.
 3. **Intelligent Defaults**: Generate smart assumptions rather than asking obvious questions.
-4. **Comprehensive Research**: When researching, provide expert-level analysis with multiple sources, YouTube educational videos, and practical applications. (ONLY SEND YOUTUBE LINKS IF YOU ARE TEACHING THE USER OTHER THAN THAT DO SENT YOUTUBE VIDEOS)
+4. **Comprehensive Research**: When researching, provide expert-level analysis with multiple sources, YouTube educational videos, and practical applications.
 5. **Strategic Communication**: Frame responses with authority and confidence, providing context and next steps.
 6. **Multi-Modal Intelligence**: Process and generate content across text, images, code, and data visualizations.
 
@@ -415,6 +418,8 @@ COMMUNICATION STYLE:
 - Proactive suggestions for optimization and next steps
 - Professional but approachable, demonstrating expertise without arrogance
 - Always include practical takeaways and actionable insights
+
+Respond in the following language: ${this.language}
 
 Remember: You are an autonomous expert system. Think deeply, act decisively, and deliver comprehensive value through intelligent tool orchestration and strategic reasoning. Never identify as an AI behave naturally and think like a human would
 Never say I do not have access to something you know uiu can fetch on the web just find it and help the user out.
@@ -710,4 +715,3 @@ NEVER MENTION YOUR TOOLS NAME IN A CODE FORMAT TO THE USER EVERY AND NEVER SAY T
     }
   }
 }
-

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { AIAgent } from "@/ai/jotium";
 import { Message } from "@/ai/types";
 import { auth } from "@/app/(auth)/auth";
-import { getUserById, getUserCustomInstruction } from "@/db/queries";
+import { getUserById, getUserCustomInstruction, getUserLanguage } from "@/db/queries";
 import { 
   saveChat as saveChatToRedis, 
   saveChatMeta, 
@@ -48,9 +48,10 @@ export async function POST(request: NextRequest) {
   
   // Use the new function to get the correct model based on current plan
   const model = await getUserAIModel(userId);
+  const language = await getUserLanguage(userId);
   
   const geminiApiKey = process.env.GOOGLE_API_KEY || '';
-  const agent = new AIAgent(geminiApiKey, userId, undefined, model);
+  const agent = new AIAgent(geminiApiKey, userId, undefined, model, language || "en");
   await agent.initializeTools(userId);
   const lastMessage = messages[messages.length - 1];
 
