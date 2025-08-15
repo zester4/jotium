@@ -66,8 +66,11 @@ export const History = ({ user }: { user: User | undefined }) => {
   const [profile, setProfile] = useState<{ firstName?: string; lastName?: string; plan?: string }>({});
 
   useEffect(() => {
-    mutate();
-  }, [pathname, mutate]);
+    // Only mutate when the history component is visible to prevent unnecessary updates
+    if (isHistoryVisible) {
+      mutate();
+    }
+  }, [pathname, mutate, isHistoryVisible]);
 
   // Fetch profile info for sidebar user display
   useEffect(() => {

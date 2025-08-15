@@ -307,9 +307,10 @@ export async function POST(request: NextRequest) {
           console.error('❌ Error saving chat to Redis:', error);
         }
 
-        // Revalidate the chat page and the root path to update message count in Navbar
+        // Revalidate only the specific chat page to update message count in Navbar
         revalidatePath(`/chat/${chatId}`);
-        revalidatePath("/");
+        // Revalidate the root path for navbar updates without forcing navigation
+        revalidatePath('/', 'layout');
       }
 
       controller.close();

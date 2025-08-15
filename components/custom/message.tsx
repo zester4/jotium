@@ -91,9 +91,9 @@ export const Message = ({
 
   return (
     <motion.div
-      className={`group flex flex-col w-full py-0.5 sm:py-1 md:py-1.5 ${
+      className={`group flex flex-col w-full py-0.5 sm:py-1 md:py-0.5 ${
         role === "assistant" ? "" : ""
-      } first-of-type:pt-8 sm:first-of-type:pt-10 md:first-of-type:pt-12`}
+      } first-of-type:pt-4 sm:first-of-type:pt-6 md:first-of-type:pt-4`}
       initial={{ y: 10, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ 
@@ -115,10 +115,10 @@ export const Message = ({
           </div>
         </div>
 
-        <div className="flex flex-col gap-1 sm:gap-1.5 md:gap-2 w-full min-w-0 overflow-hidden">
+        <div className="flex flex-col gap-1 sm:gap-1.5 md:gap-1 w-full min-w-0 overflow-hidden">
           {/* Tool Execution Display - Chained Layout */}
           {executingTools && executingTools.length > 0 && role === "assistant" && (
-            <div className="mb-1 sm:mb-2">
+            <div className="mb-1 sm:mb-1.5 md:mb-1">
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {executingTools.map((toolName, index) => (
                   <ToolExecution 
@@ -133,7 +133,7 @@ export const Message = ({
 
           {/* Thoughts/Reasoning - Mobile optimized */}
           {thoughts && (
-            <div className="mb-1 sm:mb-2">
+            <div className="mb-1 sm:mb-1.5 md:mb-1">
               <MessageReasoning 
                 isLoading={false} 
                 reasoning={thoughts} 
@@ -144,7 +144,7 @@ export const Message = ({
 
           {/* Attachments - Mobile optimized grid - Moved before content for better UX */}
           {attachments && attachments.length > 0 && (
-            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 mb-2 sm:mb-3 w-full">
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 mb-2 sm:mb-2 md:mb-1.5 w-full">
               {attachments.map((attachment, index) => (
                 <MessageImageDisplay 
                   key={attachment.url || index} 
@@ -159,7 +159,7 @@ export const Message = ({
           {/* Main Content - Full width on mobile with optimized spacing */}
           {typeof content === "string" && !isEditing && (
             <div
-              className="flex flex-col gap-1 sm:gap-2 w-full overflow-hidden"
+              className="flex flex-col gap-1 sm:gap-1.5 md:gap-1 w-full overflow-hidden"
               onTouchStart={canEdit ? handleTouchRevealActions : undefined}
             >
               <div className={`
@@ -258,7 +258,7 @@ export const Message = ({
 
           {/* Tool Invocations - Mobile optimized spacing */}
           {toolInvocations && (
-            <div className="flex flex-col gap-2 sm:gap-3 md:gap-4 mt-1.5 sm:mt-2 w-full">
+            <div className="flex flex-col gap-2 sm:gap-2.5 md:gap-2 mt-1.5 sm:mt-1.5 md:mt-1 w-full">
               {toolInvocations.map((toolInvocation) => {
                 const { toolName, toolCallId, state } = toolInvocation;
 
