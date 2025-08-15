@@ -119,7 +119,7 @@ export default function ContactPage() {
             <Phone className="size-6 mt-1 text-primary" />
             <div>
               <h3 className="font-semibold">Phone</h3>
-              <p className="text-muted-foreground">(123) 456-7890</p>
+              <p className="text-muted-foreground">(484) 401-9149</p>
             </div>
           </div>
           <div className="flex items-start gap-4">
