@@ -147,7 +147,17 @@ export class SupabaseTool implements Tool {
           },
           transactionQueries: {
             type: Type.ARRAY,
-            description: "Array of queries for transaction"
+            description: "Array of queries for transaction",
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                action: { type: Type.STRING },
+                table: { type: Type.STRING },
+                data: { type: Type.OBJECT },
+                filters: { type: Type.OBJECT }
+              },
+              required: ["action", "table"]
+            }
           },
           policyConfig: {
             type: Type.OBJECT,
