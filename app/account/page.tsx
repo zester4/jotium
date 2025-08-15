@@ -44,8 +44,8 @@ const apiTools = [
 const oauthProviders = [
   { name: "Google", service: "gmail", icon: "/logo/google.svg" },
   { name: "GitHub", service: "github", icon: "/logo/github.svg" },
-  { name: "Slack", service: "slack", icon: "/logo/slack.svg" },
-  { name: "X", service: "x", icon: "/logo/x-twitter.svg" },
+  // { name: "Slack", service: "slack", icon: "/logo/slack.svg" },
+  // { name: "X", service: "x", icon: "/logo/x-twitter.svg" },
 ];
 
 export default function AccountPage() {
@@ -650,8 +650,8 @@ export default function AccountPage() {
               <ul className="list-disc ml-6">
                 <li>Google: Profile, Email, Calendar</li>
                 <li>GitHub: Repos, Issues, Pull Requests</li>
-                <li>Slack: Channels, Messages</li>
-                <li>X: Post and engage with tweets, access profile information and settings</li>
+                {/* <li>Slack: Channels, Messages</li> */}
+                {/* <li>X: Post and engage with tweets, access profile information and settings</li> */}
                 <li>ClickUp: Tasks, Spaces</li>
                 <li>Cal.com: Bookings, Events</li>
                 {/* Add more as needed */}
