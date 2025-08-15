@@ -7,7 +7,6 @@ import { PasswordResetEmail } from '@/components/emails/password-reset-email';
 import { SubscriptionReceiptEmail } from '@/components/emails/subscription-receipt-email';
 import { WelcomeEmail } from '@/components/emails/welcome-email';
 
-
 // Remove the import since we'll define the type here to avoid circular dependency
 export type EmailType = 'welcome' | 'subscription-receipt' | 'password-reset' | 'feedback' | 'contact';
 
@@ -108,8 +107,10 @@ export async function sendEmail({ to, type, data = {} }: SendEmailOptions): Prom
         break;
 
       case 'feedback':
-        subject = `New Feedback from Jotium User`;
+        subject = `New Feedback from ${data.name}`;
         emailComponent = FeedbackEmail({
+          name: data.name,
+          email: data.email,
           feedbackText: data.feedbackText,
           sentiment: data.sentiment,
           timestamp: data.timestamp,
@@ -268,6 +269,58 @@ export async function sendPasswordResetEmail({
       resetUrl: finalResetUrl,
       userAgent,
       ipAddress,
+    },
+  });
+}
+
+/**
+ * Send feedback email
+ */
+export async function sendFeedbackEmail({
+  name,
+  email,
+  feedbackText,
+  sentiment,
+  timestamp,
+}: {
+  name: string;
+  email: string;
+  feedbackText: string;
+  sentiment: "positive" | "neutral" | "negative" | null;
+  timestamp: string;
+}): Promise<EmailResponse> {
+  return sendEmail({
+    to: process.env.RESEND_REPLY_TO_EMAIL || 'support@yourdomain.com',
+    type: 'feedback',
+    data: {
+      name,
+      email,
+      feedbackText,
+      sentiment,
+      timestamp,
+    },
+  });
+}
+
+/**
+ * Send contact email
+ */
+export async function sendContactEmail({
+  name,
+  email,
+  message,
+}: {
+  name: string;
+  email: string;
+  message: string;
+}): Promise<EmailResponse> {
+  return sendEmail({
+    to: process.env.RESEND_REPLY_TO_EMAIL || 'support@yourdomain.com',
+    type: 'contact',
+    data: {
+      name,
+      email,
+      message,
     },
   });
 }

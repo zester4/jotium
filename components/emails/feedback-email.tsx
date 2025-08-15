@@ -2,21 +2,28 @@ import {
   Body,
   Container,
   Head,
+  Heading,
   Html,
   Preview,
   Section,
   Text,
   Hr,
+  Tailwind,
+  pixelBasedPreset,
 } from "@react-email/components";
 import * as React from "react";
 
 interface FeedbackEmailProps {
+  name: string;
+  email: string;
   feedbackText: string;
   sentiment: "positive" | "neutral" | "negative" | null;
   timestamp: string;
 }
 
 const FeedbackEmail = ({
+  name,
+  email,
   feedbackText,
   sentiment,
   timestamp,
@@ -27,89 +34,66 @@ const FeedbackEmail = ({
   return (
     <Html>
       <Head />
-      <Preview>New Feedback Received</Preview>
-      <Body style={main}>
-        <Container style={container}>
-          <Section style={box}>
-            <Text style={heading}>New Feedback Received!</Text>
-            <Hr style={hr} />
-            <Text style={paragraph}>
-              A new feedback submission has been received for Jotium.
-            </Text>
-            <Text style={paragraph}>
-              <strong>Sentiment:</strong> {sentimentEmoji}
-            </Text>
-            <Text style={paragraph}>
-              <strong>Feedback:</strong>
-            </Text>
-            <Text style={feedbackTextarea}>{feedbackText}</Text>
-            <Text style={paragraph}>
-              <strong>Submitted On:</strong> {timestamp}
-            </Text>
-            <Hr style={hr} />
-            <Text style={footer}>
-              This email was sent automatically from your Jotium application.
-            </Text>
-          </Section>
-        </Container>
-      </Body>
+      <Preview>New Feedback Received from {name}</Preview>
+      <Tailwind
+        config={{
+          presets: [pixelBasedPreset],
+          theme: {
+            extend: {
+              colors: {
+                brand: "#f59e0b",
+                brandDark: "#d97706",
+                offwhite: "#fffbeb",
+                accent: "#fef3c7",
+              },
+              spacing: {
+                0: "0px",
+                20: "20px",
+                45: "45px",
+              },
+            },
+          },
+        }}
+      >
+        <Body className="bg-offwhite font-sans text-base">
+          <Container className="text-center">
+            <Heading className="my-0 text-center leading-8 text-4xl font-bold text-brand">Jotium</Heading>
+            <Text className="text-lg text-gray-600">New Feedback Received</Text>
+          </Container>
+
+          <Container className="bg-white p-45 rounded-lg shadow-sm">
+            <Section>
+              <Text className="text-2xl font-bold my-0 mb-4 text-brand">New Feedback Received!</Text>
+              <Hr className="border-gray-200 my-5" />
+              <Text className="text-base leading-6 text-left text-gray-600">
+                A new feedback submission has been received for Jotium.
+              </Text>
+              <Text className="text-base leading-6 text-left text-gray-600">
+                <strong>Name:</strong> {name}
+              </Text>
+              <Text className="text-base leading-6 text-left text-gray-600">
+                <strong>Email:</strong> {email}
+              </Text>
+              <Text className="text-base leading-6 text-left text-gray-600">
+                <strong>Sentiment:</strong> {sentimentEmoji}
+              </Text>
+              <Text className="text-base leading-6 text-left text-gray-600">
+                <strong>Feedback:</strong>
+              </Text>
+              <Text className="text-sm leading-5 bg-accent p-4 rounded-md border border-gray-200 whitespace-pre-wrap break-words">{feedbackText}</Text>
+              <Text className="text-base leading-6 text-left text-gray-600">
+                <strong>Submitted On:</strong> {timestamp}
+              </Text>
+              <Hr className="border-gray-200 my-5" />
+              <Text className="text-gray-400 text-sm text-center mt-5">
+                This email was sent automatically from your Jotium application.
+              </Text>
+            </Section>
+          </Container>
+        </Body>
+      </Tailwind>
     </Html>
   );
 };
 
 export default FeedbackEmail;
-
-const main = {
-  backgroundColor: "#f6f9fc",
-  fontFamily:
-    '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
-};
-
-const container = {
-  backgroundColor: "#ffffff",
-  margin: "0 auto",
-  padding: "20px 0 48px",
-  marginBottom: "64px",
-};
-
-const box = {
-  padding: "0 48px",
-};
-
-const hr = {
-  borderColor: "#e6ebf1",
-  margin: "20px 0",
-};
-
-const heading = {
-  fontSize: "24px",
-  fontWeight: "bold",
-  margin: "0",
-  marginBottom: "15px",
-  color: "#333",
-};
-
-const paragraph = {
-  fontSize: "16px",
-  lineHeight: "24px",
-  textAlign: "left" as const,
-  color: "#555",
-};
-
-const feedbackTextarea = {
-  fontSize: "14px",
-  lineHeight: "20px",
-  backgroundColor: "#f0f0f0",
-  padding: "10px",
-  borderRadius: "5px",
-  border: "1px solid #ddd",
-  whiteSpace: "pre-wrap" as const,
-  wordBreak: "break-word" as const,
-};
-
-const footer = {
-  color: "#888",
-  fontSize: "12px",
-  textAlign: "center" as const,
-  marginTop: "20px",
-};

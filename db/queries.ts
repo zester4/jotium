@@ -19,7 +19,7 @@ let db = drizzle(client);
 
 export const adminEmails = [
   "seyyid225@gmail.com",
-  "terry.wright40@gmail.com",
+  "terry.wright40@outlook.com",
   "treffbour@gmail.com",
 ];
 
@@ -426,6 +426,28 @@ export async function setUserCustomInstruction({ userId, instruction }: { userId
       .where(eq(user.id, userId));
   } catch (error) {
     console.error("Failed to set custom instruction:", error);
+    throw error;
+  }
+}
+
+// Language (Agent response language)
+export async function getUserLanguage(userId: string): Promise<string | null> {
+  try {
+    const [u] = await db.select({ language: user.language }).from(user).where(eq(user.id, userId));
+    return u?.language || null;
+  } catch (error) {
+    console.error("Failed to get language:", error);
+    throw error;
+  }
+}
+
+export async function setUserLanguage({ userId, language }: { userId: string; language: string }): Promise<void> {
+  try {
+    await db.update(user)
+      .set({ language: language })
+      .where(eq(user.id, userId));
+  } catch (error) {
+    console.error("Failed to set language:", error);
     throw error;
   }
 }

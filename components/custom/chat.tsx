@@ -61,12 +61,12 @@ export function Chat({
     const nextPage = currentPage + 1;
     try {
       const response = await fetch(
-        `/api/messages?chatId=${id}&page=${nextPage}&limit=${MESSAGES_PER_PAGE}`
+        `/api/message?chatId=${id}&page=${nextPage}&limit=${MESSAGES_PER_PAGE}`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch more messages");
       }
-      const newMessages: Message[] = await response.json();
+      const { messages: newMessages } = await response.json();
 
       if (newMessages.length > 0) {
         setMessages((prev) => [...newMessages, ...prev]);
@@ -127,6 +127,14 @@ export function Chat({
     if (response.status === 429) {
       console.error("Error: Message limit reached.");
       toast.error("You've reached your daily message limit. Please upgrade your plan for more messages.");
+      setIsLoading(false);
+      setMessages((prev) => prev.slice(0, prev.length - 1));
+      return;
+    }
+
+    if (!response.ok) {
+      console.error("Error: Failed to send message.");
+      toast.error("Failed to send message. Please try again.");
       setIsLoading(false);
       setMessages((prev) => prev.slice(0, prev.length - 1));
       return;
@@ -205,14 +213,13 @@ export function Chat({
         )
       );
       setExecutingTools([]); // Reset executing tools after response
-      // Trigger a refresh of the current route to update Server Components (like Navbar)
-      router.refresh();
+      // No need to refresh the router - this was causing navigation issues
     }
     setIsLoading(false);
   };
 
   return (
-    <div className="flex flex-col h-screen pt-16 bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="flex flex-col h-screen pt-12 bg-gradient-to-br from-background via-background to-muted/20">
       {/* Messages Container - Stable width system */}
       <div
         ref={messagesContainerRef}
@@ -255,7 +262,7 @@ className="flex-1 overflow-y-auto custom-scrollbar pb-24 sm:pb-32"
             <div className="max-w-4xl mx-auto layout-stable">
               <AnimatePresence mode="popLayout">
                 {loadingMore && (
-                  <div className="text-center py-2 text-sm text-muted-foreground">
+                  <div className="text-center py-1.5 text-sm text-muted-foreground">
                     Loading more messages...
                   </div>
                 )}
@@ -374,7 +381,7 @@ className="flex-1 overflow-y-auto custom-scrollbar pb-24 sm:pb-32"
                                 }
                                 setMessages((prev) => prev.map((msg) => msg.id === assistantMessage.id ? { ...assistantMessage } : msg));
                                 setExecutingTools([]);
-                                router.refresh();
+                                // No need to refresh the router - this was causing navigation issues
                               }
                             } catch (err) {
                               console.error(err);

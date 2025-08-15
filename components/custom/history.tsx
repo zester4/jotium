@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 
-import { Chat } from "@/db/schema";
+import { ChatMeta } from "@/lib/redis-queries";
 import { fetcher, generateUUID } from "@/lib/utils";
 
 import { FeedbackForm } from "./feedback-form"; // Import the new component
@@ -58,7 +58,7 @@ export const History = ({ user }: { user: User | undefined }) => {
     data: history,
     isLoading,
     mutate,
-  } = useSWR<Array<Chat>>(user ? "/api/history" : null, fetcher, {
+  } = useSWR<Array<ChatMeta>>(user ? "/api/history" : null, fetcher, {
     fallbackData: [],
   });
 
@@ -66,8 +66,11 @@ export const History = ({ user }: { user: User | undefined }) => {
   const [profile, setProfile] = useState<{ firstName?: string; lastName?: string; plan?: string }>({});
 
   useEffect(() => {
-    mutate();
-  }, [pathname, mutate]);
+    // Only mutate when the history component is visible to prevent unnecessary updates
+    if (isHistoryVisible) {
+      mutate();
+    }
+  }, [pathname, mutate, isHistoryVisible]);
 
   // Fetch profile info for sidebar user display
   useEffect(() => {
@@ -104,26 +107,12 @@ export const History = ({ user }: { user: User | undefined }) => {
     setShowDeleteDialog(false);
   };
 
-  function getTitleFromChat(chat: Chat): import("react").ReactNode {
-    // Use the first user message as the chat title, or fallback to a default
-    if (Array.isArray(chat.messages) && chat.messages.length > 0) {
-      // Try to find the first user message
-      const firstUserMsg = chat.messages.find(
-        (msg: any) => msg && msg.role === "user" && typeof msg.content === "string" && msg.content.trim() !== ""
-      );
-      if (firstUserMsg) {
-        // Limit to 40 chars for display, add ellipsis if longer
-        const content = firstUserMsg.content.trim();
-        return content.length > 40 ? content.slice(0, 40) + "..." : content;
-      }
-      // Fallback: use the first message's content if available
-      const firstMsg = chat.messages[0];
-      if (firstMsg && typeof firstMsg.content === "string" && firstMsg.content.trim() !== "") {
-        const content = firstMsg.content.trim();
-        return content.length > 40 ? content.slice(0, 40) + "..." : content;
-      }
+  function getTitleFromChat(chat: ChatMeta): import("react").ReactNode {
+    // Use the title from Redis, or fallback to a default
+    if (chat.title && chat.title !== 'Untitled chat') {
+      const content = chat.title.trim();
+      return content.length > 40 ? content.slice(0, 40) + "..." : content;
     }
-    // If no messages, show a placeholder
     return <span className="italic text-zinc-400">Untitled chat</span>;
   }
 
@@ -145,7 +134,7 @@ export const History = ({ user }: { user: User | undefined }) => {
           setIsHistoryVisible(state);
         }}
       >
-        <SheetContent side="left" className="p-3 w-80 bg-background/80 backdrop-blur-md border-r border-border/50">
+        <SheetContent side="left" className="p-3 w-[78vw] sm:w-80 max-w-[90vw] bg-background/80 backdrop-blur-md border-r border-border/50">
           <SheetHeader>
             <VisuallyHidden.Root>
               <SheetTitle className="text-left">History</SheetTitle>
@@ -165,7 +154,7 @@ export const History = ({ user }: { user: User | undefined }) => {
             </div>
           </div>
 
-          <div className="mt-10 flex flex-col flex-1">
+          <div className="mt-8 sm:mt-10 flex flex-col flex-1">
             {user && (
               <Button
                 className="font-normal text-sm flex flex-row justify-between text-white"
@@ -264,25 +253,23 @@ export const History = ({ user }: { user: User | undefined }) => {
 
           {/* Feedback button */}
           {user && (
-            <div className="mt-3 pt-2">
+            <div className="mt-2 px-2">
               <Button
-                className="font-normal text-sm flex flex-row justify-between text-white w-full mb-1"
+                className="font-normal text-sm flex flex-row items-center justify-start w-full h-10 pl-3 pr-2 gap-2 text-foreground"
                 variant="ghost"
                 onClick={() => {
                   setShowFeedbackForm(true);
                   setIsHistoryVisible(false); // Close sidebar when opening feedback form
                 }}
               >
-                <div className="flex items-center gap-2">
-                  <MessageSquareText size={14} />
-                  <span>Submit Feedback</span>
-                </div>
+                <MessageSquareText className="shrink-0" size={20} />
+                <span className="leading-none">Submit Feedback</span>
               </Button>
             </div>
           )}
 
           {/* NavUser at the bottom of the sidebar */}
-          <div className="pt-1">
+          <div className="pt-1 px-2">
              {/* Feedback Form Dialog */}
             <AlertDialog open={showFeedbackForm} onOpenChange={setShowFeedbackForm}>
               <AlertDialogContent>

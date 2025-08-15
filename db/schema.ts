@@ -32,6 +32,7 @@ export const user = pgTable("User", {
   passwordResetExpires: timestamp("passwordResetExpires"),
   // Per-user agent customization
   customInstruction: varchar("customInstruction", { length: 4000 }),
+  language: varchar("language", { length: 20 }),
 });
 
 export type User = InferSelectModel<typeof user>;

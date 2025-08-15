@@ -1,10 +1,10 @@
 //components/custom/navbar.tsx
 import { headers } from "next/headers";
-import Image from "next/image";
 import Link from "next/link";
 
 import { auth } from "@/app/(auth)/auth";
-import { getMessageCount, getUserById } from "@/db/queries";
+import { getUserById } from "@/db/queries";
+import { getUserDailyMessageCount } from "@/lib/redis-queries";
 
 import { History } from "./history";
 import { SlashIcon } from "./icons";
@@ -12,15 +12,15 @@ import { UserMenu } from "./user-menu";
 import { Button } from "../ui/button";
 
 export const Navbar = async () => {
-  const heads = headers();
+  const heads = await headers();
   const pathname = heads.get("x-next-pathname");
   const session = await auth();
   let messageCount = 0;
-  let messageLimit: number | "Unlimited" = 25; // Default to Free plan limit
+  let messageLimit: number | "Unlimited" = 5; // Default to Free plan limit
 
   if (session?.user?.id) {
     const user = await getUserById(session.user.id);
-    const { count } = await getMessageCount(session.user.id);
+    const { count } = await getUserDailyMessageCount(session.user.id);
     messageCount = count;
 
     const planLimits: { [key: string]: number | "Unlimited" } = {
@@ -33,19 +33,16 @@ export const Navbar = async () => {
 
   return (
     <>
-      <div className="bg-background/80 backdrop-blur-md border-b border-border/50 fixed top-0 left-0 w-full py-2 px-3 justify-between flex flex-row items-center z-30 shadow-sm">
+      <div className="bg-background/80 backdrop-blur-md fixed top-0 left-0 w-full py-1 px-3 justify-between flex flex-row items-center z-30">
         <div className="flex flex-row gap-3 items-center">
           <History user={session?.user} />
           {pathname !== "/login" && pathname !== "/register" && (
             <Link href="/" className="flex flex-row gap-3 items-center group">
-              <div className="relative">
-                <Image
+              <div className="relative w-5 h-5">
+                <img
                   src="/images/jotium.png"
-                  height={20}
-                  width={20}
                   alt="jotium logo"
-                  className="group-hover:scale-105 transition-transform duration-200"
-                  style={{ width: "auto", height: "auto" }}
+                  className="w-5 h-5 group-hover:scale-105 transition-transform duration-200 object-contain"
                 />
               </div>
               <div className="text-zinc-400 group-hover:text-zinc-500 transition-colors duration-200">

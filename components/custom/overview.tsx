@@ -12,7 +12,7 @@ export const Overview = ({ firstName }: { firstName?: string }) => {
   return (
     <motion.div
       key="overview"
-      className="w-full mt-20 px-4"
+      className="w-full mt-16 px-4"
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}
