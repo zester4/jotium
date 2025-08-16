@@ -134,7 +134,7 @@ export const History = ({ user }: { user: User | undefined }) => {
           setIsHistoryVisible(state);
         }}
       >
-        <SheetContent side="left" className="p-3 w-[78vw] sm:w-80 max-w-[90vw] bg-background/80 backdrop-blur-md border-r border-border/50">
+        <SheetContent side="left" className="p-3 w-[68vw] sm:w-72 max-w-[90vw] bg-background/80 backdrop-blur-md border-r border-border/50">
           <SheetHeader>
             <VisuallyHidden.Root>
               <SheetTitle className="text-left">History</SheetTitle>

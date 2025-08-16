@@ -226,14 +226,14 @@ export function MultimodalInput({
                     className="group w-full text-left bg-background/60 backdrop-blur-sm border border-border/50 hover:border-border transition-all duration-200 rounded-lg p-2 hover:bg-muted/50 hover:shadow-sm hover:-translate-y-0.5"
                   >
                     <div className="flex items-start gap-2">
-                      <span className="text-xs group-hover:scale-110 transition-transform duration-200 shrink-0">
+                      <span className="text-[11px] group-hover:scale-110 transition-transform duration-200 shrink-0">
                         {suggestedAction.icon}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <span className="font-medium text-foreground block text-xs">
+                        <span className="font-medium text-foreground block text-[10px]">
                           {suggestedAction.title}
                         </span>
-                        <span className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                        <span className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
                           {suggestedAction.label}
                         </span>
                       </div>
@@ -292,7 +292,7 @@ export function MultimodalInput({
         transition-all duration-200 shadow-sm
         ${isFocused ? "border-primary/50 shadow-md ring-2 sm:ring-4 ring-primary/10" : "hover:border-border"}
         ${hasContent ? "border-primary/30" : ""}
-      `}>
+      `} style={{ animation: 'glowing 2s infinite alternate' }}>
         <MessageLimitBanner
           messageCount={messageCount}
           messageLimit={messageLimit}
@@ -307,7 +307,7 @@ export function MultimodalInput({
           onBlur={() => setIsFocused(false)}
           className={`
             min-h-[72px] sm:min-h-[88px] max-h-[250px] sm:max-h-[300px] overflow-y-auto resize-none 
-            border-0 bg-transparent text-sm sm:text-base placeholder:text-muted-foreground/60 
+            border-0 bg-transparent text-sm sm:text-sm placeholder:text-muted-foreground/60 
             focus-visible:ring-0 focus-visible:ring-offset-0 p-3 sm:p-4 
             pr-20 sm:pr-28 leading-relaxed thin-scrollbar
           `}

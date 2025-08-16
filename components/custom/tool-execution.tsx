@@ -5,6 +5,7 @@ import { VscTools } from "react-icons/vsc";
 
 interface ToolExecutionProps {
   toolName: string;
+  count: number;
   isExecuting?: boolean; // New prop to indicate if tool is currently executing
 }
 
@@ -46,12 +47,12 @@ const getToolLogo = (toolName: string): { src: string; alt: string } | null => {
   return toolMap[toolName.toLowerCase()] || null;
 };
 
-export const ToolExecution = ({ toolName, isExecuting = false }: ToolExecutionProps) => {
+export const ToolExecution = ({ toolName, count, isExecuting = false }: ToolExecutionProps) => {
   const toolLogo = getToolLogo(toolName);
   
   return (
     <motion.div
-      className={`inline-flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm border rounded-md px-2 py-1.5 sm:px-3 sm:py-2 max-w-full overflow-hidden ${
+      className={`inline-flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs border rounded-sm px-1.5 py-1 sm:px-2 sm:py-1 max-w-full overflow-hidden ${
         isExecuting 
           ? 'text-muted-foreground bg-muted/30 border-muted/50' 
           : 'text-foreground/80 bg-primary/10 border-primary/20'
@@ -63,18 +64,20 @@ export const ToolExecution = ({ toolName, isExecuting = false }: ToolExecutionPr
     >
       {toolLogo ? (
         <>
-          <div className={`relative w-3 h-3 sm:w-4 sm:h-4 shrink-0 ${
-            isExecuting ? 'animate-pulse' : ''
-          }`}>
-            <Image
-              src={toolLogo.src}
-              alt={toolLogo.alt}
-              fill
-              className="object-contain"
-              sizes="16px"
-            />
-          </div>
-          <span className="truncate text-xs sm:text-sm font-medium">
+          {Array.from({ length: count }).map((_, i) => (
+            <div key={i} className={`relative w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 ${
+              isExecuting ? 'animate-pulse' : ''
+            }`}>
+              <Image
+                src={toolLogo.src}
+                alt={toolLogo.alt}
+                fill
+                className="object-contain"
+                sizes="16px"
+              />
+            </div>
+          ))}
+          <span className="truncate text-[10px] sm:text-xs font-medium">
             {isExecuting ? (
               <>Using <span className="text-foreground/80">{toolLogo.alt}</span></>
             ) : (
@@ -84,13 +87,16 @@ export const ToolExecution = ({ toolName, isExecuting = false }: ToolExecutionPr
         </>
       ) : (
         <>
-          <VscTools 
-            className={`shrink-0 w-3 h-3 sm:w-4 sm:h-4 ${
-              isExecuting ? 'animate-spin' : ''
-            }`}
-            style={isExecuting ? { animationDuration: '1s' } : {}}
-          />
-          <span className="truncate text-xs sm:text-sm font-medium">
+          {Array.from({ length: count }).map((_, i) => (
+            <VscTools 
+              key={i}
+              className={`shrink-0 w-2.5 h-2.5 sm:w-3 sm:h-3 ${
+                isExecuting ? 'animate-spin' : ''
+              }`}
+              style={isExecuting ? { animationDuration: '1s' } : {}}
+            />
+          ))}
+          <span className="truncate text-[10px] sm:text-xs font-medium">
             {isExecuting ? (
               <>Using <span className="text-foreground/80">{toolName}</span></>
             ) : (
