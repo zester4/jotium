@@ -348,7 +348,7 @@ export function MultimodalInput({
 
           {isLoading ? (
             <Button
-              className="rounded-full p-1.5 sm:p-2 size-8 sm:size-10 bg-red-500 hover:bg-red-600 text-white transition-all duration-200"
+              className="rounded-full p-1.5 sm:p-2 size-8 sm:size-10 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200"
               onClick={(event) => {
                 event.preventDefault();
                 stop();
