@@ -253,9 +253,9 @@ export const History = ({ user }: { user: User | undefined }) => {
 
           {/* Feedback button */}
           {user && (
-            <div className="mt-2 px-2">
+            <div className="mt-2">
               <Button
-                className="font-normal text-sm flex flex-row items-center justify-start w-full h-10 pl-3 pr-2 gap-2 text-foreground"
+                className="font-normal text-sm flex flex-row items-center justify-start w-full h-10 pl-1 pr-2 gap-2 text-foreground"
                 variant="ghost"
                 onClick={() => {
                   setShowFeedbackForm(true);
@@ -269,7 +269,7 @@ export const History = ({ user }: { user: User | undefined }) => {
           )}
 
           {/* NavUser at the bottom of the sidebar */}
-          <div className="pt-1 px-2">
+          <div className="pt-1">
              {/* Feedback Form Dialog */}
             <AlertDialog open={showFeedbackForm} onOpenChange={setShowFeedbackForm}>
               <AlertDialogContent>

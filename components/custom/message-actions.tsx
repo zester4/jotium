@@ -69,11 +69,11 @@ export function MessageActions({ messageId, content, onRegenerate, className, is
           onClick={onEdit}
           className={cn(
             "text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors",
-            isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0",
+            isMobile ? "h-6 w-6 p-0" : "h-6 w-6 p-0",
           )}
           title="Edit message"
        >
-          <Pencil className={cn(isMobile ? "h-3 w-3" : "h-4 w-4")} />
+          <Pencil className={cn(isMobile ? "h-3 w-3" : "h-3 w-3")} />
         </Button>
       )}
 
@@ -85,14 +85,14 @@ export function MessageActions({ messageId, content, onRegenerate, className, is
         onClick={handleCopy}
         className={cn(
           "text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors",
-          isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0",
+          isMobile ? "h-6 w-6 p-0" : "h-6 w-6 p-0",
         )}
         title="Copy message"
       >
         {copied ? (
-          <Check className={cn(isMobile ? "h-3 w-3" : "h-4 w-4", "text-green-600")} />
+          <Check className={cn(isMobile ? "h-3 w-3" : "h-3 w-3", "text-green-600")} />
         ) : (
-          <Copy className={cn(isMobile ? "h-3 w-3" : "h-4 w-4")} />
+          <Copy className={cn(isMobile ? "h-3 w-3" : "h-3 w-3")} />
         )}
       </Button>
 
@@ -103,11 +103,11 @@ export function MessageActions({ messageId, content, onRegenerate, className, is
           onClick={handleShare}
           className={cn(
             "text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors",
-            isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0",
+            isMobile ? "h-6 w-6 p-0" : "h-6 w-6 p-0",
           )}
           title="Share message"
         >
-          <Share className={cn(isMobile ? "h-3 w-3" : "h-4 w-4")} />
+          <Share className={cn(isMobile ? "h-3 w-3" : "h-3 w-3")} />
         </Button>
       )}
 
@@ -118,12 +118,12 @@ export function MessageActions({ messageId, content, onRegenerate, className, is
           onClick={() => handleFeedback("up")}
           className={cn(
             "text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors",
-            isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0",
+            isMobile ? "h-6 w-6 p-0" : "h-6 w-6 p-0",
             feedback === "up" && "text-green-600 bg-green-50",
           )}
           title="Good response"
         >
-          <ThumbsUp className={cn(isMobile ? "h-3 w-3" : "h-4 w-4")} />
+          <ThumbsUp className={cn(isMobile ? "h-3 w-3" : "h-3 w-3")} />
         </Button>
       )}
 
@@ -134,12 +134,12 @@ export function MessageActions({ messageId, content, onRegenerate, className, is
           onClick={() => handleFeedback("down")}
           className={cn(
             "text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors",
-            isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0",
+            isMobile ? "h-6 w-6 p-0" : "h-6 w-6 p-0",
             feedback === "down" && "text-red-600 bg-red-50",
           )}
           title="Poor response"
         >
-          <ThumbsDown className={cn(isMobile ? "h-3 w-3" : "h-4 w-4")} />
+          <ThumbsDown className={cn(isMobile ? "h-3 w-3" : "h-3 w-3")} />
         </Button>
       )}
     </div>
