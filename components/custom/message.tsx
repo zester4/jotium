@@ -120,10 +120,14 @@ export const Message = ({
           {executingTools && executingTools.length > 0 && role === "assistant" && (
             <div className="mb-1 sm:mb-1.5 md:mb-1">
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {executingTools.map((toolName, index) => (
+                {Object.entries(executingTools.reduce((acc, toolName) => {
+                  acc[toolName] = (acc[toolName] || 0) + 1;
+                  return acc;
+                }, {} as Record<string, number>)).map(([toolName, count]) => (
                   <ToolExecution 
-                    key={`${toolName}-${index}`} 
+                    key={toolName} 
                     toolName={toolName}
+                    count={count}
                     isExecuting={isStreaming} // Pass streaming state to show different animation
                   />
                 ))}
@@ -176,10 +180,10 @@ export const Message = ({
                 prose-blockquote:text-foreground/80
                 
                 /* Mobile-first responsive typography */
-                prose-p:text-sm sm:prose-p:text-base md:prose-p:text-lg
-                prose-li:text-sm sm:prose-li:text-base md:prose-li:text-lg
-                prose-headings:text-base sm:prose-headings:text-lg md:prose-headings:text-xl lg:prose-headings:text-2xl
-                prose-code:text-xs sm:prose-code:text-sm md:prose-code:text-base
+                prose-p:text-sm sm:prose-p:text-base md:prose-p:text-[9px]
+                prose-li:text-sm sm:prose-li:text-base md:prose-li:text-[9px]
+                prose-headings:text-base sm:prose-headings:text-lg md:prose-headings:text-[11px] lg:prose-headings:text-[11px]
+                prose-code:text-xs sm:prose-code:text-sm md:prose-code:text-[7px]
                 
                 /* Prevent horizontal overflow and ensure full width */
                 prose-pre:overflow-x-auto

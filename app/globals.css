@@ -233,3 +233,12 @@ body::-webkit-scrollbar-thumb {
 .thin-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: hsl(var(--muted-foreground));
 }
+
+@keyframes glowing {
+  0% {
+    border-color: hsl(var(--primary));
+  }
+  100% {
+    border-color: hsl(var(--primary) / 0.4);
+  }
+}
